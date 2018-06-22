@@ -1,23 +1,24 @@
-import { AsyncPriorityQueue } from "async";
-import { Box } from "../../../lib/bakeryjs/Box";
-import { Message } from "../../../lib/bakeryjs/Message";
-
+import { Box } from '../../../lib/bakeryjs/Box';
+import { Message } from '../../../lib/bakeryjs/Message';
 
 class Print extends Box<Message,Object> {
-	private symbols:Array<string>
+	private symbols:Array<string>;
 	meta = {
 		requires: ['job','raw'],
-		provides: []
-	}
+		provides: [],
+	};
+
 	constructor(name: string) {
-		super(name)
-		this.symbols = []
+		super(name);
+		this.symbols = [];
     }
+
 	public async process(input: any) {
-		console.log({printBox: JSON.stringify(input)})
-		return {printBox: JSON.stringify(input)}
+		console.log({printBox: JSON.stringify(input)});
+		return {printBox: JSON.stringify(input)};
 	}
 }
-export default (name:string):Print => {
-	return new Print(name)					
-}
+
+export default (name: string): Print => {
+	return new Print(name);
+};
