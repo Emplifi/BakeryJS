@@ -1,8 +1,9 @@
 import { IBox } from './types/Box';
 import { Message } from './Message';
 import {statSync,readdirSync} from 'fs';
+import IComponentProvider from './IComponentProvider';
 
-export default class ComponentProvider {
+export default class ComponentProvider implements IComponentProvider {
     private availableComponents:{[s: string]: string} = {};
     private boxes: {[key: string]: IBox<Message, Object>} = {};
 

@@ -1,16 +1,16 @@
 import { AsyncPriorityQueue } from 'async';
-import ComponentProvider from '../ComponentProvider';
 import { IBox } from '../types/Box';
 import IFlowBuilder, {ProcessSchema, SchemaObject, SchemaParallelComponent} from '../IFlowBuilder';
 import { Message } from '../Message';
+import IComponentProvider from '../IComponentProvider';
 const async = require('async');
 
 export class MilanBuilder implements IFlowBuilder {
-    public async build(schema: SchemaObject, componentProvider: ComponentProvider): Promise<AsyncPriorityQueue<Message>> {
+    public async build(schema: SchemaObject, componentProvider: IComponentProvider): Promise<AsyncPriorityQueue<Message>> {
         return await this.buildPriorityQueue(schema, 'process', componentProvider);
     }
 
-    private async buildParallels(cfg: SchemaParallelComponent, componentProvider: ComponentProvider): Promise<Function[]> {
+    private async buildParallels(cfg: SchemaParallelComponent, componentProvider: IComponentProvider): Promise<Function[]> {
         const parallelFunctions: Function[] = [];
         for (const boxName of cfg) {
             if (typeof boxName !== 'string') {
@@ -34,7 +34,7 @@ export class MilanBuilder implements IFlowBuilder {
         return parallelFunctions;
     }
 
-    private async buildWaterfall(processLines: ProcessSchema, componentProvider: ComponentProvider): Promise<Function[]> {
+    private async buildWaterfall(processLines: ProcessSchema, componentProvider: IComponentProvider): Promise<Function[]> {
         const waterfallFunctions: Promise<Function>[] = processLines.map(async (pl: SchemaParallelComponent) => {
             const parallelFunctions:Function[] = await this.buildParallels(pl, componentProvider);
             return async (args: Function[]) => {
@@ -45,7 +45,7 @@ export class MilanBuilder implements IFlowBuilder {
         return await Promise.all(waterfallFunctions);
     }
 
-    private async buildPriorityQueue(schema: SchemaObject, key: string, componentProvider: ComponentProvider): Promise<AsyncPriorityQueue<Message>> {
+    private async buildPriorityQueue(schema: SchemaObject, key: string, componentProvider: IComponentProvider): Promise<AsyncPriorityQueue<Message>> {
         const waterFall = await this.buildWaterfall(schema[key], componentProvider);
         return async.priorityQueue(
             async (task: Message) => {

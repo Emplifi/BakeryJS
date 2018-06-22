@@ -1,31 +1,27 @@
 import { Flow } from './Flow';
-import ComponentProvider from './ComponentProvider';
-import {MilanBuilder} from './builders/MilanBuilder';
-import {SchemaObject} from './IFlowBuilder';
+import IFlowSchemaReader from './IFlowSchemaReader';
+import FlowFactory from './FlowFactory';
+import IComponentProvider from './IComponentProvider';
+import IFlowBuilder from './IFlowBuilder';
 
 export class FlowCatalog {
-    componentsPath: string;
-    flowList: {[key: string]: SchemaObject};
+    private readonly flowSchemaReader: IFlowSchemaReader;
+    private readonly builder: IFlowBuilder;
+    private readonly flowFactory: FlowFactory;
 
-    constructor(componentsPath: string, flowsPath: string) {
-        this.componentsPath = componentsPath;
-        this.flowList = require(flowsPath).default;
+    constructor(flowSchemaReader: IFlowSchemaReader, componentProvider: IComponentProvider, builder: IFlowBuilder) {
+        this.flowSchemaReader = flowSchemaReader;
+        this.builder = builder;
+        this.flowFactory = new FlowFactory(componentProvider, builder);
     }
 
     async getFlow(flowName: string): Promise<Flow> {
-        if (!this.flowList[flowName]) {
-            throw new Error(`Flow not found: ${flowName}`);
-        }
+        const schema = await this.flowSchemaReader.getFlowSchema(flowName);
+
         console.log(`getFlow: ${flowName}`);
 
-        const builder = new MilanBuilder();
-        const flow = new Flow(
-            new ComponentProvider(this.componentsPath),
-            builder
-        );
-        builder.buildVisual(this.flowList[flowName]);
-        await flow.build(this.flowList[flowName]);
+        await this.builder.buildVisual(schema);
 
-        return flow;
+        return await this.flowFactory.create(schema);
     }
 }
