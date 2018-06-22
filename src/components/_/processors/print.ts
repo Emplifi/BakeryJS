@@ -1,7 +1,7 @@
 import { Box } from '../../../lib/bakeryjs/Box';
 import { Message } from '../../../lib/bakeryjs/Message';
 
-class Print extends Box<Message,Object> {
+class Print extends Box<Message, Object> {
 	private symbols:Array<string>;
 	meta = {
 		requires: ['job','raw'],
@@ -13,7 +13,7 @@ class Print extends Box<Message,Object> {
 		this.symbols = [];
     }
 
-	public async process(input: any) {
+	public process(input: any): Object {
 		console.log({printBox: JSON.stringify(input)});
 		return {printBox: JSON.stringify(input)};
 	}

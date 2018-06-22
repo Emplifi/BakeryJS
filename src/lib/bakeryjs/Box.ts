@@ -17,7 +17,7 @@ export abstract class Box<T,O> implements IBox<T,O> {
     }
 
 	// the processing function itself
-	public abstract process(value: T): Promise<O>;
+	public abstract process(value: T): Promise<O> | O;
 
     setOutQueue(q: AsyncPriorityQueue<T>): void {
         this.q = q

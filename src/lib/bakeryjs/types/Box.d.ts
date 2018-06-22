@@ -17,6 +17,6 @@ interface IBox<T,O> {
 		(): void;
 	};
 	// the processing function itself
-	process(value: T): Promise<O>
+	process(value: T): Promise<O> | O
 	setOutQueue(q: AsyncPriorityQueue<T>): void
 }

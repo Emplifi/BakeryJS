@@ -1,7 +1,7 @@
 import { Box } from '../../../lib/bakeryjs/Box';
 import { Message } from '../../../lib/bakeryjs/Message';
 
-class Tick extends Box<Message,Object> {
+class Tick extends Box<Message, Object> {
 	private symbols: Array<string>;
 	meta = {
 		requires: ['job'],
@@ -13,7 +13,7 @@ class Tick extends Box<Message,Object> {
 		this.symbols = [];
     }
 
-	public async process(input: Object) {
+	public async process(input: Object): Promise<Object> {
 		let i: number = 0;
 		return new Promise((resolve) => {
 			const id = setInterval(() => {
