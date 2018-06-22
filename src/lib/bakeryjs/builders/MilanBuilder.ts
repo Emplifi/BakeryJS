@@ -43,7 +43,7 @@ export class MilanBuilder implements IFlowBuilder {
         });
 
         return await Promise.all(waterfallFunctions);
-    };
+    }
 
     private async buildPriorityQueue(schema: SchemaObject, key: string, componentProvider: ComponentProvider): Promise<AsyncPriorityQueue<Message>> {
         const waterFall = await this.buildWaterfall(schema[key], componentProvider);

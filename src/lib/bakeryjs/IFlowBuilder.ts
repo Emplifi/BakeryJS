@@ -11,6 +11,6 @@ interface ISchemaObject {
 export type SchemaObject = ISchemaObject;
 
 export default interface IFlowBuilder {
-    build(schema: SchemaObject, componentProvider: ComponentProvider): Promise<AsyncPriorityQueue<Message>> | AsyncPriorityQueue<Message>;
-    buildVisual(schema: SchemaObject, parent: string): Promise<void> | void;
+    build(schema: SchemaObject, componentProvider: ComponentProvider): Promise<AsyncPriorityQueue<Message>> | AsyncPriorityQueue<Message>
+    buildVisual(schema: SchemaObject, parent: string): Promise<void> | void
 }
