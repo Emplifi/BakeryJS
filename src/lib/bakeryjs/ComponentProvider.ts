@@ -6,14 +6,14 @@ import IComponentProvider from './IComponentProvider';
 
 export default class ComponentProvider implements IComponentProvider {
     private availableComponents:{[s: string]: string} = {};
-    private boxes: {[key: string]: IBox<Message, Object>} = {};
+    private boxes: {[key: string]: IBox<Message, Message>} = {};
 
     constructor(componentsPath: string) {
         this.findComponents(componentsPath);
         debug(this.availableComponents);
     }
 
-    public async getComponent(name: string): Promise<IBox<Message, Object>> {
+    public async getComponent(name: string): Promise<IBox<Message, Message>> {
         if (this.boxes[name]) {
             return this.boxes[name]
         }

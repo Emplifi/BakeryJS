@@ -5,27 +5,32 @@ import { Message } from '../Message';
 import IComponentProvider from '../IComponentProvider';
 const async = require('async');
 
+type InputProvider = (requires: string[]) => Message;
+type OutputAcceptor = (provides: string[], value: Message) => void;
+
+type ProcessingCallback = (getInput: InputProvider, setOutput: OutputAcceptor) => Promise<void> | void;
+
 export class MilanBuilder implements IFlowBuilder {
     public async build(schema: SchemaObject, componentProvider: IComponentProvider): Promise<AsyncPriorityQueue<Message>> {
         return await this.buildPriorityQueue(schema, 'process', componentProvider);
     }
 
-    private async buildConcurrentFunctions(concurrentSchema: ConcurrentSchemaComponent, componentProvider: IComponentProvider): Promise<Function[]> {
-        const concurrentFunctions: Function[] = [];
+    private async buildConcurrentFunctions(concurrentSchema: ConcurrentSchemaComponent, componentProvider: IComponentProvider): Promise<ProcessingCallback[]> {
+        const concurrentFunctions: ProcessingCallback[] = [];
         for (const boxName of concurrentSchema) {
             if (typeof boxName !== 'string') {
                 for (const key of Object.keys(boxName)) {
-                    const component: IBox<Message,Object> = await componentProvider.getComponent(key);
+                    const component: IBox<Message, Message> = await componentProvider.getComponent(key);
                     component.setOutQueue(await this.buildPriorityQueue(boxName, key, componentProvider));
-                    concurrentFunctions.push(async (getInput: Function, setOutput: Function) => {
-                        const results: Object = await component.process(getInput(component.meta.requires));
+                    concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
+                        const results = await component.process(getInput(component.meta.requires));
                         setOutput(component.meta.provides, results);
                     })
                 }
             } else {
-                const component: IBox<Message,Object> = await componentProvider.getComponent(boxName);
-                concurrentFunctions.push(async (getInput: Function, setOutput: Function) => {
-                    const results: Object = await component.process(getInput(component.meta.requires));
+                const component: IBox<Message, Message> = await componentProvider.getComponent(boxName);
+                concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
+                    const results = await component.process(getInput(component.meta.requires));
                     setOutput(component.meta.provides, results);
                 })
             }
@@ -34,11 +39,11 @@ export class MilanBuilder implements IFlowBuilder {
         return concurrentFunctions;
     }
 
-    private async buildSerialFunctions(serialSchema: SerialSchemaComponent, componentProvider: IComponentProvider): Promise<Function[]> {
-        const serialFunctions: Promise<Function>[] = serialSchema.map(async (schema: ConcurrentSchemaComponent) => {
-            const concurrentFunctions: Function[] = await this.buildConcurrentFunctions(schema, componentProvider);
-            return async (args: Function[]) => {
-                return await Promise.all(concurrentFunctions.map((fn: Function) => fn(args[0], args[1])));
+    private async buildSerialFunctions(serialSchema: SerialSchemaComponent, componentProvider: IComponentProvider): Promise<ProcessingCallback[]> {
+        const serialFunctions: Promise<ProcessingCallback>[] = serialSchema.map(async (schema: ConcurrentSchemaComponent): Promise<ProcessingCallback> => {
+            const concurrentFunctions = await this.buildConcurrentFunctions(schema, componentProvider);
+            return async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
+                await Promise.all(concurrentFunctions.map((processingCallback: ProcessingCallback) => processingCallback(getInput, setOutput)));
             }
         });
 
@@ -46,16 +51,19 @@ export class MilanBuilder implements IFlowBuilder {
     }
 
     private async buildPriorityQueue(schema: SchemaObject, key: string, componentProvider: IComponentProvider): Promise<AsyncPriorityQueue<Message>> {
-        const waterFall = await this.buildSerialFunctions(schema[key], componentProvider);
+        const serialFunctions = await this.buildSerialFunctions(schema[key], componentProvider);
         return async.priorityQueue(
             async (task: Message) => {
                 const getInput = (requires: string[]) => task.getInput(requires);
-                const setOutput = (provides: string[], val: Message) => task.setOutput(provides, val);
+                const setOutput = (provides: string[], value: Message) => task.setOutput(provides, value);
 
-                waterFall.reduce((prev: Promise<Function[]>, curr: any) => {
+                serialFunctions.reduce((previous: Promise<{input: InputProvider, output: OutputAcceptor}>, serialCallback: ProcessingCallback): Promise<{input: InputProvider, output: OutputAcceptor}> => {
                     // TODO: prvni fce se vykona, dalsi fce nepreda spravne params
-                    return prev.then(curr);
-                }, Promise.resolve([getInput, setOutput]));
+                    return previous.then(async ({input, output}: {input: InputProvider, output: OutputAcceptor}): Promise<{input: InputProvider, output: OutputAcceptor}> => {
+                        await serialCallback(input, output);
+                        return {input, output};
+                    });
+                }, Promise.resolve({input: getInput, output: setOutput}));
             }
         , 10);
     }

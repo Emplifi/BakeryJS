@@ -9,7 +9,7 @@ export class Message {
         }
     }
 
-    getInput(requires: string[]): Object {
+    getInput(requires: string[]): Message {
         const input: any = {};
         for (const r of requires) {
             input[r] = this.data[r];
