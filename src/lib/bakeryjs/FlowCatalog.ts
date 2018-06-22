@@ -1,10 +1,11 @@
 import { Flow } from './Flow';
 import ComponentProvider from './ComponentProvider';
 import {MilanBuilder} from './builders/MilanBuilder';
+import {SchemaObject} from './IFlowBuilder';
 
 export class FlowCatalog {
     componentsPath: string;
-    flowList: any;
+    flowList: {[key: string]: SchemaObject};
 
     constructor(componentsPath: string, flowsPath: string) {
         this.componentsPath = componentsPath;
