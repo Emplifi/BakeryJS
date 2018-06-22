@@ -3,8 +3,8 @@ import ComponentProvider from './ComponentProvider';
 import { Message } from './Message';
 
 type SchemaComponent = string | SchemaObject;
-export type SchemaParallelComponent = Array<SchemaComponent>;
-export type ProcessSchema = Array<SchemaParallelComponent>;
+export type SchemaParallelComponent = SchemaComponent[];
+export type ProcessSchema = SchemaParallelComponent[];
 interface ISchemaObject {
     [key: string]: ProcessSchema;
 }

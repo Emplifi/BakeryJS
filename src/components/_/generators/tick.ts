@@ -2,7 +2,7 @@ import { Box } from '../../../lib/bakeryjs/Box';
 import { Message } from '../../../lib/bakeryjs/Message';
 
 class Tick extends Box<Message, Object> {
-	private symbols: Array<string>;
+	private symbols: string[];
 	meta = {
 		requires: ['job'],
 		provides: ['tick'],
