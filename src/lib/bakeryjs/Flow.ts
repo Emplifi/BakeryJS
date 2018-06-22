@@ -25,14 +25,12 @@ export class Flow {
     public process(job:Job) {
         if (this.queue == null) {
             var a = setInterval( () => {
-                console.log("waiting")
                 if (this.queue != null) {
                     this.queue.push(new Message(job), 1);
                     clearInterval(a);
                 }}
             ,100)
         } else {
-            console.log("q exists");
             this.queue.push(new Message(job), 1);
         }
         
@@ -45,7 +43,6 @@ export class Flow {
                 for (let key of Object.keys(boxName)) {
                     const component:IBox<Message,Object> = await this.getComponent(key)
                     component.setOutQueue(await this.buildPriorityQueue(boxName, key))
-                    console.log({generator:component})
                     parallelFunctions.push(async (getInput:Function, setOutput:Function) => { 
                         var results:Object = await component.process(getInput(component.meta.requires)) 
                         setOutput(component.meta.provides, results);                        
@@ -77,9 +74,7 @@ export class Flow {
     };
 
     private buildPriorityQueue = async (schema:SchemaObject, key:string) => {
-        console.log("buildPriorityQueue: "+key)
         var waterFall = await this.buildWaterfall(schema[key])
-        waterFall.map((x:Function)=>console.log("a:"+x.toString()))
         return async.priorityQueue(
             async (task:Message) => {
                 const getInput = function (requires:string[]) {

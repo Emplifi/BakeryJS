@@ -20,7 +20,7 @@ class Tick extends Box<Message,Object> {
 					resolve({tick:i});
 				}
 				i += 1
-				this.q.push(new Message({raw:true}))
+				this.q.push(new Message({raw:i}))
 			}, 1000)
 		});
 	}
