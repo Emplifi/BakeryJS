@@ -1,14 +1,12 @@
-import { Flow } from "./Flow";
-import { Job } from "./Job";
+import { Flow } from './Flow';
+import { Job } from './Job';
 
 export class Program {
-    public run(flow:Flow) {
+    public run(flow: Flow): void {
+        console.log("Program run ----->");
 
-        console.log("Program run ----->")
+        flow.process(new Job());
 
-        flow.process(new Job())
-
-        //setTimeout(()=>flow.process(new Job()),2000)
-
+        // setTimeout(() => flow.process(new Job()),2000);
     }
 }
