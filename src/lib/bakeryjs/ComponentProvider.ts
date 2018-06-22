@@ -1,5 +1,6 @@
 import { IBox } from './types/Box';
 import { Message } from './Message';
+const debug = require('debug')('bakeryjs:componentProvider');
 import {statSync,readdirSync} from 'fs';
 import IComponentProvider from './IComponentProvider';
 
@@ -9,7 +10,7 @@ export default class ComponentProvider implements IComponentProvider {
 
     constructor(componentsPath: string) {
         this.findComponents(componentsPath);
-        console.log(this.availableComponents);
+        debug(this.availableComponents);
     }
 
     public async getComponent(name: string): Promise<IBox<Message, Object>> {
