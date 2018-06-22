@@ -1,4 +1,6 @@
 import { Flow } from './Flow';
+import ComponentProvider from './ComponentProvider';
+import {MilanBuilder} from './builders/MilanBuilder';
 
 export class FlowCatalog {
     componentsPath: string;
@@ -15,9 +17,12 @@ export class FlowCatalog {
         }
         console.log(`getFlow: ${flowName}`);
 
-        const flow = new Flow();
-        flow.setup(this.componentsPath);
-        flow.buildVisual(this.flowList[flowName]);
+        const builder = new MilanBuilder();
+        const flow = new Flow(
+            new ComponentProvider(this.componentsPath),
+            builder
+        );
+        builder.buildVisual(this.flowList[flowName]);
         await flow.build(this.flowList[flowName]);
 
         return flow;
