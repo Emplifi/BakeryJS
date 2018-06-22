@@ -1,17 +1,9 @@
 import { AsyncPriorityQueue } from 'async';
 import ComponentProvider from '../ComponentProvider';
 import { IBox } from '../types/Box';
-import IFlowBuilder from '../IFlowBuilder';
+import IFlowBuilder, {ProcessSchema, SchemaObject, SchemaParallelComponent} from '../IFlowBuilder';
 import { Message } from '../Message';
 const async = require('async');
-
-type ProcessSchema = Array<SchemaParallelComponent>;
-type SchemaParallelComponent = Array<SchemaComponent>;
-type SchemaComponent = string | SchemaObject;
-interface ISchemaObject {
-    [key: string]: ProcessSchema;
-}
-type SchemaObject = ISchemaObject;
 
 export class MilanBuilder implements IFlowBuilder {
     public async build(schema: SchemaObject, componentProvider: ComponentProvider): Promise<AsyncPriorityQueue<Message>> {
