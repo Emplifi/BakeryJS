@@ -29,8 +29,7 @@ export default class ComponentProvider implements IComponentProvider {
         files.forEach( (file: string) => {
             if (statSync(`${componentsPath}${file}`).isDirectory()) {
                 if (file !== '.' && file !== '..') {
-                    const child: string = `${file}/`;
-                    this.findComponents(`${componentsPath}${file}/`, `${parentDir}${child}`);
+                    this.findComponents(`${componentsPath}${file}/`, `${parentDir}${file}/`);
                 }
             } else {
                 const name = parseComponentName(`${parentDir}${file}`);
