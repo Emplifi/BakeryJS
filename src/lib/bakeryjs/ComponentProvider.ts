@@ -3,6 +3,7 @@ import { Message } from './Message';
 const debug = require('debug')('bakeryjs:componentProvider');
 import {statSync,readdirSync} from 'fs';
 import IComponentProvider from './IComponentProvider';
+import {parseComponentName} from './componentNameParser';
 
 export default class ComponentProvider implements IComponentProvider {
     private availableComponents:{[s: string]: string} = {};
@@ -32,15 +33,8 @@ export default class ComponentProvider implements IComponentProvider {
                     this.findComponents(`${componentsPath}${file}/`, `${parentDir}${child}`);
                 }
             } else {
-                this.availableComponents[
-                    `${parentDir}${file}`
-                        .replace('boxes/', '')
-                        .replace('_/', '')
-                        .replace('processors/', '')
-                        .replace('generators/', '')
-                        .replace('.coffee', '')
-                        .replace('.ts', '')
-                ] = `${componentsPath}${file}`;
+                const name = parseComponentName(`${parentDir}${file}`);
+                this.availableComponents[name] = `${componentsPath}${file}`;
             }
         })
     }
