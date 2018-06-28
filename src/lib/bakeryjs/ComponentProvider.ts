@@ -33,6 +33,9 @@ export default class ComponentProvider implements IComponentProvider {
                 }
             } else {
                 const name = parseComponentName(`${parentDir}${file}`);
+                if (name == null) {
+                    return;
+                }
                 this.availableComponents[name] = `${componentsPath}${file}`;
             }
         })
