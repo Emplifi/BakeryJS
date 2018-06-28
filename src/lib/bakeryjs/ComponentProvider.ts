@@ -1,7 +1,7 @@
+import * as fs from 'fs';
 import { IBox } from './types/Box';
 import { Message } from './Message';
 const debug = require('debug')('bakeryjs:componentProvider');
-import {statSync,readdirSync} from 'fs';
 import IComponentProvider from './IComponentProvider';
 import {parseComponentName} from './componentNameParser';
 
@@ -25,9 +25,9 @@ export default class ComponentProvider implements IComponentProvider {
     }
 
     private findComponents(componentsPath: string, parentDir: string = ''): void {
-        const files = readdirSync(componentsPath);
+        const files = fs.readdirSync(componentsPath);
         files.forEach( (file: string) => {
-            if (statSync(`${componentsPath}${file}`).isDirectory()) {
+            if (fs.statSync(`${componentsPath}${file}`).isDirectory()) {
                 if (file !== '.' && file !== '..') {
                     this.findComponents(`${componentsPath}${file}/`, `${parentDir}${file}/`);
                 }
