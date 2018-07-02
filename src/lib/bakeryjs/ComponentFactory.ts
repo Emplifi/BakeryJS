@@ -7,7 +7,6 @@ const debug = require('debug')('bakeryjs:componentProvider');
 
 export default class ComponentFactory implements IComponentFactory {
     private availableComponents:{[s: string]: string} = {};
-    private boxes: {[key: string]: IBox<MessageData, MessageData>} = {};
 
     constructor(componentsPath: string) {
         this.findComponents(componentsPath);
@@ -15,13 +14,8 @@ export default class ComponentFactory implements IComponentFactory {
     }
 
     public async create(name: string): Promise<IBox<MessageData, MessageData>> {
-        if (this.boxes[name]) {
-            return this.boxes[name]
-        }
         const box = await import(this.availableComponents[name]);
-        this.boxes[name] = box.default(name);
-
-        return this.boxes[name];
+        return box.default(name);
     }
 
     private findComponents(componentsPath: string, parentDir: string = ''): void {
