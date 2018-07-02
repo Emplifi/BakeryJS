@@ -20,7 +20,7 @@ export default class ComponentFactory implements IComponentFactory {
 
     private findComponents(componentsPath: string, parentDir: string = ''): void {
         const files = fs.readdirSync(componentsPath);
-        files.forEach( (file: string) => {
+        files.forEach( (file: string): void => {
             if (fs.statSync(`${componentsPath}${file}`).isDirectory()) {
                 if (file !== '.' && file !== '..') {
                     this.findComponents(`${componentsPath}${file}/`, `${parentDir}${file}/`);

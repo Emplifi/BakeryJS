@@ -22,14 +22,14 @@ export class MilanBuilder implements IFlowBuilder {
                 for (const key of Object.keys(boxName)) {
                     const component: IBox<MessageData, MessageData> = await componentFactory.create(key);
                     component.setOutQueue(await this.buildPriorityQueue(boxName, key, componentFactory));
-                    concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
+                    concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
                         const results = await component.process(getInput(component.meta.requires));
                         setOutput(component.meta.provides, results);
                     })
                 }
             } else {
                 const component: IBox<MessageData, MessageData> = await componentFactory.create(boxName);
-                concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
+                concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
                     const results = await component.process(getInput(component.meta.requires));
                     setOutput(component.meta.provides, results);
                 })
@@ -53,7 +53,7 @@ export class MilanBuilder implements IFlowBuilder {
     private async buildPriorityQueue(schema: SchemaObject, key: string, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> {
         const serialFunctions = await this.buildSerialFunctions(schema[key], componentFactory);
         return async.priorityQueue(
-            async (task: Message) => {
+            async (task: Message): Promise<void> => {
                 const getInput = (requires: string[]) => task.getInput(requires);
                 const setOutput = (provides: string[], value: MessageData) => task.setOutput(provides, value);
 
