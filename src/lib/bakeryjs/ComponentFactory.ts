@@ -1,11 +1,11 @@
 import * as fs from 'fs';
-import {MessageData} from './Message';
-const debug = require('debug')('bakeryjs:componentProvider');
 import {IBox} from './IBox';
-import IComponentProvider from './IComponentProvider';
+import IComponentFactory from './IComponentFactory';
+import {MessageData} from './Message';
 import {parseComponentName} from './componentNameParser';
+const debug = require('debug')('bakeryjs:componentProvider');
 
-export default class ComponentProvider implements IComponentProvider {
+export default class ComponentFactory implements IComponentFactory {
     private availableComponents:{[s: string]: string} = {};
     private boxes: {[key: string]: IBox<MessageData, MessageData>} = {};
 
@@ -14,7 +14,7 @@ export default class ComponentProvider implements IComponentProvider {
         debug(this.availableComponents);
     }
 
-    public async getComponent(name: string): Promise<IBox<MessageData, MessageData>> {
+    public async create(name: string): Promise<IBox<MessageData, MessageData>> {
         if (this.boxes[name]) {
             return this.boxes[name]
         }

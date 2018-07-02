@@ -1,6 +1,6 @@
 import { AsyncPriorityQueue } from 'async';
 import { Message } from './Message';
-import IComponentProvider from './IComponentProvider';
+import IComponentFactory from './IComponentFactory';
 
 type SchemaComponent = string | SchemaObject;
 export type ConcurrentSchemaComponent = SchemaComponent[];
@@ -8,6 +8,6 @@ export type SerialSchemaComponent = ConcurrentSchemaComponent[];
 export type SchemaObject = {[key: string]: SerialSchemaComponent};
 
 export default interface IFlowBuilder {
-    build(schema: SchemaObject, componentProvider: IComponentProvider): Promise<AsyncPriorityQueue<Message>> | AsyncPriorityQueue<Message>
+    build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> | AsyncPriorityQueue<Message>
     buildVisual(schema: SchemaObject): Promise<void> | void
 }

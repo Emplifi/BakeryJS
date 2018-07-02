@@ -1,7 +1,7 @@
 import { AsyncPriorityQueue } from 'async';
 import IFlowBuilder, {SerialSchemaComponent, SchemaObject, ConcurrentSchemaComponent} from '../IFlowBuilder';
 import {IBox} from '../IBox';
-import IComponentProvider from '../IComponentProvider';
+import IComponentFactory from '../IComponentFactory';
 import {Message, MessageData} from '../Message';
 const async = require('async');
 
@@ -11,24 +11,24 @@ type OutputAcceptor = (provides: string[], value: MessageData) => void;
 type ProcessingCallback = (getInput: InputProvider, setOutput: OutputAcceptor) => Promise<void> | void;
 
 export class MilanBuilder implements IFlowBuilder {
-    public async build(schema: SchemaObject, componentProvider: IComponentProvider): Promise<AsyncPriorityQueue<Message>> {
-        return await this.buildPriorityQueue(schema, 'process', componentProvider);
+    public async build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> {
+        return await this.buildPriorityQueue(schema, 'process', componentFactory);
     }
 
-    private async buildConcurrentFunctions(concurrentSchema: ConcurrentSchemaComponent, componentProvider: IComponentProvider): Promise<ProcessingCallback[]> {
+    private async buildConcurrentFunctions(concurrentSchema: ConcurrentSchemaComponent, componentFactory: IComponentFactory): Promise<ProcessingCallback[]> {
         const concurrentFunctions: ProcessingCallback[] = [];
         for (const boxName of concurrentSchema) {
             if (typeof boxName !== 'string') {
                 for (const key of Object.keys(boxName)) {
-                    const component: IBox<MessageData, MessageData> = await componentProvider.getComponent(key);
-                    component.setOutQueue(await this.buildPriorityQueue(boxName, key, componentProvider));
+                    const component: IBox<MessageData, MessageData> = await componentFactory.create(key);
+                    component.setOutQueue(await this.buildPriorityQueue(boxName, key, componentFactory));
                     concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
                         const results = await component.process(getInput(component.meta.requires));
                         setOutput(component.meta.provides, results);
                     })
                 }
             } else {
-                const component: IBox<MessageData, MessageData> = await componentProvider.getComponent(boxName);
+                const component: IBox<MessageData, MessageData> = await componentFactory.create(boxName);
                 concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
                     const results = await component.process(getInput(component.meta.requires));
                     setOutput(component.meta.provides, results);
@@ -39,9 +39,9 @@ export class MilanBuilder implements IFlowBuilder {
         return concurrentFunctions;
     }
 
-    private async buildSerialFunctions(serialSchema: SerialSchemaComponent, componentProvider: IComponentProvider): Promise<ProcessingCallback[]> {
+    private async buildSerialFunctions(serialSchema: SerialSchemaComponent, componentFactory: IComponentFactory): Promise<ProcessingCallback[]> {
         const serialFunctions: Promise<ProcessingCallback>[] = serialSchema.map(async (schema: ConcurrentSchemaComponent): Promise<ProcessingCallback> => {
-            const concurrentFunctions = await this.buildConcurrentFunctions(schema, componentProvider);
+            const concurrentFunctions = await this.buildConcurrentFunctions(schema, componentFactory);
             return async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
                 await Promise.all(concurrentFunctions.map((processingCallback: ProcessingCallback) => processingCallback(getInput, setOutput)));
             }
@@ -50,8 +50,8 @@ export class MilanBuilder implements IFlowBuilder {
         return await Promise.all(serialFunctions);
     }
 
-    private async buildPriorityQueue(schema: SchemaObject, key: string, componentProvider: IComponentProvider): Promise<AsyncPriorityQueue<Message>> {
-        const serialFunctions = await this.buildSerialFunctions(schema[key], componentProvider);
+    private async buildPriorityQueue(schema: SchemaObject, key: string, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> {
+        const serialFunctions = await this.buildSerialFunctions(schema[key], componentFactory);
         return async.priorityQueue(
             async (task: Message) => {
                 const getInput = (requires: string[]) => task.getInput(requires);
