@@ -1,7 +1,8 @@
 import { AsyncPriorityQueue } from 'async';
 import {BoxMeta, IBox, OnCleanCallback} from './IBox';
+import {MessageData} from './Message';
 
-export abstract class Box<T, O> implements IBox<T, O> {
+export abstract class Box<T extends MessageData, O extends MessageData> implements IBox<T, O> {
     name: string;
 	queue?: AsyncPriorityQueue<T>;
 	// metadata: what I provide, what I require

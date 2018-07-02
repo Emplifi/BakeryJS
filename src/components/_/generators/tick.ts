@@ -1,7 +1,7 @@
 import { Box } from '../../../lib/bakeryjs/Box';
-import { Message } from '../../../lib/bakeryjs/Message';
+import {Message, MessageData} from '../../../lib/bakeryjs/Message';
 
-class Tick extends Box<Message, Object> {
+class Tick extends Box<MessageData, MessageData> {
 	meta = {
 		requires: ['job'],
 		provides: ['tick'],
@@ -11,10 +11,10 @@ class Tick extends Box<Message, Object> {
 		super(name);
     }
 
-	public async process(input: Object): Promise<Object> {
+	public async process(input: MessageData): Promise<MessageData> {
 		let i: number = 0;
-		return new Promise((resolve) => {
-			const id = setInterval(() => {
+		return new Promise((resolve: (result: MessageData) => void): void => {
+			const id = setInterval((): void => {
 				if (i >= 3) {
 					clearInterval(id);
 					resolve({tick: i});

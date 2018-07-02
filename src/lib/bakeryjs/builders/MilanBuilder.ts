@@ -2,11 +2,11 @@ import { AsyncPriorityQueue } from 'async';
 import IFlowBuilder, {SerialSchemaComponent, SchemaObject, ConcurrentSchemaComponent} from '../IFlowBuilder';
 import {IBox} from '../IBox';
 import IComponentProvider from '../IComponentProvider';
-import { Message } from '../Message';
+import {Message, MessageData} from '../Message';
 const async = require('async');
 
-type InputProvider = (requires: string[]) => Message;
-type OutputAcceptor = (provides: string[], value: Message) => void;
+type InputProvider = (requires: string[]) => MessageData;
+type OutputAcceptor = (provides: string[], value: MessageData) => void;
 
 type ProcessingCallback = (getInput: InputProvider, setOutput: OutputAcceptor) => Promise<void> | void;
 
@@ -20,7 +20,7 @@ export class MilanBuilder implements IFlowBuilder {
         for (const boxName of concurrentSchema) {
             if (typeof boxName !== 'string') {
                 for (const key of Object.keys(boxName)) {
-                    const component: IBox<Message, Message> = await componentProvider.getComponent(key);
+                    const component: IBox<MessageData, MessageData> = await componentProvider.getComponent(key);
                     component.setOutQueue(await this.buildPriorityQueue(boxName, key, componentProvider));
                     concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
                         const results = await component.process(getInput(component.meta.requires));
@@ -28,7 +28,7 @@ export class MilanBuilder implements IFlowBuilder {
                     })
                 }
             } else {
-                const component: IBox<Message, Message> = await componentProvider.getComponent(boxName);
+                const component: IBox<MessageData, MessageData> = await componentProvider.getComponent(boxName);
                 concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor) => {
                     const results = await component.process(getInput(component.meta.requires));
                     setOutput(component.meta.provides, results);
@@ -55,7 +55,7 @@ export class MilanBuilder implements IFlowBuilder {
         return async.priorityQueue(
             async (task: Message) => {
                 const getInput = (requires: string[]) => task.getInput(requires);
-                const setOutput = (provides: string[], value: Message) => task.setOutput(provides, value);
+                const setOutput = (provides: string[], value: MessageData) => task.setOutput(provides, value);
 
                 serialFunctions.reduce((previous: Promise<{input: InputProvider, output: OutputAcceptor}>, serialCallback: ProcessingCallback): Promise<{input: InputProvider, output: OutputAcceptor}> => {
                     // TODO: prvni fce se vykona, dalsi fce nepreda spravne params

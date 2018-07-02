@@ -1,4 +1,5 @@
 import {AsyncPriorityQueue} from 'async';
+import {MessageData} from './Message';
 
 export type BoxMeta = {
 	provides: string[],
@@ -11,7 +12,7 @@ export type BoxMeta = {
 
 export type OnCleanCallback = () => (Promise<void> | void);
 
-export interface IBox<T, O> {
+export interface IBox<T extends MessageData, O extends MessageData> {
 	queue?: AsyncPriorityQueue<T>;
 	// metadata: what I provide, what I require
 	// needed to barely check the dependencies of the pipeline

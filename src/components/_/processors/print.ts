@@ -1,7 +1,7 @@
 import { Box } from '../../../lib/bakeryjs/Box';
-import { Message } from '../../../lib/bakeryjs/Message';
+import {MessageData} from '../../../lib/bakeryjs/Message';
 
-class Print extends Box<Message, Object> {
+class Print extends Box<MessageData, MessageData> {
 	meta = {
 		requires: ['job','raw'],
 		provides: [],
@@ -11,7 +11,7 @@ class Print extends Box<Message, Object> {
 		super(name);
     }
 
-	public process(input: any): Object {
+	public process(input: MessageData): MessageData {
 		console.log({printBox: JSON.stringify(input)});
 		return {printBox: JSON.stringify(input)};
 	}

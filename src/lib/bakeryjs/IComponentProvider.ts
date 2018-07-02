@@ -1,6 +1,6 @@
 import {IBox} from './IBox';
-import {Message} from './Message';
+import {MessageData} from './Message';
 
 export default interface IComponentProvider {
-    getComponent(name: string): Promise<IBox<Message, Message>> | IBox<Message, Message>;
+    getComponent(name: string): Promise<IBox<MessageData, MessageData>> | IBox<MessageData, MessageData>;
 }
