@@ -1,7 +1,7 @@
 import * as fs from 'fs';
-import { IBox } from './types/Box';
 import { Message } from './Message';
 const debug = require('debug')('bakeryjs:componentProvider');
+import {IBox} from './IBox';
 import IComponentProvider from './IComponentProvider';
 import {parseComponentName} from './componentNameParser';
 

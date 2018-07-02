@@ -1,8 +1,8 @@
 import { AsyncPriorityQueue } from 'async';
-import { IBox } from '../types/Box';
 import IFlowBuilder, {SerialSchemaComponent, SchemaObject, ConcurrentSchemaComponent} from '../IFlowBuilder';
-import { Message } from '../Message';
+import {IBox} from '../IBox';
 import IComponentProvider from '../IComponentProvider';
+import { Message } from '../Message';
 const async = require('async');
 
 type InputProvider = (requires: string[]) => Message;

@@ -2,7 +2,6 @@ import { Box } from '../../../lib/bakeryjs/Box';
 import { Message } from '../../../lib/bakeryjs/Message';
 
 class Print extends Box<Message, Object> {
-	private symbols: string[];
 	meta = {
 		requires: ['job','raw'],
 		provides: [],
@@ -10,7 +9,6 @@ class Print extends Box<Message, Object> {
 
 	constructor(name: string) {
 		super(name);
-		this.symbols = [];
     }
 
 	public process(input: any): Object {

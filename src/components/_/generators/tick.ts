@@ -2,7 +2,6 @@ import { Box } from '../../../lib/bakeryjs/Box';
 import { Message } from '../../../lib/bakeryjs/Message';
 
 class Tick extends Box<Message, Object> {
-	private symbols: string[];
 	meta = {
 		requires: ['job'],
 		provides: ['tick'],
@@ -10,7 +9,6 @@ class Tick extends Box<Message, Object> {
 
 	constructor(name: string) {
 		super(name);
-		this.symbols = [];
     }
 
 	public async process(input: Object): Promise<Object> {
@@ -22,7 +20,9 @@ class Tick extends Box<Message, Object> {
 					resolve({tick: i});
 				}
 				i += 1;
-				this.q.push(new Message({raw: i}));
+				if (this.queue != null) {
+					this.queue.push(new Message({raw: i}), 1);
+                }
 			}, 1000);
 		});
 	}
