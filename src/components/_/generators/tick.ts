@@ -11,7 +11,7 @@ class Tick extends Box<MessageData, MessageData> {
 		super(name);
     }
 
-	public async process(input: MessageData): Promise<MessageData> {
+	public async process(): Promise<MessageData> {
 		let i: number = 0;
 		return new Promise((resolve: (result: MessageData) => void): void => {
 			const id = setInterval((): void => {
