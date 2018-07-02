@@ -7,7 +7,11 @@ import {MilanBuilder} from './lib/bakeryjs/builders/MilanBuilder';
 
 const catalog = new FlowCatalog(
     new FlowSchemaReader(`${__dirname}/flows/flows.ts`),
-    new ComponentFactory(`${__dirname}/components/`),
+    new ComponentFactory(`${__dirname}/components/`, {
+        logger: {
+            log: (message: any): void => console.log(message),
+        },
+    }),
     new MilanBuilder()
 );
 
