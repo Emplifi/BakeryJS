@@ -4,14 +4,18 @@ import { Program } from './lib/bakeryjs/Program';
 import FlowSchemaReader from './lib/bakeryjs/FlowSchemaReader';
 import ComponentFactory from './lib/bakeryjs/ComponentFactory';
 import {MilanBuilder} from './lib/bakeryjs/builders/MilanBuilder';
+import {ServiceProvider} from './lib/bakeryjs/ServiceProvider';
 
 const catalog = new FlowCatalog(
     new FlowSchemaReader(`${__dirname}/flows/flows.ts`),
-    new ComponentFactory(`${__dirname}/components/`, {
-        logger: {
-            log: (message: any): void => console.log(message),
-        },
-    }),
+    new ComponentFactory(
+        `${__dirname}/components/`,
+        new ServiceProvider({
+            logger: {
+                log: (message: any): void => console.log(message),
+            },
+        })
+    ),
     new MilanBuilder()
 );
 

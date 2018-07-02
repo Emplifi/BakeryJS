@@ -1,5 +1,6 @@
 import { Box } from '../../../lib/bakeryjs/Box';
 import {MessageData} from '../../../lib/bakeryjs/Message';
+import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
 class Print extends Box<MessageData, MessageData> {
 	meta = {
@@ -19,6 +20,6 @@ class Print extends Box<MessageData, MessageData> {
 	}
 }
 
-export default (name: string, services: {[key: string]: any}): Print => {
-	return new Print(name, services.logger);
+export default (name: string, serviceProvider: ServiceProvider): Print => {
+	return new Print(name, serviceProvider.get('logger'));
 };
