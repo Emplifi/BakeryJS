@@ -20,6 +20,6 @@ export abstract class Box<T extends MessageData, O extends MessageData> implemen
 	public abstract process(value: T): Promise<O> | O;
 
     setOutQueue(queue: AsyncPriorityQueue<T>): void {
-        this.queue = queue
+        this.queue = queue;
     }
 }
