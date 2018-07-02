@@ -5,7 +5,7 @@ import {Message} from '../../../src/lib/bakeryjs/Message';
 
 describe('Flow', () => {
     it('enqueues job as a message', () => {
-        const queue = priorityQueue((task: Message) => null, 1);
+        const queue = priorityQueue((task: Message) => task, 1);
         const spyOnPush = jest.spyOn(queue, 'push');
 
         const flow = new Flow(queue);
