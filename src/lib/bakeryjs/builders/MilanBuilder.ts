@@ -10,6 +10,8 @@ type OutputAcceptor = (provides: string[], value: MessageData) => void;
 
 type ProcessingCallback = (getInput: InputProvider, setOutput: OutputAcceptor) => Promise<void> | void;
 
+const TERMINAL_WIDTH = 80;
+
 export class MilanBuilder implements IFlowBuilder {
     public async build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> {
         return await this.buildPriorityQueue(schema, 'process', componentFactory);
@@ -68,27 +70,42 @@ export class MilanBuilder implements IFlowBuilder {
         , 10);
     }
 
-    public buildVisual(schema: SchemaObject, parent: string = ''): void {
+    public buildVisual(schema: SchemaObject): void {
+        this.printSchema(schema);
+    }
+
+    private printSchema(schema: SchemaObject, indent: string = ''): void {
         for (const key of Object.keys(schema)) {
-            console.log(`${parent}${key}`);
-            parent += ' ';
-            console.log(`${parent}Waterfall(`);
-            parent += ' ';
-            for (const serial of schema[key]) {
-                console.log(`${parent}Parallel(`);
-                parent += ' ';
-                for (const concurrent of serial) {
-                    if (typeof concurrent !== 'string') {
-                        this.buildVisual(concurrent, `${parent} `);
-                    } else {
-                        console.log(` ${parent}${concurrent}`);
-                    }
-                }
-                parent = parent.substr(1);
-                console.log(`${parent})`);
-            }
-            parent = parent.substr(1);
-            console.log(`${parent})`);
+            console.log(`${indent}* ${key} ${'*'.repeat(TERMINAL_WIDTH - 3 - indent.length - key.length)}`);
+            indent += '* ';
+            this.printSerial(schema[key], indent);
+            indent = indent.substr(0, indent.length - 2);
+            console.log(`${indent}${'*'.repeat(TERMINAL_WIDTH - indent.length)}`);
         }
+    }
+
+    private printSerial(series: SerialSchemaComponent, indent: string = ''): void {
+        console.log(`${indent}SERIAL ${'-'.repeat(TERMINAL_WIDTH - 7 - indent.length)}`);
+        for (const serial of series) {
+            indent += '| ';
+            this.printConcurrent(serial, indent);
+            indent = indent.substr(0, indent.length - 2);
+        }
+        console.log(`${indent}${'-'.repeat(TERMINAL_WIDTH - indent.length)}`);
+    }
+
+    private printConcurrent(concurrencies: ConcurrentSchemaComponent, indent: string = ''): void {
+        console.log(`${indent}CONCURRENT ${'-'.repeat(TERMINAL_WIDTH - 11 - indent.length)}`);
+        for (const concurrent of concurrencies) {
+            indent += '  ';
+            if (typeof concurrent !== 'string') {
+                this.printSchema(concurrent, indent);
+                console.log(`${indent}${' '.repeat(TERMINAL_WIDTH - indent.length)}`);
+            } else {
+                console.log(`${indent}- ${concurrent}`);
+            }
+            indent = indent.substr(0, indent.length - 2);
+        }
+        console.log(`${indent}${'-'.repeat(TERMINAL_WIDTH - indent.length)}`);
     }
 }
