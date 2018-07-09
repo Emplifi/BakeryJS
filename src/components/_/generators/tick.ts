@@ -3,7 +3,7 @@ import {IPriorityQueue} from '../../../lib/bakeryjs/queue/IPriorityQueue';
 import {Message, MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
-class Tick extends Box<MessageData, MessageData, Message> {
+class Tick extends Box<MessageData, MessageData, MessageData> {
 	constructor(name: string, queue: IPriorityQueue<Message>) {
 		super(name, {
 			requires: ['job'],
@@ -11,7 +11,7 @@ class Tick extends Box<MessageData, MessageData, Message> {
 		}, queue);
     }
 
-	protected async processValue(value: MessageData, chunkCallback: (chunk: Message, priority: number) => void): Promise<MessageData> {
+	protected async processValue(value: MessageData, chunkCallback: (chunk: MessageData, priority: number) => void): Promise<MessageData> {
 		let i: number = 0;
 		return new Promise((resolve: (result: MessageData) => void): void => {
 			const id = setInterval((): void => {
@@ -20,7 +20,7 @@ class Tick extends Box<MessageData, MessageData, Message> {
 					resolve({tick: i});
 				}
 				i += 1;
-				chunkCallback(new Message({raw: i}), 1);
+				chunkCallback({raw: i}, 1);
 			}, 1000);
 		});
 	}

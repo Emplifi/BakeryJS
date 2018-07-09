@@ -58,7 +58,7 @@ describe('Message', () => {
         it(`saves output data to the message #${index}`, () => {
             const message = new Message(init);
             message.setOutput(provides, data);
-            expect(message.data).toEqual(expected);
+            expect(message.getInput(['foo', 'bar'])).toEqual(expected);
         });
     });
 
@@ -67,6 +67,6 @@ describe('Message', () => {
         expect(() => {
             message.setOutput(['baz', 'bar'], {baz: 2, bar: 3});
         }).toThrowError(new Error('Cannot provide some data because the message already contains following results "bar".'));
-        expect(message.data).toEqual({foo: 0, bar: 1});
+        expect(message.getInput(['foo', 'bar', 'baz'])).toEqual({foo: 0, bar: 1});
     });
 });

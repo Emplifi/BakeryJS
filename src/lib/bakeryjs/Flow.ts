@@ -10,7 +10,9 @@ export class Flow {
     }
 
     public process(job: Job): void {
-        this.queue.push(new Message(job), {
+        const message = new Message(job);
+        this.queue.push(message, {
+            jobId: job.jobId,
             priority: 1,
         });
     }

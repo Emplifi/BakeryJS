@@ -2,10 +2,13 @@ const debug = require('debug')('bakeryjs:message');
 
 export type MessageData = {[key: string]: any};
 
+let messageId = 0;
+
 export class Message {
-    data: MessageData = {};
+    private readonly data: MessageData = {};
 
     constructor(initData: MessageData) {
+        this.data.messageId = `${messageId++}`;
         for (const p in initData) {
             this.data[p] = initData[p];
         }

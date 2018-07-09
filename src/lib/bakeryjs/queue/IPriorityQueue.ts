@@ -1,7 +1,7 @@
 import {Message} from '../Message';
 
 export type MessageMetadata = {
-    jobId?: string,
+    jobId: string,
     priority: number,
 };
 
