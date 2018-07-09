@@ -1,9 +1,9 @@
 import {AsyncPriorityQueue} from 'async';
 import {IPriorityQueue, MessageMetadata} from './IPriorityQueue';
-import {MessageData} from '../Message';
+import {Message} from '../Message';
 import {priorityQueue} from 'async';
 
-export class MemoryPriorityQueue<T extends MessageData> implements IPriorityQueue<T> {
+export class MemoryPriorityQueue<T extends Message> implements IPriorityQueue<T> {
     private readonly queue: AsyncPriorityQueue<T>;
 
     constructor(worker: (task: T) => (Promise<void> | void), concurrency: number) {

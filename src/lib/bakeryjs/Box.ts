@@ -1,8 +1,8 @@
 import {BoxMeta, IBox, OnCleanCallback} from './IBox';
-import {MessageData} from './Message';
+import {Message, MessageData} from './Message';
 import {IPriorityQueue} from './queue/IPriorityQueue';
 
-export abstract class Box<T extends MessageData, O extends MessageData, C extends MessageData> implements IBox<T, O> {
+export abstract class Box<T extends MessageData, O extends MessageData, C extends Message> implements IBox<T, O> {
     readonly name: string;
 	// metadata: what I provide, what I require
 	// needed to barely check the dependencies of the pipeline

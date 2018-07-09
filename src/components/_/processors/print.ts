@@ -1,8 +1,8 @@
 import { Box } from '../../../lib/bakeryjs/Box';
-import {MessageData} from '../../../lib/bakeryjs/Message';
+import {Message, MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
-class Print extends Box<MessageData, MessageData, MessageData> {
+class Print extends Box<MessageData, MessageData, Message> {
 	meta = {
 		requires: ['job','raw'],
 		provides: [],
