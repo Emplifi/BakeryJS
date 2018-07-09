@@ -1,9 +1,9 @@
-import { AsyncPriorityQueue } from 'async';
 import IFlowBuilder, {SerialSchemaComponent, SchemaObject, ConcurrentSchemaComponent} from '../IFlowBuilder';
 import {IBox} from '../IBox';
 import IComponentFactory from '../IComponentFactory';
+import {IPriorityQueue} from '../queue/IPriorityQueue';
 import {Message, MessageData} from '../Message';
-const async = require('async');
+import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
 
 type InputProvider = (requires: string[]) => MessageData;
 type OutputAcceptor = (provides: string[], value: MessageData) => void;
@@ -11,7 +11,7 @@ type OutputAcceptor = (provides: string[], value: MessageData) => void;
 type ProcessingCallback = (getInput: InputProvider, setOutput: OutputAcceptor) => Promise<void> | void;
 
 export class MilanBuilder implements IFlowBuilder {
-    public async build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> {
+    public async build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<IPriorityQueue<Message>> {
         return await this.buildPriorityQueue(schema, 'process', componentFactory);
     }
 
@@ -50,9 +50,9 @@ export class MilanBuilder implements IFlowBuilder {
         return await Promise.all(serialFunctions);
     }
 
-    private async buildPriorityQueue(schema: SchemaObject, key: string, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> {
+    private async buildPriorityQueue(schema: SchemaObject, key: string, componentFactory: IComponentFactory): Promise<IPriorityQueue<Message>> {
         const serialFunctions = await this.buildSerialFunctions(schema[key], componentFactory);
-        return async.priorityQueue(
+        return new MemoryPriorityQueue(
             async (task: Message): Promise<void> => {
                 const getInput = (requires: string[]) => task.getInput(requires);
                 const setOutput = (provides: string[], value: MessageData) => task.setOutput(provides, value);

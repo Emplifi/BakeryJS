@@ -1,6 +1,6 @@
 import {BoxMeta, IBox, OnCleanCallback} from './IBox';
 import {MessageData} from './Message';
-import {AsyncPriorityQueue} from 'async';
+import {IPriorityQueue} from './queue/IPriorityQueue';
 
 export abstract class Box<T extends MessageData, O extends MessageData, C extends MessageData> implements IBox<T, O> {
     readonly name: string;
@@ -9,9 +9,9 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 	abstract readonly meta: BoxMeta;
 	// cleaning actions, e.g. disconnecting the DBs, cleaning internal cache, etc.
 	readonly onClean: OnCleanCallback[] = [];
-    private readonly queue?: AsyncPriorityQueue<C>;
+    private readonly queue?: IPriorityQueue<C>;
 
-    protected constructor(name: string, queue?: AsyncPriorityQueue<C>) {
+    protected constructor(name: string, queue?: IPriorityQueue<C>) {
         this.name = name;
         this.queue = queue;
     }
@@ -22,7 +22,7 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
             if (this.queue == null) {
                 throw new Error(`${this.name} has not defined a queue for generating values.`);
             }
-            this.queue.push(chunk, priority);
+            this.queue.push(chunk, {priority});
         });
     }
 

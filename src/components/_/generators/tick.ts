@@ -1,6 +1,6 @@
-import { Box } from '../../../lib/bakeryjs/Box';
+import {Box} from '../../../lib/bakeryjs/Box';
+import {IPriorityQueue} from '../../../lib/bakeryjs/queue/IPriorityQueue';
 import {Message, MessageData} from '../../../lib/bakeryjs/Message';
-import {AsyncPriorityQueue} from 'async';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
 class Tick extends Box<MessageData, MessageData, MessageData> {
@@ -9,7 +9,7 @@ class Tick extends Box<MessageData, MessageData, MessageData> {
 		provides: ['tick'],
 	};
 
-	constructor(name: string, queue: AsyncPriorityQueue<MessageData>) {
+	constructor(name: string, queue: IPriorityQueue<MessageData>) {
 		super(name, queue);
     }
 
@@ -28,6 +28,6 @@ class Tick extends Box<MessageData, MessageData, MessageData> {
 	}
 }
 
-export default (name: string, serviceProvider: ServiceProvider, queue: AsyncPriorityQueue<MessageData>): Tick => {
+export default (name: string, serviceProvider: ServiceProvider, queue: IPriorityQueue<MessageData>): Tick => {
 	return new Tick(name, queue);
 };
