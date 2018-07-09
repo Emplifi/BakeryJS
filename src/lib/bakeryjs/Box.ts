@@ -16,6 +16,10 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 
 	// the processing function itself
 	public async process(value: T): Promise<O> {
+        if (this.queue != null) {
+            this.queue.setJobFinishedCallback(value.jobId, () => {});
+            this.queue.setJobMessageFailedCallback(value.jobId, () => {});
+        }
         const result = await this.processValue(value, (chunk: C, priority: number): void => {
             if (this.queue == null) {
                 throw new Error(`${this.name} has not defined a queue for generating values.`);
@@ -25,8 +29,7 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
                 messageData[emitKey] = chunk[emitKey];
             }
             messageData.jobId = value.jobId;
-            let message = new Message(messageData);
-            this.queue.push(message, {
+            this.queue.push(new Message(messageData), {
                 priority: priority,
                 jobId: value.jobId,
             });
@@ -38,5 +41,5 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
         return result;
     }
 
-    protected abstract processValue(value: T, chunkCallback: (chunk: C, priority: number) => void): Promise<O> | O;
+    protected abstract processValue(value: T, emitCallback: (chunk: C, priority: number) => void): Promise<O> | O;
 }

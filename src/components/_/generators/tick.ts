@@ -12,7 +12,7 @@ class Tick extends Box<MessageData, MessageData, MessageData> {
 		}, queue);
     }
 
-	protected async processValue(value: MessageData, chunkCallback: (chunk: MessageData, priority: number) => void): Promise<MessageData> {
+	protected async processValue(value: MessageData, emitCallback: (chunk: MessageData, priority: number) => void): Promise<MessageData> {
 		let i: number = 0;
 		return new Promise((resolve: (result: MessageData) => void): void => {
 			const id = setInterval((): void => {
@@ -21,7 +21,7 @@ class Tick extends Box<MessageData, MessageData, MessageData> {
 					resolve({tick: i});
 				}
 				i += 1;
-				chunkCallback({raw: i}, 1);
+				emitCallback({raw: i}, 1);
 			}, 1000);
 		});
 	}

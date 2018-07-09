@@ -19,4 +19,7 @@ export class MemoryPriorityQueue<T extends Message> implements IPriorityQueue<T>
 
     setJobFinishedCallback(jobId: string, callback: () => (Promise<void> | void)): void {
     }
+
+    setJobMessageFailedCallback(jobId: string, callback: (error: Error) => (Promise<void> | void)): void {
+    }
 }
