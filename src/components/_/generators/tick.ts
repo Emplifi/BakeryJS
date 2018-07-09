@@ -4,13 +4,11 @@ import {Message, MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
 class Tick extends Box<MessageData, MessageData, Message> {
-	meta = {
-		requires: ['job'],
-		provides: ['tick'],
-	};
-
 	constructor(name: string, queue: IPriorityQueue<Message>) {
-		super(name, queue);
+		super(name, {
+			requires: ['job'],
+			provides: ['tick'],
+		}, queue);
     }
 
 	protected async processValue(value: MessageData, chunkCallback: (chunk: Message, priority: number) => void): Promise<MessageData> {
