@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import {AsyncPriorityQueue} from 'async';
 import {IBox} from './IBox';
 import IComponentFactory from './IComponentFactory';
 import {MessageData} from './Message';
@@ -16,9 +17,9 @@ export default class ComponentFactory implements IComponentFactory {
         this.serviceProvider = serviceProvider;
     }
 
-    public async create(name: string): Promise<IBox<MessageData, MessageData>> {
+    public async create(name: string, queue?: AsyncPriorityQueue<MessageData>): Promise<IBox<MessageData, MessageData>> {
         const box = await import(this.availableComponents[name]);
-        return box.default(name, this.serviceProvider);
+        return box.default(name, this.serviceProvider, queue);
     }
 
     private findComponents(componentsPath: string, parentDir: string = ''): void {

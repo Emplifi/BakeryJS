@@ -22,8 +22,8 @@ export class MilanBuilder implements IFlowBuilder {
         for (const boxName of concurrentSchema) {
             if (typeof boxName !== 'string') {
                 for (const key of Object.keys(boxName)) {
-                    const component: IBox<MessageData, MessageData> = await componentFactory.create(key);
-                    component.setOutQueue(await this.buildPriorityQueue(boxName, key, componentFactory));
+                    const queue = await this.buildPriorityQueue(boxName, key, componentFactory);
+                    const component: IBox<MessageData, MessageData> = await componentFactory.create(key, queue);
                     concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
                         const results = await component.process(getInput(component.meta.requires));
                         setOutput(component.meta.provides, results);

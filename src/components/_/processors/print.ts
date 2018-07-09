@@ -2,7 +2,7 @@ import { Box } from '../../../lib/bakeryjs/Box';
 import {MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
-class Print extends Box<MessageData, MessageData> {
+class Print extends Box<MessageData, MessageData, MessageData> {
 	meta = {
 		requires: ['job','raw'],
 		provides: [],
@@ -14,7 +14,7 @@ class Print extends Box<MessageData, MessageData> {
         this.logger = logger;
     }
 
-	public process(input: MessageData): MessageData {
+	protected processValue(input: MessageData): MessageData {
 		this.logger.log({printBox: JSON.stringify(input)});
 		return {printBox: JSON.stringify(input)};
 	}

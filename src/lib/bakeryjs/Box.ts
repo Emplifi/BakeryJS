@@ -1,25 +1,30 @@
-import { AsyncPriorityQueue } from 'async';
 import {BoxMeta, IBox, OnCleanCallback} from './IBox';
 import {MessageData} from './Message';
+import {AsyncPriorityQueue} from 'async';
 
-export abstract class Box<T extends MessageData, O extends MessageData> implements IBox<T, O> {
-    name: string;
-	queue?: AsyncPriorityQueue<T>;
+export abstract class Box<T extends MessageData, O extends MessageData, C extends MessageData> implements IBox<T, O> {
+    readonly name: string;
 	// metadata: what I provide, what I require
 	// needed to barely check the dependencies of the pipeline
-	abstract meta: BoxMeta;
+	abstract readonly meta: BoxMeta;
 	// cleaning actions, e.g. disconnecting the DBs, cleaning internal cache, etc.
-	onClean: OnCleanCallback[];
+	readonly onClean: OnCleanCallback[] = [];
+    private readonly queue?: AsyncPriorityQueue<C>;
 
-    protected constructor(name: string) {
+    protected constructor(name: string, queue?: AsyncPriorityQueue<C>) {
         this.name = name;
-        this.onClean = [];
+        this.queue = queue;
     }
 
 	// the processing function itself
-	public abstract process(value: T): Promise<O> | O;
-
-    setOutQueue(queue: AsyncPriorityQueue<T>): void {
-        this.queue = queue;
+	public async process(value: T): Promise<O> {
+        return await this.processValue(value, (chunk: C, priority: number): void => {
+            if (this.queue == null) {
+                throw new Error(`${this.name} has not defined a queue for generating values.`);
+            }
+            this.queue.push(chunk, priority);
+        });
     }
+
+    protected abstract processValue(value: T, chunkCallback: (chunk: C, priority: number) => void): Promise<O> | O;
 }
