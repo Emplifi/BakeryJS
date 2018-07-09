@@ -9,5 +9,4 @@ export type SchemaObject = {[key: string]: SerialSchemaComponent};
 
 export default interface IFlowBuilder {
     build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<AsyncPriorityQueue<Message>> | AsyncPriorityQueue<Message>
-    buildVisual(schema: SchemaObject): Promise<void> | void
 }

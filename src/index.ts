@@ -5,6 +5,7 @@ import FlowSchemaReader from './lib/bakeryjs/FlowSchemaReader';
 import ComponentFactory from './lib/bakeryjs/ComponentFactory';
 import {MilanBuilder} from './lib/bakeryjs/builders/MilanBuilder';
 import {ServiceProvider} from './lib/bakeryjs/ServiceProvider';
+import {DefaultVisualBuilder} from './lib/bakeryjs/builders/DefaultVisualBuilder';
 
 const catalog = new FlowCatalog(
     new FlowSchemaReader(`${__dirname}/flows/flows.ts`),
@@ -16,7 +17,8 @@ const catalog = new FlowCatalog(
             },
         })
     ),
-    new MilanBuilder()
+    new MilanBuilder(),
+    new DefaultVisualBuilder()
 );
 
 const program = new Program();

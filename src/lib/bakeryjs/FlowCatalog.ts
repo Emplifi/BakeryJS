@@ -3,15 +3,16 @@ import IFlowSchemaReader from './IFlowSchemaReader';
 import FlowFactory from './FlowFactory';
 import IComponentFactory from './IComponentFactory';
 import IFlowBuilder from './IFlowBuilder';
+import {IVisualBuilder} from './builders/IVisualBuilder';
 
 export class FlowCatalog {
     private readonly flowSchemaReader: IFlowSchemaReader;
-    private readonly builder: IFlowBuilder;
     private readonly flowFactory: FlowFactory;
+    private readonly visualBuilder: IVisualBuilder;
 
-    constructor(flowSchemaReader: IFlowSchemaReader, componentFactory: IComponentFactory, builder: IFlowBuilder) {
+    constructor(flowSchemaReader: IFlowSchemaReader, componentFactory: IComponentFactory, builder: IFlowBuilder, visualBuilder: IVisualBuilder) {
         this.flowSchemaReader = flowSchemaReader;
-        this.builder = builder;
+        this.visualBuilder = visualBuilder;
         this.flowFactory = new FlowFactory(componentFactory, builder);
     }
 
@@ -20,7 +21,7 @@ export class FlowCatalog {
 
         console.log(`getFlow: ${flowName}`);
 
-        await this.builder.buildVisual(schema);
+        console.log(await this.visualBuilder.build(schema));
 
         return await this.flowFactory.create(schema);
     }
