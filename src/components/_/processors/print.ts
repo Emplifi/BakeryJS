@@ -7,15 +7,16 @@ class Print extends Box<MessageData, MessageData, Message> {
 
 	constructor(name: string, logger: {log: (message: any) => void}) {
 		super(name, {
-			requires: ['job','raw'],
+			requires: ['jobId','raw'],
 			provides: [],
+			emits: [],
 		});
         this.logger = logger;
     }
 
 	protected processValue(input: MessageData): MessageData {
 		this.logger.log({printBox: JSON.stringify(input)});
-		return {printBox: JSON.stringify(input)};
+		return {};
 	}
 }
 

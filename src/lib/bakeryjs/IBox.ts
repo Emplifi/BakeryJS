@@ -3,6 +3,7 @@ import {MessageData} from './Message';
 export type BoxMeta = {
 	provides: string[],
 	requires: string[],
+	emits: string[],
 	batch?: {
 		maxSize?: number,
 		timeoutSeconds?: number,

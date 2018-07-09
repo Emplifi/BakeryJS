@@ -6,8 +6,9 @@ import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 class Tick extends Box<MessageData, MessageData, MessageData> {
 	constructor(name: string, queue: IPriorityQueue<Message>) {
 		super(name, {
-			requires: ['job'],
+			requires: ['jobId'],
 			provides: ['tick'],
+			emits: ['raw'],
 		}, queue);
     }
 

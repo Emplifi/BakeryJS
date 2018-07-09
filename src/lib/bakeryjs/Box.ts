@@ -20,7 +20,12 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
             if (this.queue == null) {
                 throw new Error(`${this.name} has not defined a queue for generating values.`);
             }
-            let message = new Message(Object.assign({}, chunk, {jobId: value.jobId}));
+            const messageData: MessageData = {};
+            for (const emitKey of this.meta.emits) {
+                messageData[emitKey] = chunk[emitKey];
+            }
+            messageData.jobId = value.jobId;
+            let message = new Message(messageData);
             this.queue.push(message, {
                 priority: priority,
                 jobId: value.jobId,
