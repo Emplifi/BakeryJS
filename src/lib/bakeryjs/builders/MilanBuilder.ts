@@ -15,24 +15,24 @@ export class MilanBuilder implements IFlowBuilder {
         return await this.buildPriorityQueue(schema, 'process', componentFactory);
     }
 
+    private async createConcurrentFunction(componentFactory: IComponentFactory, name: string, queue?: IPriorityQueue<Message>) {
+        const component: IBox<MessageData, MessageData> = await componentFactory.create(name, queue);
+        return async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
+            const results = await component.process(getInput(component.meta.requires));
+            setOutput(component.meta.provides, results);
+        };
+    }
+
     private async buildConcurrentFunctions(concurrentSchema: ConcurrentSchemaComponent, componentFactory: IComponentFactory): Promise<ProcessingCallback[]> {
         const concurrentFunctions: ProcessingCallback[] = [];
         for (const boxName of concurrentSchema) {
             if (typeof boxName !== 'string') {
                 for (const key of Object.keys(boxName)) {
                     const queue = await this.buildPriorityQueue(boxName, key, componentFactory);
-                    const component: IBox<MessageData, MessageData> = await componentFactory.create(key, queue);
-                    concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
-                        const results = await component.process(getInput(component.meta.requires));
-                        setOutput(component.meta.provides, results);
-                    })
+                    concurrentFunctions.push(await this.createConcurrentFunction(componentFactory, key, queue))
                 }
             } else {
-                const component: IBox<MessageData, MessageData> = await componentFactory.create(boxName);
-                concurrentFunctions.push(async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
-                    const results = await component.process(getInput(component.meta.requires));
-                    setOutput(component.meta.provides, results);
-                })
+                concurrentFunctions.push(await this.createConcurrentFunction(componentFactory, boxName))
             }
         }
 
