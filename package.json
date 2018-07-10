@@ -6,12 +6,6 @@
 	"types": "build/index",
 	"dependencies": {
 		"async": "^2.6.0",
-		"lodash": "^4.13.1",
-		"md5": "^2.2.1",
-		"moment": "^2.22.1",
-		"string-hash": "^1.1.3",
-		"underscore": "^1.9.0",
-		"util": "^0.10.3"
 	},
 	"engines": {
 		"node": "8.9",
