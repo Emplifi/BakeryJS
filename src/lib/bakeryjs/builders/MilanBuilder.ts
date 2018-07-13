@@ -54,8 +54,8 @@ export class MilanBuilder implements IFlowBuilder {
         const serialFunctions = await this.buildSerialFunctions(schema[key], componentFactory);
         return new MemoryPriorityQueue(
             async (task: Message): Promise<void> => {
-                const getInput = (requires: string[]) => task.getInput(requires);
-                const setOutput = (provides: string[], value: MessageData) => task.setOutput(provides, value);
+                const getInput = (requires: string[]): MessageData => task.getInput(requires);
+                const setOutput = (provides: string[], value: MessageData): void => task.setOutput(provides, value);
 
                 serialFunctions.reduce((previous: Promise<{input: InputProvider, output: OutputAcceptor}>, serialCallback: ProcessingCallback): Promise<{input: InputProvider, output: OutputAcceptor}> => {
                     // TODO: prvni fce se vykona, dalsi fce nepreda spravne params

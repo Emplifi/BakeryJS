@@ -13,7 +13,7 @@ class Tick extends Box<MessageData, MessageData, MessageData> {
     }
 
 	protected async processValue(value: MessageData, emitCallback: (chunk: MessageData, priority: number) => void): Promise<MessageData> {
-		let i: number = 0;
+		let i = 0;
 		return new Promise((resolve: (result: MessageData) => void): void => {
 			const id = setInterval((): void => {
 				if (i >= 3) {
