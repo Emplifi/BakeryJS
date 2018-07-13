@@ -4,6 +4,20 @@ export type MessageData = {[key: string]: any};
 
 let messageId = 0;
 
+/**
+ * One piece of data flowing inside the Flow through Boxes.
+ *
+ * - Message holds the computed information in fields.  The information in a field is *immutable* once written.
+ * - As Message flows through Boxes, each Box adds one or more field with arbitrary information.
+ * - The Box can't get access to other fields than it is *requiring*. (TODO: throws TypeError?)
+ * - The Box can set only fields that is *providing*. (TODO: throws TypeError?)
+ *
+ * ## TODO: Special attributes Trace (and Log)?
+ * - Message has a special attribute that is holding a trace (how was the flow through)
+ * - Every pass through a Box writes a trace info into this special attribute.
+ *
+ * @internalapi
+ */
 export class Message {
     private readonly data: MessageData = {};
 
