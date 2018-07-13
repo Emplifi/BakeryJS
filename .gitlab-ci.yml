@@ -1,0 +1,29 @@
+image: node:10
+
+lint+test:
+  cache:
+    paths:
+      - .npm-cache
+  before_script:
+    - npm config set cache .npm-cache
+    - npm ci
+  script:
+    - npm run lint
+    - npm run test -- --coverage --color
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    paths:
+      - coverage/
+
+pages:
+  stage: deploy
+  dependencies:
+    - lint+test
+  script:
+    - mv coverage/ public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - master

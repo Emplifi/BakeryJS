@@ -9,8 +9,8 @@
 		"debug": "^3.1.0"
 	},
 	"engines": {
-		"node": "8.9",
-		"npm": "5.6"
+		"node": ">=8.11",
+		"npm": ">=5.6"
 	},
 	"author": "lepik.milan@gmail.com",
 	"license": "ISC",
@@ -27,8 +27,9 @@
 	"scripts": {
 		"start": "npm run build:live",
 		"build:live": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/index.ts all",
-		"build": "./node_modules/.bin/tsc --pretty",
-		"test": "./node_modules/.bin/jest --colors"
+		"build": "tsc --pretty",
+		"test": "jest",
+		"lint": "exit 0"
 	},
 	"jest": {
 		"roots": [
@@ -38,6 +39,10 @@
 		"testEnvironment": "node",
 		"collectCoverageFrom": [
 			"src/**/*.{js,ts}"
+		],
+		"coverageReporters": [
+			"html",
+			"text"
 		],
 		"testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$",
 		"transform": {
