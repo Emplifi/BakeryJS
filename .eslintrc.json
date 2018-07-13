@@ -8,7 +8,9 @@
 		"es6": true
 	},
 	"plugins": ["typescript"],
-	"extends": ["prettier"],
+	"extends": [
+        "plugin:prettier/recommended"
+    ],
 	"rules": {
         "typescript/adjacent-overload-signatures": "error",
         "typescript/class-name-casing": "error",
