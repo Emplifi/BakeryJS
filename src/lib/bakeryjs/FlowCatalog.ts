@@ -1,4 +1,4 @@
-import { Flow } from './Flow';
+import {Flow} from './Flow';
 import IFlowSchemaReader from './IFlowSchemaReader';
 import FlowFactory from './FlowFactory';
 import IComponentFactory from './IComponentFactory';
@@ -10,13 +10,13 @@ export class FlowCatalog {
     private readonly flowFactory: FlowFactory;
     private readonly visualBuilder: IVisualBuilder;
 
-    constructor(flowSchemaReader: IFlowSchemaReader, componentFactory: IComponentFactory, builder: IFlowBuilder, visualBuilder: IVisualBuilder) {
+    public constructor(flowSchemaReader: IFlowSchemaReader, componentFactory: IComponentFactory, builder: IFlowBuilder, visualBuilder: IVisualBuilder) {
         this.flowSchemaReader = flowSchemaReader;
         this.visualBuilder = visualBuilder;
         this.flowFactory = new FlowFactory(componentFactory, builder);
     }
 
-    async getFlow(flowName: string): Promise<Flow> {
+    public async getFlow(flowName: string): Promise<Flow> {
         const schema = await this.flowSchemaReader.getFlowSchema(flowName);
 
         console.log(`getFlow: ${flowName}`);

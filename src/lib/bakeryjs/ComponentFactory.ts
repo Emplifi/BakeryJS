@@ -11,7 +11,7 @@ export default class ComponentFactory implements IComponentFactory {
     private availableComponents:{[s: string]: string} = {};
     private readonly serviceProvider: ServiceProvider;
 
-    constructor(componentsPath: string, serviceProvider: ServiceProvider) {
+    public constructor(componentsPath: string, serviceProvider: ServiceProvider) {
         this.findComponents(componentsPath);
         debug(this.availableComponents);
         this.serviceProvider = serviceProvider;

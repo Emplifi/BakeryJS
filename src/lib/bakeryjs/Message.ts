@@ -7,14 +7,14 @@ let messageId = 0;
 export class Message {
     private readonly data: MessageData = {};
 
-    constructor(initData: MessageData) {
+    public constructor(initData: MessageData) {
         this.data.messageId = `${messageId++}`;
         for (const p in initData) {
             this.data[p] = initData[p];
         }
     }
 
-    getInput(requires: string[]): MessageData {
+    public getInput(requires: string[]): MessageData {
         const input: MessageData = {};
         for (const r of requires) {
             input[r] = this.data[r];
@@ -24,7 +24,7 @@ export class Message {
         return input;
     }
 
-    setOutput(provides: string[], output: MessageData): void {
+    public setOutput(provides: string[], output: MessageData): void {
         const currentKeys = Object.keys(this.data);
         const intersectionKeys = currentKeys.filter((key: string) => provides.indexOf(key) !== -1);
         if (intersectionKeys.length > 0) {

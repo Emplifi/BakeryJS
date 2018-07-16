@@ -3,9 +3,9 @@ import {Message, MessageData} from './Message';
 import {IPriorityQueue} from './queue/IPriorityQueue';
 
 export abstract class Box<T extends MessageData, O extends MessageData, C extends MessageData> implements IBox<T, O> {
-    readonly name: string;
-	readonly meta: BoxMeta;
-	readonly onClean: OnCleanCallback[] = [];
+    public readonly name: string;
+	public readonly meta: BoxMeta;
+	public readonly onClean: OnCleanCallback[] = [];
     private readonly queue?: IPriorityQueue<Message>;
 
     protected constructor(name: string, meta: BoxMeta, queue?: IPriorityQueue<Message>) {

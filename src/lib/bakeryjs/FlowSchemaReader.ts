@@ -4,7 +4,7 @@ import IFlowSchemaReader from './IFlowSchemaReader';
 export default class FlowSchemaReader implements IFlowSchemaReader {
     private readonly flowList: {[key: string]: SchemaObject};
 
-    constructor(flowsPath: string) {
+    public constructor(flowsPath: string) {
         this.flowList = require(flowsPath).default;
     }
 

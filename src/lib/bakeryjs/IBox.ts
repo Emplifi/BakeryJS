@@ -1,16 +1,16 @@
 import {MessageData} from './Message';
 
 export type BoxMeta = {
-	provides: string[],
-	requires: string[],
-	emits: string[],
+	provides: string[];
+	requires: string[];
+	emits: string[];
 	batch?: {
-		maxSize?: number,
-		timeoutSeconds?: number,
-	},
+		maxSize?: number;
+		timeoutSeconds?: number;
+	};
 };
 
-export type OnCleanCallback = () => (Promise<void> | void);
+export type OnCleanCallback = () => Promise<void> | void;
 
 export interface IBox<T extends MessageData, O extends MessageData> {
 	// metadata: what I provide, what I require
@@ -19,5 +19,5 @@ export interface IBox<T extends MessageData, O extends MessageData> {
 	// cleaning actions, e.g. disconnecting the DBs, cleaning internal cache, etc.
 	readonly onClean: OnCleanCallback[];
 	// the processing function itself
-	process(value: T): Promise<O> | O
+	process(value: T): Promise<O> | O;
 }

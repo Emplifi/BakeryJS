@@ -3,8 +3,8 @@ import {ConcurrentSchemaComponent, SchemaObject, SerialSchemaComponent} from '..
 
 const TERMINAL_WIDTH = 80;
 
-export class DefaultVisualBuilder implements IVisualBuilder{
-    build(schema: SchemaObject): string {
+export class DefaultVisualBuilder implements IVisualBuilder {
+    public build(schema: SchemaObject): string {
         return this.printSchema(schema);
     }
 

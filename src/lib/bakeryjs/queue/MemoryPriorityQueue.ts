@@ -6,20 +6,20 @@ import {priorityQueue} from 'async';
 export class MemoryPriorityQueue<T extends Message> implements IPriorityQueue<T> {
     private readonly queue: AsyncPriorityQueue<T>;
 
-    constructor(worker: (task: T) => (Promise<void> | void), concurrency: number) {
+    public constructor(worker: (task: T) => (Promise<void> | void), concurrency: number) {
         this.queue = priorityQueue(worker, concurrency);
     }
 
-    push(message: T, metadata: MessageMetadata): void {
+	public push(message: T, metadata: MessageMetadata): void {
         this.queue.push(message, metadata.priority);
     }
 
-    pushingFinished(jobId: string): void {
+	public pushingFinished(jobId: string): void {
     }
 
-    setJobFinishedCallback(jobId: string, callback: () => (Promise<void> | void)): void {
+	public setJobFinishedCallback(jobId: string, callback: () => (Promise<void> | void)): void {
     }
 
-    setJobMessageFailedCallback(jobId: string, callback: (error: Error) => (Promise<void> | void)): void {
+	public setJobMessageFailedCallback(jobId: string, callback: (error: Error) => (Promise<void> | void)): void {
     }
 }

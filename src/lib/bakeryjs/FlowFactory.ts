@@ -6,7 +6,7 @@ export default class FlowFactory {
     private readonly componentFactory: IComponentFactory;
     private readonly builder: IFlowBuilder;
 
-    constructor(componentFactory: IComponentFactory, builder: IFlowBuilder) {
+    public constructor(componentFactory: IComponentFactory, builder: IFlowBuilder) {
         this.componentFactory = componentFactory;
         this.builder = builder;
     }

@@ -1,9 +1,9 @@
 let jobId = 0;
 
 export class Job {
-    readonly jobId: string;
+    public readonly jobId: string;
 
-    constructor() {
+    public constructor() {
         this.jobId = `${jobId++}`;
     }
 }

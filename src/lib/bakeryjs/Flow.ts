@@ -5,7 +5,7 @@ import {Message} from './Message';
 export class Flow {
     private queue: IPriorityQueue<Message>;
 
-    constructor(queue: IPriorityQueue<Message>) {
+    public constructor(queue: IPriorityQueue<Message>) {
         this.queue = queue;
     }
 
