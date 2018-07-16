@@ -4,29 +4,42 @@ import {Message, MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
 class Tick extends Box<MessageData, MessageData, MessageData> {
-	constructor(name: string, queue: IPriorityQueue<Message>) {
-		super(name, {
-			requires: ['jobId'],
-			provides: ['tick'],
-			emits: ['raw'],
-		}, queue);
-    }
+	public constructor(name: string, queue: IPriorityQueue<Message>) {
+		super(
+			name,
+			{
+				requires: ['jobId'],
+				provides: ['tick'],
+				emits: ['raw'],
+			},
+			queue
+		);
+	}
 
-	protected async processValue(value: MessageData, emitCallback: (chunk: MessageData, priority: number) => void): Promise<MessageData> {
+	protected async processValue(
+		value: MessageData,
+		emitCallback: (chunk: MessageData, priority: number) => void
+	): Promise<MessageData> {
 		let i = 0;
-		return new Promise((resolve: (result: MessageData) => void): void => {
-			const id = setInterval((): void => {
-				if (i >= 3) {
-					clearInterval(id);
-					resolve({tick: i});
-				}
-				i += 1;
-				emitCallback({raw: i}, 1);
-			}, 1000);
-		});
+		return new Promise(
+			(resolve: (result: MessageData) => void): void => {
+				const id = setInterval((): void => {
+					if (i >= 3) {
+						clearInterval(id);
+						resolve({tick: i});
+					}
+					i += 1;
+					emitCallback({raw: i}, 1);
+				}, 1000);
+			}
+		);
 	}
 }
 
-export default (name: string, serviceProvider: ServiceProvider, queue: IPriorityQueue<Message>): Tick => {
+export default (
+	name: string,
+	serviceProvider: ServiceProvider,
+	queue: IPriorityQueue<Message>
+): Tick => {
 	return new Tick(name, queue);
 };

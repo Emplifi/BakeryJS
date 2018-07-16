@@ -1,18 +1,18 @@
-import { Box } from '../../../lib/bakeryjs/Box';
+import {Box} from '../../../lib/bakeryjs/Box';
 import {Message, MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
 class Print extends Box<MessageData, MessageData, Message> {
 	private readonly logger: {log: (message: any) => void};
 
-	constructor(name: string, logger: {log: (message: any) => void}) {
+	public constructor(name: string, logger: {log: (message: any) => void}) {
 		super(name, {
-			requires: ['jobId','raw'],
+			requires: ['jobId', 'raw'],
 			provides: [],
 			emits: [],
 		});
-        this.logger = logger;
-    }
+		this.logger = logger;
+	}
 
 	protected processValue(input: MessageData): MessageData {
 		this.logger.log({printBox: JSON.stringify(input)});
