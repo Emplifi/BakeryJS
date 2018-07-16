@@ -8,7 +8,7 @@ export type ConcurrentSchemaComponent = SchemaComponent[];
 export type SerialSchemaComponent = ConcurrentSchemaComponent[];
 export type SchemaObject = {[key: string]: SerialSchemaComponent};
 
-// TODO: Why I won't get Flow, if I run `build` of IFlowBuilder?
+// TODO: (code detail) Why I won't get Flow, if I run `build` of IFlowBuilder?
 export default interface IFlowBuilder {
-    build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<IPriorityQueue<Message>> | IPriorityQueue<Message>;
+	build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<IPriorityQueue<Message>> | IPriorityQueue<Message>;
 }

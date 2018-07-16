@@ -57,14 +57,14 @@ export class MilanBuilder implements IFlowBuilder {
                 const getInput = (requires: string[]): MessageData => task.getInput(requires);
                 const setOutput = (provides: string[], value: MessageData): void => task.setOutput(provides, value);
 
-                serialFunctions.reduce((previous: Promise<{input: InputProvider, output: OutputAcceptor}>, serialCallback: ProcessingCallback): Promise<{input: InputProvider, output: OutputAcceptor}> => {
-                    // TODO: prvni fce se vykona, dalsi fce nepreda spravne params
-                    return previous.then(async ({input, output}: {input: InputProvider, output: OutputAcceptor}): Promise<{input: InputProvider, output: OutputAcceptor}> => {
-                        await serialCallback(input, output);
-                        return {input, output};
-                    });
-                }, Promise.resolve({input: getInput, output: setOutput}));
-            }
-        , 10);
-    }
+				serialFunctions.reduce((previous: Promise<{input: InputProvider, output: OutputAcceptor}>, serialCallback: ProcessingCallback): Promise<{input: InputProvider, output: OutputAcceptor}> => {
+					// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
+					return previous.then(async ({input, output}: {input: InputProvider, output: OutputAcceptor}): Promise<{input: InputProvider, output: OutputAcceptor}> => {
+						await serialCallback(input, output);
+						return {input, output};
+					});
+				}, Promise.resolve({input: getInput, output: setOutput}));
+			}
+		, 10);
+	}
 }

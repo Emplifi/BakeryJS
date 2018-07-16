@@ -11,7 +11,7 @@ import {IPriorityQueue} from './queue/IPriorityQueue';
  *
  * The operation is always considered asynchronous although it may operate synchronously.
  *
- * > ### TODO: process: Message[] => Message[]
+ * > ### TODO: (idea1) process: Message[] => Message[] OK
  * >
  * > some operations are naturally on batches -- fetch by Id from DB, API ...
  * > generation is naturally by batches -- query result cursor iteration, FB response, ...
@@ -30,7 +30,8 @@ import {IPriorityQueue} from './queue/IPriorityQueue';
  * ## Cardinality of the result
  *
   * The box can be in one of the following modes:
- *  > ### TODO: can be some particular box some time generator and some time a mapper?
+ *  > ### TODO: (idea1) can be some particular box some time generator and some time a mapper?  OK
+ *  > a -- dej mi prvnich 20 commentu vs. dej mi vsechny commenty -- vyhneme se "tupemu" aggregatoru typu "first"
  *  >
  *  > Should the generator/aggregator have different (extended) interface than a mapper?
  *  > Would it be "easy/simple" to extend the framework with new Boxes? Each type will be possibly treated
@@ -39,21 +40,20 @@ import {IPriorityQueue} from './queue/IPriorityQueue';
  *  1. A *mapper* -- it receives a batch of Messages and returns (asynchronously) a batch of Messages of the same
  *  size of the same order. (See TODO above).
  *  2. A *generator* -- a box receives the batch of Messages and creates a sequence of batches of Messages
- *  that can be further directed in the flow.
- *  > ### TODO: generator receives single Message?
- *  >
- *  > If generator accepted batch of Messages, would be the corresponding sequences interspersed?
+ *  that can be further directed in the flow.  The Messages can be interspersed with respect to theirs parent in the Batch.
  *
- *  > ### TODO: how about push & pull iterations?
- *  >
+ *  > ### TODO: (idea1) how about push & pull iterations?  Modelled by queue with empty/full events and responses.
  *  > Both regimes are reasonable.
  *  > a. **push** -- e.g. clocks.  Once in a minute, new Message is *pushed* into the flow.  Or subscribed
  *  >  events from DB Query.
  *  > b. **pull** -- e.g. Iterate posts/comments from social network.  Get a batch and *pull* the next once
  *  >   the current has been just finished.  Having it *pushed* can consume my memory. Or a case where *pull*
  *  >   (the query) takes an argument that depends on the previous batch of data (I can't remember any example, though).
+ *  >
+ *  > Both can be modeled by a queue and generator responding/not responding to events "empty" and "full"
+ *  >
  *
- *  > ### TODO: generator adds new **dimension** of data, it should be in metadata.
+ *  > ### TODO: (idea2) generator adds new **dimension** of data, it should be in metadata.
  *  >
  *  > In the beginning the job's data have 0 dimensions. It is only a "point" == a single job description info.
  *  > Further in the flow, a generator produces batches of FB posts, the job's data have single *dimension*
@@ -67,7 +67,7 @@ import {IPriorityQueue} from './queue/IPriorityQueue';
  *  3. An *aggregator* -- a box is consuming batches of Messages grouping by the Message fields but those
  *  of the *dimension* added last.  When it consumes all the dimension for given "group by" fields, it produces
  *  batch of Messages whose dimension has just been consumed.
- *  > ### TODO: How do we recognize all the dimension to some "group by" fields is consumed?
+ *  > ### TODO: (idea2) How do we recognize all the dimension to some "group by" fields is consumed?
  *  >
  *  > in iterative (pull) flow, we recognize it by ordering.  How about push flow?
  *
@@ -77,28 +77,29 @@ import {IPriorityQueue} from './queue/IPriorityQueue';
  * 1. Subclass a class Box and set metadata in the constructor?
  * 2. Redefine the method processValue?
  *
- * > ### TODO: the settings of the box -- pass it to the constructor?  We should have it in the interface, probably.
+ * > ### TODO: (code detail) the settings of the box -- pass it to the constructor?  We should have it in the interface, probably.
  *
- * > ### TODO: the Box should provide a flag about the operation. Was it success?  Was it error? Was it no ideal but let's go on?
+ * > ### TODO: (idea2) the Box should provide a flag about the operation. Was it success?  Was it error? Was it not ideal but let's go on?
  *
- * > ### TODO: Box life-cycle and onClean actions.
+ * > ### TODO: (code detail) Box life-cycle and onClean actions.
  * >
  * > If Box reads from DB, who maintains connection? Box (and will dispose of it), or the BoxFactory
  * > (somewhere in catalog)?
  *
- *  TODO: The Box should produce performance metrics about processing.  In order the Box developer not to care, should it
+ *  TODO: (code detail) The Box should produce performance metrics about processing.  In order the Box developer not to care, should it
  *  be in the prototype or in a wrap?
  *
- * TODO: logging from the Box.  Should the box log somehow?  Or everything log related to a Message should end up in the
- *        Message?
+ * TODO: (idea2) logging from the Box.  Should the box log somehow?  Yes, box has internally logger available
+ *
+ * TODO: (code detail) the Box execution should be membraned (so that it can't alter the global entities)
  *
  * @publicapi
  */
 export abstract class Box<T extends MessageData, O extends MessageData, C extends MessageData> implements IBox<T, O> {
-    public readonly name: string;
+	public readonly name: string;
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
-    private readonly queue?: IPriorityQueue<Message>;
+	private readonly queue?: IPriorityQueue<Message>;
 
 	/**
 	 *
@@ -107,13 +108,13 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 	 * @param meta metadata of the Box.  Should be immutable.  One should be able to instantiate the Box without knowing \
 	 * them. The created instance should have the metadata set.
 	 *
-	 * @param queue TODO: What is this?  What is the use for this? What is the Box developer going to do with it?
+	 * @param queue TODO: (code detail) What is this?  What is the use for this? What is the Box developer going to do with it?
 	 */
-    protected constructor(name: string, meta: BoxMeta, queue?: IPriorityQueue<Message>) {
-        this.name = name;
-        this.meta = meta;
-        this.queue = queue;
-    }
+	protected constructor(name: string, meta: BoxMeta, queue?: IPriorityQueue<Message>) {
+		this.name = name;
+		this.meta = meta;
+		this.queue = queue;
+	}
 
 	/**
 	 *  internal_api, the Box developer shouldn't touch this?
@@ -121,37 +122,37 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 	 *
 	 * @param value A Message (batch of Messages) to act on
 	 * @returns If working as a Mapper, the Message(s) are the return value of the Promise.
-	 * >   TODO: If working as a Generator? It would make a sense to return EventEmitter (message, end, error?)
+	 * >   TODO: (idea2) If working as a Generator? It would make a sense to return EventEmitter (message, end, error?)
 	 * >  or some other object of that kind.  Let's free the box developer from taking care of "connections" among
 	 * >  the boxes.  The flow builder can decide and connect on its own.
 	 *
 	 * @publicapi
 	 */
 	public async process(value: T): Promise<O> {
-        if (this.queue != null) {
-            this.queue.setJobFinishedCallback(value.jobId, () => {});
-            this.queue.setJobMessageFailedCallback(value.jobId, () => {});
-        }
-        const result = await this.processValue(value, (chunk: C, priority: number): void => {
-            if (this.queue == null) {
-                throw new Error(`${this.name} has not defined a queue for generating values.`);
-            }
-            const messageData: MessageData = {};
-            for (const emitKey of this.meta.emits) {
-                messageData[emitKey] = chunk[emitKey];
-            }
-            messageData.jobId = value.jobId;
-            this.queue.push(new Message(messageData), {
-                priority: priority,
-                jobId: value.jobId,
-            });
-        });
-        if (this.queue != null) {
-            this.queue.pushingFinished(value.jobId);
-        }
+		if (this.queue != null) {
+			this.queue.setJobFinishedCallback(value.jobId, () => {});
+			this.queue.setJobMessageFailedCallback(value.jobId, () => {});
+		}
+		const result = await this.processValue(value, (chunk: C, priority: number): void => {
+			if (this.queue == null) {
+				throw new Error(`${this.name} has not defined a queue for generating values.`);
+			}
+			const messageData: MessageData = {};
+			for (const emitKey of this.meta.emits) {
+				messageData[emitKey] = chunk[emitKey];
+			}
+			messageData.jobId = value.jobId;
+			this.queue.push(new Message(messageData), {
+				priority: priority,
+				jobId: value.jobId,
+			});
+		});
+		if (this.queue != null) {
+			this.queue.pushingFinished(value.jobId);
+		}
 
-        return result;
-    }
+		return result;
+	}
 
-    protected abstract processValue(value: T, emitCallback: (chunk: C, priority: number) => void): Promise<O> | O;
+	protected abstract processValue(value: T, emitCallback: (chunk: C, priority: number) => void): Promise<O> | O;
 }

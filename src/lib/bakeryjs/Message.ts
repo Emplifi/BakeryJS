@@ -9,10 +9,10 @@ let messageId = 0;
  *
  * - Message holds the computed information in fields.  The information in a field is *immutable* once written.
  * - As Message flows through Boxes, each Box adds one or more field with arbitrary information.
- * - The Box can't get access to other fields than it is *requiring*. (TODO: throws TypeError?)
- * - The Box can set only fields that is *providing*. (TODO: throws TypeError?)
+ * - The Box can't get access to other fields than it is *requiring*. (TODO: (code detail) throws TypeError?)
+ * - The Box can set only fields that is *providing*. (TODO: (code detail) throws TypeError?)
  *
- * ## TODO: Special attributes Trace (and Log)?
+ * ## TODO: (idea2) Special attributes Trace (and Log)? NO, see Logging and Trace.
  * - Message has a special attribute that is holding a trace (how was the flow through)
  * - Every pass through a Box writes a trace info into this special attribute.
  *
