@@ -12,7 +12,6 @@ export type BoxMeta = {
 
 export type OnCleanCallback = () => Promise<void> | void;
 
-export type
 export interface IBox<T extends MessageData, O extends MessageData> {
 	// metadata: what I provide, what I require
 	// needed to barely check the dependencies of the pipeline

@@ -1,6 +1,6 @@
 import {IPriorityQueue} from './queue/IPriorityQueue';
 import {Job} from './Job';
-import {Message} from './Message';
+import {DataMessage, Message} from './Message';
 
 /**
  * We have Boxes set up properly, now we have to interconnect them to the workflow.
@@ -56,7 +56,7 @@ export class Flow {
     }
 
     public process(job: Job): void {
-        const message = new Message(job);
+        const message = new DataMessage(job);
         this.queue.push(message, {
             jobId: job.jobId,
             priority: 1,

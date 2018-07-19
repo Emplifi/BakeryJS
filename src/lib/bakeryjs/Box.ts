@@ -1,5 +1,5 @@
 import {BoxMeta, IBox, OnCleanCallback} from './IBox';
-import {Message, MessageData} from './Message';
+import {DataMessage, Message, MessageData} from './Message';
 import {IPriorityQueue} from './queue/IPriorityQueue';
 
 /**
@@ -129,6 +129,7 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 	 * @publicapi
 	 */
 	public async process(value: T): Promise<O> {
+		// TODO: (code detail) here arrives the batch!
 		if (this.queue != null) {
 			this.queue.setJobFinishedCallback(value.jobId, () => {});
 			this.queue.setJobMessageFailedCallback(value.jobId, () => {});
@@ -142,12 +143,14 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 				messageData[emitKey] = chunk[emitKey];
 			}
 			messageData.jobId = value.jobId;
-			this.queue.push(new Message(messageData), {
+			// TODO: (code detail) Box shouldn't use Message explicitly its a flow's job to properly format the data
+			this.queue.push(new DataMessage(messageData), {
 				priority: priority,
 				jobId: value.jobId,
 			});
 		});
 		if (this.queue != null) {
+			// TODO: (code detail) This should be replaced by the SentinelMessage (formatted by the flow)
 			this.queue.pushingFinished(value.jobId);
 		}
 

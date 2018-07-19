@@ -1,8 +1,8 @@
-import IFlowBuilder, {SerialSchemaComponent, SchemaObject, ConcurrentSchemaComponent} from '../IFlowBuilder';
+import IFlowBuilder, {ConcurrentSchemaComponent, SchemaObject, SerialSchemaComponent} from '../IFlowBuilder';
 import {IBox} from '../IBox';
 import IComponentFactory from '../IComponentFactory';
 import {IPriorityQueue} from '../queue/IPriorityQueue';
-import {Message, MessageData} from '../Message';
+import {DataMessage, Message, MessageData} from '../Message';
 import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
 
 type InputProvider = (requires: string[]) => MessageData;
@@ -53,7 +53,7 @@ export class MilanBuilder implements IFlowBuilder {
     private async buildPriorityQueue(schema: SchemaObject, key: string, componentFactory: IComponentFactory): Promise<IPriorityQueue<Message>> {
         const serialFunctions = await this.buildSerialFunctions(schema[key], componentFactory);
         return new MemoryPriorityQueue(
-            async (task: Message): Promise<void> => {
+            async (task: DataMessage): Promise<void> => {
                 const getInput = (requires: string[]): MessageData => task.getInput(requires);
                 const setOutput = (provides: string[], value: MessageData): void => task.setOutput(provides, value);
 
