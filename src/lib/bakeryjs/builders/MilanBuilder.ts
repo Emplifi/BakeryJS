@@ -1,21 +1,11 @@
-import IFlowBuilder, {
-	ConcurrentSchemaComponent,
-	SchemaObject,
-	SerialSchemaComponent,
-} from '../IFlowBuilder';
+import IFlowBuilder, {ConcurrentSchemaComponent, SchemaObject, SerialSchemaComponent,} from '../IFlowBuilder';
 import {IBox} from '../IBox';
 import IComponentFactory from '../IComponentFactory';
 import {IPriorityQueue} from '../queue/IPriorityQueue';
-import {DataMessage, Message, MessageData} from '../Message';
+import {Message} from '../Message';
 import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
 
-type InputProvider = (requires: string[]) => MessageData;
-type OutputAcceptor = (provides: string[], value: MessageData) => void;
-
-type ProcessingCallback = (
-	getInput: InputProvider,
-	setOutput: OutputAcceptor
-) => Promise<void> | void;
+type ProcessingCallback = (msg: Message) => Promise<void> | void;
 
 export class MilanBuilder implements IFlowBuilder {
 	public async build(
@@ -34,19 +24,8 @@ export class MilanBuilder implements IFlowBuilder {
 		name: string,
 		queue?: IPriorityQueue<Message>
 	) {
-		const component: IBox<
-			MessageData,
-			MessageData
-		> = await componentFactory.create(name, queue);
-		return async (
-			getInput: InputProvider,
-			setOutput: OutputAcceptor
-		): Promise<void> => {
-			const results = await component.process(
-				getInput(component.meta.requires)
-			);
-			setOutput(component.meta.provides, results);
-		};
+		const component: IBox = await componentFactory.create(name, queue);
+		return (msg: Message): Promise<void> => component.process(msg);
 	}
 
 	private async buildConcurrentFunctions(
@@ -88,21 +67,15 @@ export class MilanBuilder implements IFlowBuilder {
 		componentFactory: IComponentFactory
 	): Promise<ProcessingCallback[]> {
 		const serialFunctions: Promise<ProcessingCallback>[] = serialSchema.map(
-			async (
-				schema: ConcurrentSchemaComponent
-			): Promise<ProcessingCallback> => {
-				const concurrentFunctions = await this.buildConcurrentFunctions(
+			async (schema: ConcurrentSchemaComponent): Promise<ProcessingCallback> => {
+				const concurrentFunctions: ProcessingCallback[] = await this.buildConcurrentFunctions(
 					schema,
 					componentFactory
 				);
-				return async (
-					getInput: InputProvider,
-					setOutput: OutputAcceptor
-				): Promise<void> => {
+				return async (msg: Message): Promise<void> => {
 					await Promise.all(
 						concurrentFunctions.map(
-							(processingCallback: ProcessingCallback) =>
-								processingCallback(getInput, setOutput)
+							(processCbk: ProcessingCallback) => processCbk(msg)
 						)
 					);
 				};
@@ -117,45 +90,24 @@ export class MilanBuilder implements IFlowBuilder {
 		key: string,
 		componentFactory: IComponentFactory
 	): Promise<IPriorityQueue<Message>> {
-		const serialFunctions = await this.buildSerialFunctions(
+		const serialFunctions: ProcessingCallback[] = await this.buildSerialFunctions(
 			schema[key],
 			componentFactory
 		);
-		return new MemoryPriorityQueue(async (task: DataMessage): Promise<
-			void
-		> => {
-			const getInput = (requires: string[]): MessageData =>
-				task.getInput(requires);
-			const setOutput = (provides: string[], value: MessageData): void =>
-				task.setOutput(provides, value);
-
-			serialFunctions.reduce(
-				(
-					previous: Promise<{
-						input: InputProvider;
-						output: OutputAcceptor;
-					}>,
-					serialCallback: ProcessingCallback
-				): Promise<{input: InputProvider; output: OutputAcceptor}> => {
-					// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
-					return previous.then(
-						async ({
-							input,
-							output,
-						}: {
-							input: InputProvider;
-							output: OutputAcceptor;
-						}): Promise<{
-							input: InputProvider;
-							output: OutputAcceptor;
-						}> => {
-							await serialCallback(input, output);
-							return {input, output};
-						}
-					);
-				},
-				Promise.resolve({input: getInput, output: setOutput})
-			);
-		}, 10);
+		return new MemoryPriorityQueue(
+			async (task: Message): Promise<void> => {
+				serialFunctions.reduce(
+					(previous: Promise<Message>, serialCallback: ProcessingCallback): Promise<Message> => {
+						// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
+						return previous.then(
+							async (msg: Message): Promise<Message> => {
+								await serialCallback(msg);
+								return msg;
+							}
+						);
+					},
+					Promise.resolve(task)
+				);
+			}, 10);
+		}
 	}
-}

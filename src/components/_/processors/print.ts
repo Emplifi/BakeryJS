@@ -1,8 +1,8 @@
 import {Box} from '../../../lib/bakeryjs/Box';
-import {Message, MessageData} from '../../../lib/bakeryjs/Message';
+import {MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
-class Print extends Box<MessageData, MessageData, Message> {
+class Print extends Box {
 	private readonly logger: {log: (message: any) => void};
 
 	public constructor(name: string, logger: {log: (message: any) => void}) {
@@ -10,6 +10,7 @@ class Print extends Box<MessageData, MessageData, Message> {
 			requires: ['jobId', 'raw'],
 			provides: [],
 			emits: [],
+			aggregates: false
 		});
 		this.logger = logger;
 	}

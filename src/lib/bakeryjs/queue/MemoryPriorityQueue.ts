@@ -1,7 +1,6 @@
-import {AsyncPriorityQueue} from 'async';
-import {IPriorityQueue, MessageMetadata} from './IPriorityQueue';
+import {AsyncPriorityQueue, priorityQueue} from 'async';
+import {IPriorityQueue} from './IPriorityQueue';
 import {Message} from '../Message';
-import {priorityQueue} from 'async';
 
 export class MemoryPriorityQueue<T extends Message>
 	implements IPriorityQueue<T> {
@@ -14,19 +13,7 @@ export class MemoryPriorityQueue<T extends Message>
 		this.queue = priorityQueue(worker, concurrency);
 	}
 
-	public push(message: T, metadata: MessageMetadata): void {
-		this.queue.push(message, metadata.priority);
+	public push(message: T, priority?: number): void {
+		this.queue.push(message, priority || 5);
 	}
-
-	public pushingFinished(jobId: string): void {}
-
-	public setJobFinishedCallback(
-		jobId: string,
-		callback: () => Promise<void> | void
-	): void {}
-
-	public setJobMessageFailedCallback(
-		jobId: string,
-		callback: (error: Error) => Promise<void> | void
-	): void {}
 }

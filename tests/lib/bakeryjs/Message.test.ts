@@ -122,11 +122,6 @@ describe('Message', () => {
 			);
 		});
 
-		it("One can't derive Message from Sentinel", () => {
-			const sentinel = parentMessage.createSentinel();
-			expect(() => sentinel.create('Success')).toThrow(Error);
-		});
-
 		it('Sentinel with return value', () => {
 			const theError = new TypeError('Whoa!');
 			const sentinel = parentMessage.createSentinel(theError);

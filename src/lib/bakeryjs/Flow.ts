@@ -57,9 +57,6 @@ export class Flow {
 
 	public process(job: Job): void {
 		const message = new DataMessage(job);
-		this.queue.push(message, {
-			jobId: job.jobId,
-			priority: 1,
-		});
+		this.queue.push(message,  1);
 	}
 }

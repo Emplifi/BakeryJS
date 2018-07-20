@@ -1,6 +1,9 @@
 import {BoxMeta, IBox, OnCleanCallback} from './IBox';
-import {DataMessage, Message, MessageData} from './Message';
+import {DataMessage, is_Data, is_Sentinel, Message, MessageData, SentinelMessage} from './Message';
 import {IPriorityQueue} from './queue/IPriorityQueue';
+import VError = require("verror");
+
+const noop = function() {};
 
 /**
  * # Box
@@ -95,24 +98,27 @@ import {IPriorityQueue} from './queue/IPriorityQueue';
  *
  * @publicapi
  */
-export abstract class Box<
-	T extends MessageData,
-	O extends MessageData,
-	C extends MessageData
-> implements IBox<T, O> {
+export abstract class Box implements IBox {
 	public readonly name: string;
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
-	private readonly queue?: IPriorityQueue<Message>;
+	private readonly queue: IPriorityQueue<Message>;
 
 	/**
+	 * The Box is a basic unit of execution. It comprises of two levels:
+	 * 1. Receiving layer from the flow (the method `process`).  Decomposes the Message, invokes `processValue` and
+	 * reacts on its return.
+	 *
+	 * 2. Executing layer, meant to be overridden in subclasses.
+	 *
+	 * TODO: (idea2) The 1. layer should be moved into the flow executor.
 	 *
 	 * @param name
 	 *  name/identifier of the box
 	 * @param meta metadata of the Box.  Should be immutable.  One should be able to instantiate the Box without knowing \
 	 * them. The created instance should have the metadata set.
 	 *
-	 * @param queue TODO: (code detail) What is this?  What is the use for this? What is the Box developer going to do with it?
+	 * @param queue - the output connection of the Box.  Everyone should push to that queue. Mapper, Generator, Aggregator.
 	 */
 	protected constructor(
 		name: string,
@@ -121,7 +127,41 @@ export abstract class Box<
 	) {
 		this.name = name;
 		this.meta = meta;
-		this.queue = queue;
+		this.queue = queue || {push: noop} as IPriorityQueue<Message>;
+	}
+
+	private async processMapper(value: DataMessage): Promise<any> {
+		// TODO: (idea1) Handle exceptions!
+		const result = await this.processValue(value.getInput(this.meta.requires));
+		value.setOutput(this.meta.provides, result);
+		this.queue.push(value);
+		return;
+	}
+
+	private async processGenerator(value: DataMessage): Promise<any> {
+		//TODO: (idea1) Handle exceptions!
+		const retValue: any = await this.processValue(
+			value.getInput(this.meta.requires),
+			(chunk: MessageData, priority: number) => {
+				const msg: Message = value.create();
+				msg.setOutput(this.meta.provides, chunk);
+				this.queue.push(msg, priority);
+			});
+
+		this.queue.push(new SentinelMessage(retValue, value));
+		return;
+	}
+
+	private async processAggregator(value: Message): Promise<any> {
+		throw new VError({
+			name: "NotImplementedError",
+			message: "Box '%s': Aggregator has not been implemented yet.",
+			info: {
+				name: this.name,
+				meta: this.meta
+			}},
+			this.name
+		);
 	}
 
 	/**
@@ -129,51 +169,37 @@ export abstract class Box<
 	 *  the processing function itself
 	 *
 	 * @param value A Message (batch of Messages) to act on
-	 * @returns If working as a Mapper, the Message(s) are the return value of the Promise.
-	 * >   TODO: (idea2) If working as a Generator? It would make a sense to return EventEmitter (message, end, error?)
-	 * >  or some other object of that kind.  Let's free the box developer from taking care of "connections" among
-	 * >  the boxes.  The flow builder can decide and connect on its own.
+	 * @returns
 	 *
 	 * @publicapi
 	 */
-	public async process(value: T): Promise<O> {
-		// TODO: (code detail) here arrives the batch!
-		if (this.queue != null) {
-			this.queue.setJobFinishedCallback(value.jobId, () => {});
-			this.queue.setJobMessageFailedCallback(value.jobId, () => {});
+	public async process(value: Message): Promise<any> {
+		const isGenerator: boolean = (this.meta.emits.length > 0);
+		const isAggregator: boolean = this.meta.aggregates;
+		const isMapper: boolean = !isAggregator && !isGenerator;
+
+		if (isAggregator) {
+			return await this.processAggregator(value);
 		}
-		const result = await this.processValue(
-			value,
-			(chunk: C, priority: number): void => {
-				if (this.queue == null) {
-					throw new Error(
-						`${
-							this.name
-						} has not defined a queue for generating values.`
-					);
-				}
-				const messageData: MessageData = {};
-				for (const emitKey of this.meta.emits) {
-					messageData[emitKey] = chunk[emitKey];
-				}
-				messageData.jobId = value.jobId;
-				// TODO: (code detail) Box shouldn't use Message explicitly its a flow's job to properly format the data
-				this.queue.push(new DataMessage(messageData), {
-					priority: priority,
-					jobId: value.jobId,
-				});
+		else if (is_Sentinel(value)) {
+			this.queue.push(value);
+			return;
+		}
+		else if (is_Data(value)) {
+			const dValue: DataMessage = <DataMessage> value;
+			if (isMapper) {
+				return await this.processMapper(dValue);
 			}
-		);
-		if (this.queue != null) {
-			// TODO: (code detail) This should be replaced by the SentinelMessage (formatted by the flow)
-			this.queue.pushingFinished(value.jobId);
+			else if (isGenerator) {
+				return await this.processGenerator(dValue);
+			}
 		}
 
-		return result;
+
 	}
 
 	protected abstract processValue(
-		value: T,
-		emitCallback: (chunk: C, priority: number) => void
-	): Promise<O> | O;
+		value: MessageData,
+		emitCallback?: (chunk: MessageData, priority: number) => void
+	): Promise<MessageData> | MessageData;
 }
