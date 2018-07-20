@@ -4,7 +4,6 @@ export type MessageData = {[key: string]: any};
 
 let messageId = 0;
 
-
 /**
  * ### Identifiable message
  *

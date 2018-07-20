@@ -8,34 +8,48 @@ import {ServiceProvider} from './ServiceProvider';
 const debug = require('debug')('bakeryjs:componentProvider');
 
 export default class ComponentFactory implements IComponentFactory {
-    private availableComponents:{[s: string]: string} = {};
-    private readonly serviceProvider: ServiceProvider;
+	private availableComponents: {[s: string]: string} = {};
+	private readonly serviceProvider: ServiceProvider;
 
-    public constructor(componentsPath: string, serviceProvider: ServiceProvider) {
-        this.findComponents(componentsPath);
-        debug(this.availableComponents);
-        this.serviceProvider = serviceProvider;
-    }
+	public constructor(
+		componentsPath: string,
+		serviceProvider: ServiceProvider
+	) {
+		this.findComponents(componentsPath);
+		debug(this.availableComponents);
+		this.serviceProvider = serviceProvider;
+	}
 
-    public async create(name: string, queue?: IPriorityQueue<Message>): Promise<IBox<MessageData, MessageData>> {
-        const box = await import(this.availableComponents[name]);
-        return box.default(name, this.serviceProvider, queue);
-    }
+	public async create(
+		name: string,
+		queue?: IPriorityQueue<Message>
+	): Promise<IBox<MessageData, MessageData>> {
+		const box = await import(this.availableComponents[name]);
+		return box.default(name, this.serviceProvider, queue);
+	}
 
-    private findComponents(componentsPath: string, parentDir: string = ''): void {
-        const files = fs.readdirSync(componentsPath);
-        files.forEach( (file: string): void => {
-            if (fs.statSync(`${componentsPath}${file}`).isDirectory()) {
-                if (file !== '.' && file !== '..') {
-                    this.findComponents(`${componentsPath}${file}/`, `${parentDir}${file}/`);
-                }
-            } else {
-                const name = parseComponentName(`${parentDir}${file}`);
-                if (name == null) {
-                    return;
-                }
-                this.availableComponents[name] = `${componentsPath}${file}`;
-            }
-        })
-    }
+	private findComponents(
+		componentsPath: string,
+		parentDir: string = ''
+	): void {
+		const files = fs.readdirSync(componentsPath);
+		files.forEach(
+			(file: string): void => {
+				if (fs.statSync(`${componentsPath}${file}`).isDirectory()) {
+					if (file !== '.' && file !== '..') {
+						this.findComponents(
+							`${componentsPath}${file}/`,
+							`${parentDir}${file}/`
+						);
+					}
+				} else {
+					const name = parseComponentName(`${parentDir}${file}`);
+					if (name == null) {
+						return;
+					}
+					this.availableComponents[name] = `${componentsPath}${file}`;
+				}
+			}
+		);
+	}
 }

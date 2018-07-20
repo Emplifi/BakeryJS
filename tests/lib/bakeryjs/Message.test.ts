@@ -88,7 +88,7 @@ describe('Message', () => {
 		it("message.id contains parent message's id", () => {
 			expect(message.id).toEqual(
 				expect.stringContaining(parentMessage.id)
-		);
+			);
 		});
 
 		it('Parent data are accessible in the message data', () => {
@@ -122,6 +122,11 @@ describe('Message', () => {
 			);
 		});
 
+		it("One can't derive Message from Sentinel", () => {
+			const sentinel = parentMessage.createSentinel();
+			expect(() => sentinel.create('Success')).toThrow(Error);
+		});
+
 		it('Sentinel with return value', () => {
 			const theError = new TypeError('Whoa!');
 			const sentinel = parentMessage.createSentinel(theError);
@@ -129,6 +134,6 @@ describe('Message', () => {
 			expect.assertions(2);
 			expect(sentinel.data).toEqual(theError);
 			expect(sentinel.parent).toEqual(parentMessage);
-	});
+		});
 	});
 });

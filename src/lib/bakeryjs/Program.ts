@@ -8,7 +8,7 @@ import {Job} from './Job';
  */
 export class Program {
 	public run(flow: Flow): void {
-		console.log("Program run ----->");
+		console.log('Program run ----->');
 
 		flow.process(new Job());
 

@@ -49,17 +49,17 @@ import {DataMessage, Message} from './Message';
  * - ToDo: (idea2) The Flow provides performance/monitoring metrics of the DAG edges? OK
  */
 export class Flow {
-    private queue: IPriorityQueue<Message>;
+	private queue: IPriorityQueue<Message>;
 
-    public constructor(queue: IPriorityQueue<Message>) {
-        this.queue = queue;
-    }
+	public constructor(queue: IPriorityQueue<Message>) {
+		this.queue = queue;
+	}
 
-    public process(job: Job): void {
-        const message = new DataMessage(job);
-        this.queue.push(message, {
-            jobId: job.jobId,
-            priority: 1,
-        });
-    }
+	public process(job: Job): void {
+		const message = new DataMessage(job);
+		this.queue.push(message, {
+			jobId: job.jobId,
+			priority: 1,
+		});
+	}
 }

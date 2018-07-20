@@ -95,7 +95,11 @@ import {IPriorityQueue} from './queue/IPriorityQueue';
  *
  * @publicapi
  */
-export abstract class Box<T extends MessageData, O extends MessageData, C extends MessageData> implements IBox<T, O> {
+export abstract class Box<
+	T extends MessageData,
+	O extends MessageData,
+	C extends MessageData
+> implements IBox<T, O> {
 	public readonly name: string;
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
@@ -110,7 +114,11 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 	 *
 	 * @param queue TODO: (code detail) What is this?  What is the use for this? What is the Box developer going to do with it?
 	 */
-	protected constructor(name: string, meta: BoxMeta, queue?: IPriorityQueue<Message>) {
+	protected constructor(
+		name: string,
+		meta: BoxMeta,
+		queue?: IPriorityQueue<Message>
+	) {
 		this.name = name;
 		this.meta = meta;
 		this.queue = queue;
@@ -134,21 +142,28 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 			this.queue.setJobFinishedCallback(value.jobId, () => {});
 			this.queue.setJobMessageFailedCallback(value.jobId, () => {});
 		}
-		const result = await this.processValue(value, (chunk: C, priority: number): void => {
-			if (this.queue == null) {
-				throw new Error(`${this.name} has not defined a queue for generating values.`);
+		const result = await this.processValue(
+			value,
+			(chunk: C, priority: number): void => {
+				if (this.queue == null) {
+					throw new Error(
+						`${
+							this.name
+						} has not defined a queue for generating values.`
+					);
+				}
+				const messageData: MessageData = {};
+				for (const emitKey of this.meta.emits) {
+					messageData[emitKey] = chunk[emitKey];
+				}
+				messageData.jobId = value.jobId;
+				// TODO: (code detail) Box shouldn't use Message explicitly its a flow's job to properly format the data
+				this.queue.push(new DataMessage(messageData), {
+					priority: priority,
+					jobId: value.jobId,
+				});
 			}
-			const messageData: MessageData = {};
-			for (const emitKey of this.meta.emits) {
-				messageData[emitKey] = chunk[emitKey];
-			}
-			messageData.jobId = value.jobId;
-			// TODO: (code detail) Box shouldn't use Message explicitly its a flow's job to properly format the data
-			this.queue.push(new DataMessage(messageData), {
-				priority: priority,
-				jobId: value.jobId,
-			});
-		});
+		);
 		if (this.queue != null) {
 			// TODO: (code detail) This should be replaced by the SentinelMessage (formatted by the flow)
 			this.queue.pushingFinished(value.jobId);
@@ -157,5 +172,8 @@ export abstract class Box<T extends MessageData, O extends MessageData, C extend
 		return result;
 	}
 
-	protected abstract processValue(value: T, emitCallback: (chunk: C, priority: number) => void): Promise<O> | O;
+	protected abstract processValue(
+		value: T,
+		emitCallback: (chunk: C, priority: number) => void
+	): Promise<O> | O;
 }
