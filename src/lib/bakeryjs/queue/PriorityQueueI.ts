@@ -1,5 +1,3 @@
-import {Message} from '../Message';
-
-export interface PriorityQueueI<T extends Message> {
+export interface PriorityQueueI<T> {
 	push(message: T, priority?: number): Promise<void> | void;
 }
