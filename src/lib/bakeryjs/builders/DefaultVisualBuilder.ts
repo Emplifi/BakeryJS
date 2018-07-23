@@ -1,13 +1,13 @@
-import {IVisualBuilder} from './IVisualBuilder';
+import {VisualBuilder} from './VisualBuilder';
 import {
 	ConcurrentSchemaComponent,
 	SchemaObject,
 	SerialSchemaComponent,
-} from '../IFlowBuilder';
+} from '../FlowBuilderI';
 
 const TERMINAL_WIDTH = 80;
 
-export class DefaultVisualBuilder implements IVisualBuilder {
+export class DefaultVisualBuilder implements VisualBuilder {
 	public build(schema: SchemaObject): string {
 		return this.printSchema(schema);
 	}

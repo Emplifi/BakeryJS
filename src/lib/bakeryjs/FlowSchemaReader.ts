@@ -1,7 +1,7 @@
-import {SchemaObject} from './IFlowBuilder';
-import IFlowSchemaReader from './IFlowSchemaReader';
+import {SchemaObject} from './FlowBuilderI';
+import FlowSchemaReaderI from './FlowSchemaReaderI';
 
-export default class FlowSchemaReader implements IFlowSchemaReader {
+export default class FlowSchemaReader implements FlowSchemaReaderI {
 	private readonly flowList: {[key: string]: SchemaObject};
 
 	public constructor(flowsPath: string) {

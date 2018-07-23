@@ -1,5 +1,5 @@
-import IComponentFactory from './IComponentFactory';
-import {IPriorityQueue} from './queue/IPriorityQueue';
+import ComponentFactoryI from './ComponentFactoryI';
+import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
 
 // eslint-disable-next-line typescript/no-use-before-define
@@ -8,10 +8,10 @@ export type ConcurrentSchemaComponent = SchemaComponent[];
 export type SerialSchemaComponent = ConcurrentSchemaComponent[];
 export type SchemaObject = {[key: string]: SerialSchemaComponent};
 
-// TODO: (code detail) Why I won't get Flow, if I run `build` of IFlowBuilder?
-export default interface IFlowBuilder {
+// TODO: (code detail) Why I won't get Flow, if I run `build` of FlowBuilderI?
+export default interface FlowBuilderI {
 	build(
 		schema: SchemaObject,
-		componentFactory: IComponentFactory
-	): Promise<IPriorityQueue<Message>> | IPriorityQueue<Message>;
+		componentFactory: ComponentFactoryI
+	): Promise<PriorityQueueI<Message>> | PriorityQueueI<Message>;
 }

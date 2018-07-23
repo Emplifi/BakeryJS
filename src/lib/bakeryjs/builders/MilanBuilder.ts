@@ -1,17 +1,21 @@
-import IFlowBuilder, {ConcurrentSchemaComponent, SchemaObject, SerialSchemaComponent,} from '../IFlowBuilder';
-import {IBox} from '../IBox';
-import IComponentFactory from '../IComponentFactory';
-import {IPriorityQueue} from '../queue/IPriorityQueue';
+import FlowBuilderI, {
+	ConcurrentSchemaComponent,
+	SchemaObject,
+	SerialSchemaComponent,
+} from '../FlowBuilderI';
+import {BoxInterface} from '../BoxI';
+import ComponentFactoryI from '../ComponentFactoryI';
+import {PriorityQueueI} from '../queue/PriorityQueueI';
 import {Message} from '../Message';
 import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
 
 type ProcessingCallback = (msg: Message) => Promise<void> | void;
 
-export class MilanBuilder implements IFlowBuilder {
+export class MilanBuilder implements FlowBuilderI {
 	public async build(
 		schema: SchemaObject,
-		componentFactory: IComponentFactory
-	): Promise<IPriorityQueue<Message>> {
+		componentFactory: ComponentFactoryI
+	): Promise<PriorityQueueI<Message>> {
 		return await this.buildPriorityQueue(
 			schema,
 			'process',
@@ -20,17 +24,20 @@ export class MilanBuilder implements IFlowBuilder {
 	}
 
 	private async createConcurrentFunction(
-		componentFactory: IComponentFactory,
+		componentFactory: ComponentFactoryI,
 		name: string,
-		queue?: IPriorityQueue<Message>
+		queue?: PriorityQueueI<Message>
 	) {
-		const component: IBox = await componentFactory.create(name, queue);
+		const component: BoxInterface = await componentFactory.create(
+			name,
+			queue
+		);
 		return (msg: Message): Promise<void> => component.process(msg);
 	}
 
 	private async buildConcurrentFunctions(
 		concurrentSchema: ConcurrentSchemaComponent,
-		componentFactory: IComponentFactory
+		componentFactory: ComponentFactoryI
 	): Promise<ProcessingCallback[]> {
 		const concurrentFunctions: ProcessingCallback[] = [];
 		for (const boxName of concurrentSchema) {
@@ -64,10 +71,12 @@ export class MilanBuilder implements IFlowBuilder {
 
 	private async buildSerialFunctions(
 		serialSchema: SerialSchemaComponent,
-		componentFactory: IComponentFactory
+		componentFactory: ComponentFactoryI
 	): Promise<ProcessingCallback[]> {
 		const serialFunctions: Promise<ProcessingCallback>[] = serialSchema.map(
-			async (schema: ConcurrentSchemaComponent): Promise<ProcessingCallback> => {
+			async (
+				schema: ConcurrentSchemaComponent
+			): Promise<ProcessingCallback> => {
 				const concurrentFunctions: ProcessingCallback[] = await this.buildConcurrentFunctions(
 					schema,
 					componentFactory
@@ -88,26 +97,28 @@ export class MilanBuilder implements IFlowBuilder {
 	private async buildPriorityQueue(
 		schema: SchemaObject,
 		key: string,
-		componentFactory: IComponentFactory
-	): Promise<IPriorityQueue<Message>> {
+		componentFactory: ComponentFactoryI
+	): Promise<PriorityQueueI<Message>> {
 		const serialFunctions: ProcessingCallback[] = await this.buildSerialFunctions(
 			schema[key],
 			componentFactory
 		);
-		return new MemoryPriorityQueue(
-			async (task: Message): Promise<void> => {
-				serialFunctions.reduce(
-					(previous: Promise<Message>, serialCallback: ProcessingCallback): Promise<Message> => {
-						// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
-						return previous.then(
-							async (msg: Message): Promise<Message> => {
-								await serialCallback(msg);
-								return msg;
-							}
-						);
-					},
-					Promise.resolve(task)
-				);
-			}, 10);
-		}
+		return new MemoryPriorityQueue(async (task: Message): Promise<void> => {
+			serialFunctions.reduce(
+				(
+					previous: Promise<Message>,
+					serialCallback: ProcessingCallback
+				): Promise<Message> => {
+					// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
+					return previous.then(
+						async (msg: Message): Promise<Message> => {
+							await serialCallback(msg);
+							return msg;
+						}
+					);
+				},
+				Promise.resolve(task)
+			);
+		}, 10);
 	}
+}

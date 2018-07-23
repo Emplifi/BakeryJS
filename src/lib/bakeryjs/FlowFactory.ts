@@ -1,14 +1,14 @@
-import IComponentFactory from './IComponentFactory';
-import IFlowBuilder, {SchemaObject} from './IFlowBuilder';
+import ComponentFactoryI from './ComponentFactoryI';
+import FlowBuilderI, {SchemaObject} from './FlowBuilderI';
 import {Flow} from './Flow';
 
 export default class FlowFactory {
-	private readonly componentFactory: IComponentFactory;
-	private readonly builder: IFlowBuilder;
+	private readonly componentFactory: ComponentFactoryI;
+	private readonly builder: FlowBuilderI;
 
 	public constructor(
-		componentFactory: IComponentFactory,
-		builder: IFlowBuilder
+		componentFactory: ComponentFactoryI,
+		builder: FlowBuilderI
 	) {
 		this.componentFactory = componentFactory;
 		this.builder = builder;

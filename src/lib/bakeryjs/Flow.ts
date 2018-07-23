@@ -1,4 +1,4 @@
-import {IPriorityQueue} from './queue/IPriorityQueue';
+import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Job} from './Job';
 import {DataMessage, Message} from './Message';
 
@@ -49,14 +49,14 @@ import {DataMessage, Message} from './Message';
  * - ToDo: (idea2) The Flow provides performance/monitoring metrics of the DAG edges? OK
  */
 export class Flow {
-	private queue: IPriorityQueue<Message>;
+	private queue: PriorityQueueI<Message>;
 
-	public constructor(queue: IPriorityQueue<Message>) {
+	public constructor(queue: PriorityQueueI<Message>) {
 		this.queue = queue;
 	}
 
 	public process(job: Job): void {
 		const message = new DataMessage(job);
-		this.queue.push(message,  1);
+		this.queue.push(message, 1);
 	}
 }

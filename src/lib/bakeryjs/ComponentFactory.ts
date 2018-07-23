@@ -1,14 +1,14 @@
 import * as fs from 'fs';
-import {IBox} from './IBox';
-import IComponentFactory from './IComponentFactory';
-import {IPriorityQueue} from './queue/IPriorityQueue';
+import {BoxInterface} from './BoxI';
+import ComponentFactoryI from './ComponentFactoryI';
+import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
 import {parseComponentName} from './componentNameParser';
 import {ServiceProvider} from './ServiceProvider';
 
 const debug = require('debug')('bakeryjs:componentProvider');
 
-export default class ComponentFactory implements IComponentFactory {
+export default class ComponentFactory implements ComponentFactoryI {
 	private availableComponents: {[s: string]: string} = {};
 	private readonly serviceProvider: ServiceProvider;
 
@@ -23,8 +23,8 @@ export default class ComponentFactory implements IComponentFactory {
 
 	public async create(
 		name: string,
-		queue?: IPriorityQueue<Message>
-	): Promise<IBox> {
+		queue?: PriorityQueueI<Message>
+	): Promise<BoxInterface> {
 		const box = await import(this.availableComponents[name]);
 		return box.default(name, this.serviceProvider, queue);
 	}

@@ -1,20 +1,20 @@
 import {Flow} from './Flow';
-import IFlowSchemaReader from './IFlowSchemaReader';
+import FlowSchemaReaderI from './FlowSchemaReaderI';
 import FlowFactory from './FlowFactory';
-import IComponentFactory from './IComponentFactory';
-import IFlowBuilder from './IFlowBuilder';
-import {IVisualBuilder} from './builders/IVisualBuilder';
+import ComponentFactoryI from './ComponentFactoryI';
+import FlowBuilderI from './FlowBuilderI';
+import {VisualBuilder} from './builders/VisualBuilder';
 
 export class FlowCatalog {
-	private readonly flowSchemaReader: IFlowSchemaReader;
+	private readonly flowSchemaReader: FlowSchemaReaderI;
 	private readonly flowFactory: FlowFactory;
-	private readonly visualBuilder: IVisualBuilder;
+	private readonly visualBuilder: VisualBuilder;
 
 	public constructor(
-		flowSchemaReader: IFlowSchemaReader,
-		componentFactory: IComponentFactory,
-		builder: IFlowBuilder,
-		visualBuilder: IVisualBuilder
+		flowSchemaReader: FlowSchemaReaderI,
+		componentFactory: ComponentFactoryI,
+		builder: FlowBuilderI,
+		visualBuilder: VisualBuilder
 	) {
 		this.flowSchemaReader = flowSchemaReader;
 		this.visualBuilder = visualBuilder;

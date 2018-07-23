@@ -10,7 +10,7 @@ import {
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 
-const noop = function() {};
+const noop = function(): void {};
 
 /**
  * # Box
@@ -105,11 +105,11 @@ const noop = function() {};
  *
  * @publicapi
  */
-export abstract class Box implements IBox {
+export abstract class Box implements BoxInterface {
 	public readonly name: string;
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
-	private readonly queue: IPriorityQueue<Message>;
+	private readonly queue: PriorityQueueI<Message>;
 
 	/**
 	 * The Box is a basic unit of execution. It comprises of two levels:
@@ -130,16 +130,18 @@ export abstract class Box implements IBox {
 	protected constructor(
 		name: string,
 		meta: BoxMeta,
-		queue?: IPriorityQueue<Message>
+		queue?: PriorityQueueI<Message>
 	) {
 		this.name = name;
 		this.meta = meta;
-		this.queue = queue || {push: noop} as IPriorityQueue<Message>;
+		this.queue = queue || ({push: noop} as PriorityQueueI<Message>);
 	}
 
 	private async processMapper(value: DataMessage): Promise<any> {
 		// TODO: (idea1) Handle exceptions!
-		const result = await this.processValue(value.getInput(this.meta.requires));
+		const result = await this.processValue(
+			value.getInput(this.meta.requires)
+		);
 		value.setOutput(this.meta.provides, result);
 		this.queue.push(value);
 		return;
@@ -153,20 +155,23 @@ export abstract class Box implements IBox {
 				const msg: Message = value.create();
 				msg.setOutput(this.meta.provides, chunk);
 				this.queue.push(msg, priority);
-			});
+			}
+		);
 
 		this.queue.push(new SentinelMessage(retValue, value));
 		return;
 	}
 
 	private async processAggregator(value: Message): Promise<any> {
-		throw new VError({
-			name: "NotImplementedError",
-			message: "Box '%s': Aggregator has not been implemented yet.",
-			info: {
-				name: this.name,
-				meta: this.meta
-			}},
+		throw new VError(
+			{
+				name: 'NotImplementedError',
+				message: "Box '%s': Aggregator has not been implemented yet.",
+				info: {
+					name: this.name,
+					meta: this.meta,
+				},
+			},
 			this.name
 		);
 	}
@@ -181,7 +186,7 @@ export abstract class Box implements IBox {
 	 * @publicapi
 	 */
 	public async process(value: Message): Promise<any> {
-		const isGenerator: boolean = (this.meta.emits.length > 0);
+		const isGenerator: boolean = this.meta.emits.length > 0;
 		const isAggregator: boolean = this.meta.aggregates;
 		const isMapper: boolean = !isAggregator && !isGenerator;
 
@@ -194,13 +199,10 @@ export abstract class Box implements IBox {
 			const dValue: DataMessage = value as DataMessage;
 			if (isMapper) {
 				return await this.processMapper(dValue);
-			}
-			else if (isGenerator) {
+			} else if (isGenerator) {
 				return await this.processGenerator(dValue);
 			}
 		}
-
-
 	}
 
 	protected abstract processValue(

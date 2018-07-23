@@ -1,11 +1,11 @@
 import {AsyncPriorityQueue, priorityQueue} from 'async';
-import {IPriorityQueue} from './IPriorityQueue';
+import {PriorityQueueI} from './PriorityQueueI';
 import {Message} from '../Message';
 
 const DEFAULT_PRIORITY = 5;
 
 export class MemoryPriorityQueue<T extends Message>
-	implements IPriorityQueue<T> {
+	implements PriorityQueueI<T> {
 	private readonly queue: AsyncPriorityQueue<T>;
 
 	public constructor(

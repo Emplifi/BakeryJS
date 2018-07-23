@@ -10,7 +10,7 @@ class Print extends Box {
 			requires: ['jobId', 'raw'],
 			provides: [],
 			emits: [],
-			aggregates: false
+			aggregates: false,
 		});
 		this.logger = logger;
 	}
