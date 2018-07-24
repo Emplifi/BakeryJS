@@ -5,8 +5,10 @@
 	"main": "build/index",
 	"types": "build/index",
 	"dependencies": {
+		"ajv": "^6.5.2",
 		"async": "^2.6.0",
 		"debug": "^3.1.0",
+		"jsnetworkx": "^0.3.4",
 		"verror": "^1.10.0"
 	},
 	"engines": {

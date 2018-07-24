@@ -10,7 +10,9 @@ import {
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 
-const noop = function(): void {};
+export const noopQueue = {
+	push: (msg: any, priority?: number) => undefined,
+};
 
 /**
  * # Box
@@ -134,7 +136,7 @@ export abstract class Box implements BoxInterface {
 	) {
 		this.name = name;
 		this.meta = meta;
-		this.queue = queue || ({push: noop} as PriorityQueueI<Message>);
+		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
 	}
 
 	private async processMapper(value: DataMessage): Promise<any> {
