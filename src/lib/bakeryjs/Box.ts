@@ -1,7 +1,14 @@
-import {BoxMeta, IBox, OnCleanCallback} from './IBox';
-import {DataMessage, is_Data, is_Sentinel, Message, MessageData, SentinelMessage} from './Message';
-import {IPriorityQueue} from './queue/IPriorityQueue';
-import VError = require("verror");
+import {BoxInterface, BoxMeta, OnCleanCallback} from './BoxI';
+import {
+	DataMessage,
+	isData,
+	isSentinel,
+	Message,
+	MessageData,
+	SentinelMessage,
+} from './Message';
+import {PriorityQueueI} from './queue/PriorityQueueI';
+import VError from 'verror';
 
 const noop = function() {};
 
@@ -180,13 +187,11 @@ export abstract class Box implements IBox {
 
 		if (isAggregator) {
 			return await this.processAggregator(value);
-		}
-		else if (is_Sentinel(value)) {
+		} else if (isSentinel(value)) {
 			this.queue.push(value);
 			return;
-		}
-		else if (is_Data(value)) {
-			const dValue: DataMessage = <DataMessage> value;
+		} else if (isData(value)) {
+			const dValue: DataMessage = value as DataMessage;
 			if (isMapper) {
 				return await this.processMapper(dValue);
 			}

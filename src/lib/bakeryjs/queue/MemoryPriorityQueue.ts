@@ -2,6 +2,8 @@ import {AsyncPriorityQueue, priorityQueue} from 'async';
 import {IPriorityQueue} from './IPriorityQueue';
 import {Message} from '../Message';
 
+const DEFAULT_PRIORITY = 5;
+
 export class MemoryPriorityQueue<T extends Message>
 	implements IPriorityQueue<T> {
 	private readonly queue: AsyncPriorityQueue<T>;
@@ -13,7 +15,7 @@ export class MemoryPriorityQueue<T extends Message>
 		this.queue = priorityQueue(worker, concurrency);
 	}
 
-	public push(message: T, priority?: number): void {
-		this.queue.push(message, priority || 5);
+	public push(message: T, priority = DEFAULT_PRIORITY): void {
+		this.queue.push(message, priority);
 	}
 }
