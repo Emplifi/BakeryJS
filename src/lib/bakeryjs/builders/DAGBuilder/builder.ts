@@ -13,7 +13,7 @@ import {BoxInterface} from '../../BoxI';
 import {QZip, tee} from './joinedQueue';
 import {MemoryPriorityQueue} from '../../queue/MemoryPriorityQueue';
 import {noopQueue} from '../../Box';
-import jsnx = require('jsnetworkx');
+import * as jsnx from 'jsnetworkx';
 
 /**
  * Build recursively a directed graph from the SchemaObject.
