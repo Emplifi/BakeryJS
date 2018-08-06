@@ -4,36 +4,15 @@ export type MessageData = {[key: string]: any};
 
 let messageId = 0;
 
-/**
- * # Behaviour
- * 1. Object that is identified by an *id*. The *id* is unique at lest within the flow being currently executed.
- * 2. Such an object can have its parent, the object it has been generated from.
- * 3. A new descendant is created by calling the method *create*.
- *
- * # Intended use:
- * A Message is Identifiable.
- *
- * ## Joints of Edges
- * Several clones of the Message pass through the flow "in parallel".  We need to merge
- * these clones into a single Message, eventually.  As Messages can be (possibly) prioritized, we have to perform a join
- * with respect to *ids*.
- *
- * ## Generating Messages in a *Generator*
- * A generated Message must have an (abstract) link to its *parent* for the purpose of aggregation.  The *parent* *id* plays
- * a role of the GROUP BY expression.
- */
-interface Identifiable {
-	readonly id: string;
-	readonly parent: Identifiable | undefined;
-}
 
 /**
  * ### Identifiable message
  *
  * The Identifiable with data and their accessors and the flag that the generation is not finished.
  */
-interface IdMessage extends Identifiable {
-	data: MessageData;
+interface IdMessage {
+	readonly id: string;
+	readonly parent: IdMessage | undefined;
 	create(values: MessageData): IdMessage;
 	createSentinel(retValue?: any): IdSentinel;
 	getInput(requires: string[]): MessageData;
@@ -60,8 +39,10 @@ interface IdMessage extends Identifiable {
  * The field *data* has different semantics.  You can't access to fields of the parent *Message* through it.
  * It holds a *Return Value* of the generator -- `undefined`, Error instance, Warning instance, etc.
  */
-interface IdSentinel extends Identifiable {
-	data: any;
+interface IdSentinel {
+	readonly id: string;
+	readonly parent: IdMessage;
+	readonly data: any;
 	/**
 	 * ## Flag of the sentinel message.
 	 *
@@ -75,20 +56,50 @@ interface IdSentinel extends Identifiable {
 
 export type Message = IdMessage | IdSentinel;
 
-abstract class CIdentifiable implements Identifiable {
+/**
+ * # Behaviour
+ * 1. Object that is identified by an *id*. The *id* is unique at lest within the flow being currently executed.
+ * 2. Such an object can have its parent, the object it has been generated from.
+ * 3. A new descendant is created by calling the method *create*.
+ *
+ * # Intended use:
+ * A Message is Identifiable.
+ *
+ * ## Joints of Edges
+ * Several clones of the Message pass through the flow "in parallel".  We need to merge
+ * these clones into a single Message, eventually.  As Messages can be (possibly) prioritized, we have to perform a join
+ * with respect to *ids*.
+ *
+ * ## Generating Messages in a *Generator*
+ * A generated Message must have an (abstract) link to its *parent* for the purpose of aggregation.  The *parent* *id* plays
+ * a role of the GROUP BY expression.
+ */
+abstract class CIdentifiable {
 	private readonly _id: string;
-	readonly parent: IdMessage | undefined;
+	public readonly parent: IdMessage | undefined;
 
-	get id(): string {
+	public get id(): string {
 		return (this.parent ? `${this.parent.id};` : '') + '/' + this._id;
 	}
 
-	protected constructor(parent?: IdMessage) {
+	protected constructor(parent: IdMessage | undefined) {
 		this._id = `${messageId++}`;
 		this.parent = parent;
 	}
-
 }
+
+export class SentinelMessage extends CIdentifiable implements IdSentinel {
+	public readonly parent: IdMessage;
+	public readonly data: any;
+	public readonly finished: true = true;
+
+	public constructor(retValue: any, parent: IdMessage) {
+		super(parent);
+		this.parent = parent; // WTF!!! without this, there is an error "My property parent is not set!"
+		this.data = retValue;
+	}
+}
+
 /**
  * One piece of data flowing inside the Flow through Boxes.
  *
@@ -101,28 +112,28 @@ abstract class CIdentifiable implements Identifiable {
  * @internalapi
  */
 export class DataMessage extends CIdentifiable implements IdMessage {
-	finished: false = false;
-	data: MessageData;
+	protected data: MessageData;
+	public readonly finished: false = false;
 
-	constructor(initData?: MessageData, parent?: IdMessage) {
+	public constructor(initData?: MessageData, parent?: IdMessage) {
 		super(parent);
 		this.data = initData ? initData : Object.create(null);
 	}
 
-	create(values?: MessageData): IdMessage {
-
-		const newData = values ?
-			Object.create(this.data, Object.getOwnPropertyDescriptors(values)) : Object.create(this.data);
+	public create(values?: MessageData): IdMessage {
+		const newData = values
+			? Object.create(this.data, Object.getOwnPropertyDescriptors(values))
+			: Object.create(this.data);
 		return new DataMessage(newData, this);
-	};
+	}
 
-	createSentinel(retValue?: any): IdSentinel {
+	public createSentinel(retValue?: any): IdSentinel {
 		return new SentinelMessage(retValue, this);
 	}
 
 	// TODO: (code detail) the flow executor should create a Data Access Object that will guard the fields and
 	// pass the DAO into the box.  The factory of the DAO could be a method of the Message.
-	getInput(requires: string[]): MessageData {
+	public getInput(requires: string[]): MessageData {
 		const input: MessageData = {};
 		for (const r of requires) {
 			input[r] = this.data[r];
@@ -132,11 +143,17 @@ export class DataMessage extends CIdentifiable implements IdMessage {
 		return input;
 	}
 
-	setOutput(provides: string[], output: MessageData): void {
+	public setOutput(provides: string[], output: MessageData): void {
 		const currentKeys = Object.keys(this.data);
-		const intersectionKeys = currentKeys.filter((key: string) => provides.indexOf(key) !== -1);
+		const intersectionKeys = currentKeys.filter(
+			(key: string) => provides.indexOf(key) !== -1
+		);
 		if (intersectionKeys.length > 0) {
-			throw new Error(`Cannot provide some data because the message already contains following results "${intersectionKeys.join('", "')}".`);
+			throw new Error(
+				`Cannot provide some data because the message already contains following results "${intersectionKeys.join(
+					'", "'
+				)}".`
+			);
 		}
 
 		debug(`set output: ${JSON.stringify(output)}`);
@@ -146,20 +163,10 @@ export class DataMessage extends CIdentifiable implements IdMessage {
 	}
 }
 
-export class SentinelMessage extends CIdentifiable implements IdSentinel {
-	public data: any;
-	public finished: true = true;
-
-	constructor(retValue: any, parent: IdMessage) {
-		super(parent);
-		this.data = retValue;
-	}
-}
-
-export function is_Data(m: Message): m is IdMessage {
+export function isData(m: Message): m is IdMessage {
 	return !m.finished;
 }
 
-export function is_Sentinel(m: Message): m is SentinelMessage {
+export function isSentinel(m: Message): m is SentinelMessage {
 	return m.finished;
 }

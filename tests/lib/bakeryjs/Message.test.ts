@@ -81,16 +81,17 @@ describe('Message', () => {
 		});
 	});
 
-	describe("Parent message", () => {
+	describe('Parent message', () => {
 		const parentMessage = new DataMessage({foo: 1, bar: 'hello'});
 		const message = parentMessage.create();
 
 		it("message.id contains parent message's id", () => {
-			expect(message.id).toEqual(expect.stringContaining(parentMessage.id));
-			}
+			expect(message.id).toEqual(
+				expect.stringContaining(parentMessage.id)
 		);
+		});
 
-		it("Parent data are accessible in the message data", () => {
+		it('Parent data are accessible in the message data', () => {
 			expect(message.getInput(['bar'])).toEqual({bar: 'hello'});
 		});
 
@@ -101,13 +102,12 @@ describe('Message', () => {
 			expect(message.getInput(['baz'])).toEqual({baz: 'world!'});
 			expect(parentMessage.getInput(['baz'])).toEqual({baz: undefined});
 		});
-	}
-	);
+	});
 
-	describe("Sentinel Message", () => {
+	describe('Sentinel Message', () => {
 		const parentMessage = new DataMessage({foo: 1, bar: 2});
 
-		it("Sentinel with undefined return value", () => {
+		it('Sentinel with undefined return value', () => {
 			const sentinel = parentMessage.createSentinel();
 			expect.assertions(2);
 
@@ -117,22 +117,18 @@ describe('Message', () => {
 
 		it("Sentinel contains parent's id", () => {
 			const sentinel = parentMessage.createSentinel();
-			expect(sentinel.id).toEqual(expect.stringContaining(parentMessage.id));
+			expect(sentinel.id).toEqual(
+				expect.stringContaining(parentMessage.id)
+			);
 		});
 
-		it("One can't derive Message from Sentinel", () =>{
-			const sentinel = parentMessage.createSentinel();
-			expect(() => sentinel.create("Success")).toThrow(Error);
-		});
-
-		it( "Sentinel with return value", () => {
-			const theError = new TypeError("Whoa!");
+		it('Sentinel with return value', () => {
+			const theError = new TypeError('Whoa!');
 			const sentinel = parentMessage.createSentinel(theError);
 
 			expect.assertions(2);
 			expect(sentinel.data).toEqual(theError);
 			expect(sentinel.parent).toEqual(parentMessage);
-		})
 	});
-
+	});
 });
