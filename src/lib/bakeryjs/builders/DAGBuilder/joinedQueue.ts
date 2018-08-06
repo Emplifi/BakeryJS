@@ -1,7 +1,7 @@
 import {PriorityQueueI} from '../../queue/PriorityQueueI';
 import {Options, VError} from 'verror';
 import {Message} from '../../Message';
-import assert = require('assert');
+import assert from 'assert';
 
 /**
  * Assume one has several queues already set up.  We wan't a queue-like endpoint
