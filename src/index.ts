@@ -3,9 +3,9 @@ import {FlowCatalog} from './lib/bakeryjs/FlowCatalog';
 import {Program} from './lib/bakeryjs/Program';
 import FlowSchemaReader from './lib/bakeryjs/FlowSchemaReader';
 import ComponentFactory from './lib/bakeryjs/ComponentFactory';
-import {MilanBuilder} from './lib/bakeryjs/builders/MilanBuilder';
 import {ServiceProvider} from './lib/bakeryjs/ServiceProvider';
 import {DefaultVisualBuilder} from './lib/bakeryjs/builders/DefaultVisualBuilder';
+import {DAGBuilder} from './lib/bakeryjs/builders/DAGBuilder/builder';
 
 const catalog = new FlowCatalog(
 	new FlowSchemaReader(`${__dirname}/flows/flows.ts`),
@@ -17,7 +17,7 @@ const catalog = new FlowCatalog(
 			},
 		})
 	),
-	new MilanBuilder(),
+	new DAGBuilder(),
 	new DefaultVisualBuilder()
 );
 

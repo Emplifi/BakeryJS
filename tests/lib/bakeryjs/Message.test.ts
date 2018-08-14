@@ -1,4 +1,4 @@
-import {Message} from '../../../src/lib/bakeryjs/Message';
+import {DataMessage} from '../../../src/lib/bakeryjs/Message';
 
 describe('Message', () => {
 	const inputTestData = [
@@ -21,7 +21,7 @@ describe('Message', () => {
 
 	inputTestData.forEach(({init, requires, expected}, index: number) => {
 		it(`returns partial data as input #${index}`, () => {
-			const message = new Message(init);
+			const message = new DataMessage(init);
 			const input = message.getInput(requires);
 			expect(input).toEqual(expected);
 		});
@@ -57,7 +57,7 @@ describe('Message', () => {
 	outputTestData.forEach(
 		({init, provides, data, expected}, index: number) => {
 			it(`saves output data to the message #${index}`, () => {
-				const message = new Message(init);
+				const message = new DataMessage(init);
 				message.setOutput(provides, data);
 				expect(message.getInput(['foo', 'bar'])).toEqual(expected);
 			});
@@ -65,7 +65,7 @@ describe('Message', () => {
 	);
 
 	it('throws an error on rewriting existing data key by an output without any changes', () => {
-		const message = new Message({foo: 0, bar: 1});
+		const message = new DataMessage({foo: 0, bar: 1});
 
 		expect(() => {
 			message.setOutput(['baz', 'bar'], {baz: 2, bar: 3});
@@ -78,6 +78,57 @@ describe('Message', () => {
 		expect(message.getInput(['foo', 'bar', 'baz'])).toEqual({
 			foo: 0,
 			bar: 1,
+		});
+	});
+
+	describe('Parent message', () => {
+		const parentMessage = new DataMessage({foo: 1, bar: 'hello'});
+		const message = parentMessage.create();
+
+		it("message.id contains parent message's id", () => {
+			expect(message.id).toEqual(
+				expect.stringContaining(parentMessage.id)
+			);
+		});
+
+		it('Parent data are accessible in the message data', () => {
+			expect(message.getInput(['bar'])).toEqual({bar: 'hello'});
+		});
+
+		it("Write into the message doesn't touch the parent", () => {
+			message.setOutput(['baz'], {baz: 'world!'});
+
+			expect.assertions(2);
+			expect(message.getInput(['baz'])).toEqual({baz: 'world!'});
+			expect(parentMessage.getInput(['baz'])).toEqual({baz: undefined});
+		});
+	});
+
+	describe('Sentinel Message', () => {
+		const parentMessage = new DataMessage({foo: 1, bar: 2});
+
+		it('Sentinel with undefined return value', () => {
+			const sentinel = parentMessage.createSentinel();
+			expect.assertions(2);
+
+			expect(sentinel.data).toEqual(undefined);
+			expect(sentinel.parent).toEqual(parentMessage);
+		});
+
+		it("Sentinel contains parent's id", () => {
+			const sentinel = parentMessage.createSentinel();
+			expect(sentinel.id).toEqual(
+				expect.stringContaining(parentMessage.id)
+			);
+		});
+
+		it('Sentinel with return value', () => {
+			const theError = new TypeError('Whoa!');
+			const sentinel = parentMessage.createSentinel(theError);
+
+			expect.assertions(2);
+			expect(sentinel.data).toEqual(theError);
+			expect(sentinel.parent).toEqual(parentMessage);
 		});
 	});
 });

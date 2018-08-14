@@ -1,70 +1,124 @@
-import IFlowBuilder, {SerialSchemaComponent, SchemaObject, ConcurrentSchemaComponent} from '../IFlowBuilder';
-import {IBox} from '../IBox';
-import IComponentFactory from '../IComponentFactory';
-import {IPriorityQueue} from '../queue/IPriorityQueue';
-import {Message, MessageData} from '../Message';
+import FlowBuilderI, {
+	ConcurrentSchemaComponent,
+	SchemaObject,
+	SerialSchemaComponent,
+} from '../FlowBuilderI';
+import {BoxInterface} from '../BoxI';
+import ComponentFactoryI from '../ComponentFactoryI';
+import {PriorityQueueI} from '../queue/PriorityQueueI';
+import {Message} from '../Message';
 import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
 
-type InputProvider = (requires: string[]) => MessageData;
-type OutputAcceptor = (provides: string[], value: MessageData) => void;
+type ProcessingCallback = (msg: Message) => Promise<void> | void;
 
-type ProcessingCallback = (getInput: InputProvider, setOutput: OutputAcceptor) => Promise<void> | void;
+export class MilanBuilder implements FlowBuilderI {
+	public async build(
+		schema: SchemaObject,
+		componentFactory: ComponentFactoryI
+	): Promise<PriorityQueueI<Message>> {
+		return await this.buildPriorityQueue(
+			schema,
+			'process',
+			componentFactory
+		);
+	}
 
-export class MilanBuilder implements IFlowBuilder {
-    public async build(schema: SchemaObject, componentFactory: IComponentFactory): Promise<IPriorityQueue<Message>> {
-        return await this.buildPriorityQueue(schema, 'process', componentFactory);
-    }
+	private async createConcurrentFunction(
+		componentFactory: ComponentFactoryI,
+		name: string,
+		queue?: PriorityQueueI<Message>
+	) {
+		const component: BoxInterface = await componentFactory.create(
+			name,
+			queue
+		);
+		return (msg: Message): Promise<void> => component.process(msg);
+	}
 
-    private async createConcurrentFunction(componentFactory: IComponentFactory, name: string, queue?: IPriorityQueue<Message>) {
-        const component: IBox<MessageData, MessageData> = await componentFactory.create(name, queue);
-        return async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
-            const results = await component.process(getInput(component.meta.requires));
-            setOutput(component.meta.provides, results);
-        };
-    }
+	private async buildConcurrentFunctions(
+		concurrentSchema: ConcurrentSchemaComponent,
+		componentFactory: ComponentFactoryI
+	): Promise<ProcessingCallback[]> {
+		const concurrentFunctions: ProcessingCallback[] = [];
+		for (const boxName of concurrentSchema) {
+			if (typeof boxName !== 'string') {
+				for (const key of Object.keys(boxName)) {
+					const queue = await this.buildPriorityQueue(
+						boxName,
+						key,
+						componentFactory
+					);
+					concurrentFunctions.push(
+						await this.createConcurrentFunction(
+							componentFactory,
+							key,
+							queue
+						)
+					);
+				}
+			} else {
+				concurrentFunctions.push(
+					await this.createConcurrentFunction(
+						componentFactory,
+						boxName
+					)
+				);
+			}
+		}
 
-    private async buildConcurrentFunctions(concurrentSchema: ConcurrentSchemaComponent, componentFactory: IComponentFactory): Promise<ProcessingCallback[]> {
-        const concurrentFunctions: ProcessingCallback[] = [];
-        for (const boxName of concurrentSchema) {
-            if (typeof boxName !== 'string') {
-                for (const key of Object.keys(boxName)) {
-                    const queue = await this.buildPriorityQueue(boxName, key, componentFactory);
-                    concurrentFunctions.push(await this.createConcurrentFunction(componentFactory, key, queue))
-                }
-            } else {
-                concurrentFunctions.push(await this.createConcurrentFunction(componentFactory, boxName))
-            }
-        }
+		return concurrentFunctions;
+	}
 
-        return concurrentFunctions;
-    }
+	private async buildSerialFunctions(
+		serialSchema: SerialSchemaComponent,
+		componentFactory: ComponentFactoryI
+	): Promise<ProcessingCallback[]> {
+		const serialFunctions: Promise<ProcessingCallback>[] = serialSchema.map(
+			async (
+				schema: ConcurrentSchemaComponent
+			): Promise<ProcessingCallback> => {
+				const concurrentFunctions: ProcessingCallback[] = await this.buildConcurrentFunctions(
+					schema,
+					componentFactory
+				);
+				return async (msg: Message): Promise<void> => {
+					await Promise.all(
+						concurrentFunctions.map(
+							(processCbk: ProcessingCallback) => processCbk(msg)
+						)
+					);
+				};
+			}
+		);
 
-    private async buildSerialFunctions(serialSchema: SerialSchemaComponent, componentFactory: IComponentFactory): Promise<ProcessingCallback[]> {
-        const serialFunctions: Promise<ProcessingCallback>[] = serialSchema.map(async (schema: ConcurrentSchemaComponent): Promise<ProcessingCallback> => {
-            const concurrentFunctions = await this.buildConcurrentFunctions(schema, componentFactory);
-            return async (getInput: InputProvider, setOutput: OutputAcceptor): Promise<void> => {
-                await Promise.all(concurrentFunctions.map((processingCallback: ProcessingCallback) => processingCallback(getInput, setOutput)));
-            }
-        });
+		return await Promise.all(serialFunctions);
+	}
 
-        return await Promise.all(serialFunctions);
-    }
-
-    private async buildPriorityQueue(schema: SchemaObject, key: string, componentFactory: IComponentFactory): Promise<IPriorityQueue<Message>> {
-        const serialFunctions = await this.buildSerialFunctions(schema[key], componentFactory);
-        return new MemoryPriorityQueue(
-            async (task: Message): Promise<void> => {
-                const getInput = (requires: string[]): MessageData => task.getInput(requires);
-                const setOutput = (provides: string[], value: MessageData): void => task.setOutput(provides, value);
-
-                serialFunctions.reduce((previous: Promise<{input: InputProvider, output: OutputAcceptor}>, serialCallback: ProcessingCallback): Promise<{input: InputProvider, output: OutputAcceptor}> => {
-                    // TODO: prvni fce se vykona, dalsi fce nepreda spravne params
-                    return previous.then(async ({input, output}: {input: InputProvider, output: OutputAcceptor}): Promise<{input: InputProvider, output: OutputAcceptor}> => {
-                        await serialCallback(input, output);
-                        return {input, output};
-                    });
-                }, Promise.resolve({input: getInput, output: setOutput}));
-            }
-        , 10);
-    }
+	private async buildPriorityQueue(
+		schema: SchemaObject,
+		key: string,
+		componentFactory: ComponentFactoryI
+	): Promise<PriorityQueueI<Message>> {
+		const serialFunctions: ProcessingCallback[] = await this.buildSerialFunctions(
+			schema[key],
+			componentFactory
+		);
+		return new MemoryPriorityQueue(async (task: Message): Promise<void> => {
+			serialFunctions.reduce(
+				(
+					previous: Promise<Message>,
+					serialCallback: ProcessingCallback
+				): Promise<Message> => {
+					// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
+					return previous.then(
+						async (msg: Message): Promise<Message> => {
+							await serialCallback(msg);
+							return msg;
+						}
+					);
+				},
+				Promise.resolve(task)
+			);
+		}, 10);
+	}
 }
