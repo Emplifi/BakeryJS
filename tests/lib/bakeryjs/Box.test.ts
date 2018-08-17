@@ -1,4 +1,4 @@
-import {Box} from '../../../src/lib/bakeryjs/Box';
+import {boxFactory, BoxFactorySignature} from '../../../src/lib/bakeryjs/Box';
 import {
 	DataMessage,
 	Message,
@@ -7,46 +7,44 @@ import {
 } from '../../../src/lib/bakeryjs/Message';
 import {BoxMeta} from './BoxI';
 import {PriorityQueueI} from './queue/PriorityQueueI';
+import {BoxInterface} from '../../../src/lib/bakeryjs/BoxI';
+import {ServiceProvider} from '../../../src/lib/bakeryjs/ServiceProvider';
 
 describe('Box', () => {
 	describe('Mapper', () => {
-		class MappingBox extends Box {
-			public constructor(output: PriorityQueueI<Message>) {
-				super(
-					'MapperTest',
-					{
-						requires: ['foo'],
-						provides: ['bar'],
-						emits: [],
-						aggregates: false,
-					} as BoxMeta,
-					output
-				);
-			}
-			protected async processValue(
+		const MappingBox: BoxFactorySignature = boxFactory(
+			'MapperTest',
+			{
+				requires: ['foo'],
+				provides: ['bar'],
+				emits: [],
+				aggregates: false,
+			} as BoxMeta,
+			async function(
+				serviceProvider: ServiceProvider,
 				value: MessageData
 			): Promise<MessageData> {
 				const foo = value['foo'];
 				return {bar: `${foo}!`, baz: "this value won't make it."};
 			}
-		}
+		);
 
 		const setupFunction = (): {
-			box: Box;
+			box: BoxInterface;
 			push: (arg: any) => void;
 		} => {
 			const outQ = {
 				push: jest.fn(),
 			} as PriorityQueueI<Message>;
 
-			const box = new MappingBox(outQ);
+			const box = new MappingBox({} as ServiceProvider, outQ);
 			return {box: box, push: outQ.push};
 		};
 
 		const scenarios = [
-			(setups: {box: Box; push: any}) =>
+			(setups: {box: BoxInterface; push: any}) =>
 				it('Stores `provided` fields skips other.', async () => {
-					const box: Box = setups.box;
+					const box: BoxInterface = setups.box;
 					const pushMock = setups.push;
 					const msg = new DataMessage({jobId: 'ttt', foo: 'hoo'});
 
@@ -64,9 +62,9 @@ describe('Box', () => {
 					});
 				}),
 
-			(setups: {box: Box; push: any}) =>
+			(setups: {box: BoxInterface; push: any}) =>
 				it('Sentinel value is passed.', async () => {
-					const box: Box = setups.box;
+					const box: BoxInterface = setups.box;
 					const pushMock = setups.push;
 					const parMsg = new DataMessage({jobId: '111'});
 					const msg = new SentinelMessage(
@@ -89,44 +87,45 @@ describe('Box', () => {
 	});
 
 	describe('Generator', () => {
-		class GeneratingBox extends Box {
-			public constructor(output: PriorityQueueI<Message>) {
-				super(
-					'GeneratingTest',
-					{
-						requires: ['foo'],
-						provides: ['bar'],
-						emits: ['baz'],
-						aggregates: false,
-					} as BoxMeta,
-					output
-				);
-			}
-			protected async processValue(
+		const GeneratingBox: BoxFactorySignature = boxFactory(
+			'GeneratingTest',
+			{
+				requires: ['foo'],
+				provides: ['bar'],
+				emits: ['baz'],
+				aggregates: false,
+			} as BoxMeta,
+			async function processValue(
+				serviceProvider: ServiceProvider,
 				value: MessageData,
-				emit: (val: MessageData) => void
+				emit?: (val: MessageData, priority?: number) => void
 			): Promise<any> {
+				if (!emit) {
+					throw TypeError(
+						'GeneratingTest box method `processValue` must be invoked with `emit`!'
+					);
+				}
 				const foo = value['foo'];
 				emit({bar: `${foo}1`, baz: "this value won't make it."});
 				emit({bar: `${foo}2`, baz: "this value won't make it."});
 				return;
 			}
-		}
+		);
 
 		const setupFunction = (): {
-			box: Box;
+			box: BoxInterface;
 			push: (arg: any) => void;
 		} => {
 			const outQ = {
 				push: jest.fn(),
 			} as PriorityQueueI<Message>;
 
-			const box = new GeneratingBox(outQ);
+			const box = new GeneratingBox({} as ServiceProvider, outQ);
 			return {box: box, push: outQ.push};
 		};
 
 		const scenarios = [
-			(setups: {box: Box; push: any}) =>
+			(setups: {box: BoxInterface; push: any}) =>
 				it('Generates into queue', async () => {
 					const box = setups.box;
 					const pushMock = setups.push;
@@ -162,7 +161,7 @@ describe('Box', () => {
 					expect(pushMock.mock.calls[2][0].data).toBe(undefined);
 				}),
 
-			(setups: {box: Box; push: any}) =>
+			(setups: {box: BoxInterface; push: any}) =>
 				it('passes sentinel Message', async () => {
 					const box = setups.box;
 					const pushMock = setups.push;

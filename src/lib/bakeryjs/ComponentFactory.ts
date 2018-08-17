@@ -25,8 +25,9 @@ export default class ComponentFactory implements ComponentFactoryI {
 		name: string,
 		queue?: PriorityQueueI<Message>
 	): Promise<BoxInterface> {
+		// TODO: (code detail) Is it necessary to always import the file?
 		const box = await import(this.availableComponents[name]);
-		return box.default(name, this.serviceProvider, queue);
+		return new box.default(this.serviceProvider, queue);
 	}
 
 	private findComponents(

@@ -1,7 +1,11 @@
-export class ServiceProvider {
-	private readonly services: {[key: string]: any};
+type ServiceContainer = {
+	[key: string]: any;
+};
 
-	public constructor(services: {[key: string]: any}) {
+export class ServiceProvider {
+	private readonly services: ServiceContainer;
+
+	public constructor(services: ServiceContainer) {
 		this.services = services;
 	}
 

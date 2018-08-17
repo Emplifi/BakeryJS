@@ -9,10 +9,39 @@ import {
 } from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
+import {ServiceProvider} from './ServiceProvider';
 
 export const noopQueue = {
 	push: (msg: any, priority?: number) => undefined,
 };
+
+/**
+ * Type of the definig executing code of the Box.
+ *
+ * The routine that contains the business logic of the Box.  The capability of the function are stated
+ * in the metadata, namely *provides*, *emits* and *aggregates*.
+ *
+ * ### The box does not *aggregate*
+ * - When called with `value` only -> it serves as a mapper and *must* return (promise) of MessageData,
+ * - when called with both `value` and `emit` -> it serves as a generator and
+ *   - each new message emits by calling `emit(data, priority?)`
+ *   - when finished with generating, resolves the returned Promise to any value
+ *
+ * ### The box *aggregates*
+ * TODO: (idea1) how is the api for aggregation?
+ *
+ * @publicapi
+ */
+export type BoxExecutiveDefinition = (
+	serviceProvider: ServiceProvider,
+	value: MessageData,
+	emit: (chunk: MessageData, priority?: number) => void
+) => Promise<MessageData> | MessageData | Promise<any>;
+
+export type BoxFactorySignature = new (
+	serviceProvider: ServiceProvider,
+	q?: PriorityQueueI<Message>
+) => BoxInterface;
 
 /**
  * # Box
@@ -105,9 +134,9 @@ export const noopQueue = {
  *
  * TODO: (code detail) the Box execution should be membraned (so that it can't alter the global entities)
  *
- * @publicapi
+ * @internalapi
  */
-export abstract class Box implements BoxInterface {
+abstract class Box implements BoxInterface {
 	public readonly name: string;
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
@@ -139,10 +168,26 @@ export abstract class Box implements BoxInterface {
 		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
 	}
 
+	protected neverEmitCallback(): void {
+		throw new VError(
+			{
+				name: 'InconsistentBoxError',
+				message:
+					"Box '%s': Can't invoke `emitCallback` unless being a generator/aggregator! Either set metadata filed 'emits' or 'aggregates'.",
+				info: {
+					name: this.name,
+					meta: this.meta,
+				},
+			},
+			this.name
+		);
+	}
+
 	private async processMapper(value: DataMessage): Promise<any> {
 		// TODO: (idea1) Handle exceptions!
 		const result = await this.processValue(
-			value.getInput(this.meta.requires)
+			value.getInput(this.meta.requires),
+			(chunk: MessageData, priority?: number) => this.neverEmitCallback()
 		);
 		value.setOutput(this.meta.provides, result);
 		this.queue.push(value);
@@ -153,7 +198,7 @@ export abstract class Box implements BoxInterface {
 		//TODO: (idea1) Handle exceptions!
 		const retValue: any = await this.processValue(
 			value.getInput(this.meta.requires),
-			(chunk: MessageData, priority: number) => {
+			(chunk: MessageData, priority?: number) => {
 				const msg: Message = value.create();
 				msg.setOutput(this.meta.provides, chunk);
 				this.queue.push(msg, priority);
@@ -207,8 +252,50 @@ export abstract class Box implements BoxInterface {
 		}
 	}
 
+	/**
+	 * Type of the executing code of the Box's boilerplate.
+	 *
+	 * The routine that contains the business logic of the Box.  The capability of the function are stated
+	 * in the metadata, namely *provides*, *emits* and *aggregates*.
+	 *
+	 * ### The box does not *aggregate*
+	 * - When called with `value` only -> it serves as a mapper and *must* return (promise) of MessageData,
+	 * - when called with both `value` and `emit` -> it serves as a generator and
+	 *   - each new message emits by calling `emit(data, priority?)`
+	 *   - when finished with generating, resolves the returned Promise.  The resolved value is thrown away
+	 *     the promise only marks the generation complete.
+	 *   - If an error occurres, reject the returned Promise with an Error instance
+	 *
+	 * ### The box *aggregates*
+	 * TODO: (idea1) how is the api for aggregation?
+	 *
+	 * @internalapi
+	 */
 	protected abstract processValue(
-		value: MessageData,
-		emitCallback?: (chunk: MessageData, priority: number) => void
-	): Promise<MessageData> | MessageData;
+		msg: MessageData,
+		emit: (msg: MessageData, priority?: number) => void
+	): Promise<MessageData> | MessageData | Promise<any>;
+}
+
+export function boxFactory(
+	name: string,
+	metadata: BoxMeta,
+	processValueDef: BoxExecutiveDefinition
+): BoxFactorySignature {
+	return class extends Box {
+		private readonly serviceProvider: ServiceProvider;
+		public constructor(
+			serviceProvider: ServiceProvider,
+			q?: PriorityQueueI<Message>
+		) {
+			super(name, metadata, q);
+			this.serviceProvider = serviceProvider;
+		}
+		protected processValue(
+			msg: MessageData,
+			emit: (msg: MessageData, priority?: number) => void
+		) {
+			return processValueDef(this.serviceProvider, msg, emit);
+		}
+	};
 }
