@@ -2,7 +2,7 @@ import {Flow} from './lib/bakeryjs/Flow';
 import {FlowCatalog} from './lib/bakeryjs/FlowCatalog';
 import {Program} from './lib/bakeryjs/Program';
 import FlowSchemaReader from './lib/bakeryjs/FlowSchemaReader';
-import ComponentFactory from './lib/bakeryjs/ComponentFactory';
+import {ComponentFactory} from './lib/bakeryjs/ComponentFactory';
 import {ServiceProvider} from './lib/bakeryjs/ServiceProvider';
 import {DefaultVisualBuilder} from './lib/bakeryjs/builders/DefaultVisualBuilder';
 import {DAGBuilder} from './lib/bakeryjs/builders/DAGBuilder/builder';

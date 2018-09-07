@@ -5,17 +5,37 @@ import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
 import {parseComponentName} from './componentNameParser';
 import {ServiceProvider} from './ServiceProvider';
+import VError = require('verror');
 
 const debug = require('debug')('bakeryjs:componentProvider');
 
-export default class ComponentFactory implements ComponentFactoryI {
+function boxNotFoundError(name: string, baseURIs: string | string[]): Error {
+	const joinedUris =
+		typeof baseURIs == 'string' ? baseURIs : baseURIs.join(',');
+	return new VError(
+		{
+			name: 'BoxNotFound',
+			message: "Box '%s' not found in %s.",
+			info: {
+				requestedBoxName: name,
+				factoryBaseUri: baseURIs,
+			},
+		},
+		name,
+		joinedUris
+	);
+}
+
+export class ComponentFactory implements ComponentFactoryI {
 	private availableComponents: {[s: string]: string} = {};
 	private readonly serviceProvider: ServiceProvider;
+	public readonly baseURI: string;
 
 	public constructor(
 		componentsPath: string,
 		serviceProvider: ServiceProvider
 	) {
+		this.baseURI = `file://${componentsPath}`;
 		this.findComponents(componentsPath);
 		debug(this.availableComponents);
 		this.serviceProvider = serviceProvider;
@@ -25,6 +45,9 @@ export default class ComponentFactory implements ComponentFactoryI {
 		name: string,
 		queue?: PriorityQueueI<Message>
 	): Promise<BoxInterface> {
+		if (!this.availableComponents[name]) {
+			return Promise.reject(boxNotFoundError(name, this.baseURI));
+		}
 		// TODO: (code detail) Is it necessary to always import the file?
 		const box = await import(this.availableComponents[name]);
 		return new box.default(this.serviceProvider, queue);
@@ -52,6 +75,55 @@ export default class ComponentFactory implements ComponentFactoryI {
 					this.availableComponents[name] = `${componentsPath}${file}`;
 				}
 			}
+		);
+	}
+}
+
+export class MultiComponentFactory implements ComponentFactoryI {
+	protected readonly factories: ComponentFactory[];
+	public constructor() {
+		this.factories = [];
+	}
+
+	public push(factory: ComponentFactory) {
+		this.factories.unshift(factory);
+	}
+
+	public async create(
+		name: string,
+		queue?: PriorityQueueI<Message>
+	): Promise<BoxInterface> {
+		const futureBoxes = this.factories.map(async (f) => {
+			return await f.create(name, queue).catch((reason) => {
+				if (VError.hasCauseWithName(reason, 'BoxNotFound')) {
+					return;
+				}
+
+				throw new VError(
+					{
+						name: 'FactoryException',
+						message: 'ComponentFactory.create(%s) failed.',
+						info: {
+							factoryBaseURI: f.baseURI,
+							requestedBoxName: name,
+						},
+						cause: reason,
+					},
+					name
+				);
+			});
+		});
+
+		const resolvedBoxes = await Promise.all(futureBoxes);
+		const result = resolvedBoxes.find(
+			(resp: void | BoxInterface) => resp !== undefined
+		);
+		if (result) {
+			return result;
+		}
+
+		return Promise.reject(
+			boxNotFoundError(name, this.factories.map((f) => f.baseURI))
 		);
 	}
 }
