@@ -5,6 +5,7 @@ import {
 	SchemaObject,
 	SerialSchemaComponent,
 } from '../../FlowBuilderI';
+import * as jsnx from 'jsnetworkx';
 import {DiGraph, Edge} from 'jsnetworkx';
 import ComponentFactoryI from '../../ComponentFactoryI';
 import {PriorityQueueI} from '../../queue/PriorityQueueI';
@@ -13,7 +14,6 @@ import {BoxInterface} from '../../BoxI';
 import {QZip, tee} from './joinedQueue';
 import {MemoryPriorityQueue} from '../../queue/MemoryPriorityQueue';
 import {noopQueue} from '../../Box';
-import * as jsnx from 'jsnetworkx';
 
 /**
  * Build recursively a directed graph from the SchemaObject.
@@ -95,7 +95,8 @@ function analyzeSchema(schema: SerialSchemaComponent): DiGraph {
 export class DAGBuilder implements FlowBuilderI {
 	public async build(
 		schema: SchemaObject,
-		componentFactory: ComponentFactoryI
+		componentFactory: ComponentFactoryI,
+		drain?: PriorityQueueI<Message>
 	): Promise<PriorityQueueI<Message>> {
 		// Directed graph of connected boxes.  Notice, that we are going to build the boxes from the end, i.e.
 		// create the last box first, then a queue directing to it, then a box feeding the directing queue etc.
@@ -121,6 +122,12 @@ export class DAGBuilder implements FlowBuilderI {
 		// 1. instantiate the box (as all its flow-dependents are already instantiated, inlcuding their queues, we have all the information)
 		// 2. instantiate all the flow-incoming queues (i.e. where the messages will come into this box)
 		return await boxBuildOrder.reduce(
+			/**
+			 * @param prevBoxReady -- the outgoing queue of the last instantiated box
+			 * It has no sense until the last box is `_root_`.  Then it is a desired
+			 * input queue into the whole DAG.
+			 * @param boxName -- we are going to bring this box to life
+			 */
 			async (
 				prevBoxReady: Promise<PriorityQueueI<Message>>,
 				boxName: string
@@ -148,8 +155,9 @@ export class DAGBuilder implements FlowBuilderI {
 
 				if (depsQueues.length == 0) {
 					// no queues from me, no dependencies => I am a terminal box
+					// output goes into drain
 					boxMeta[boxName] = {
-						instance: await componentFactory.create(boxName),
+						instance: await componentFactory.create(boxName, drain),
 						outputs: [],
 					};
 					returnValue = noopQueue;

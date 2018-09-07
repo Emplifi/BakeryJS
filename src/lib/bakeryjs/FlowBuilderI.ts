@@ -12,6 +12,7 @@ export type SchemaObject = {[key: string]: SerialSchemaComponent};
 export default interface FlowBuilderI {
 	build(
 		schema: SchemaObject,
-		componentFactory: ComponentFactoryI
+		componentFactory: ComponentFactoryI,
+		drain?: PriorityQueueI<Message>
 	): Promise<PriorityQueueI<Message>> | PriorityQueueI<Message>;
 }

@@ -1,6 +1,8 @@
 import ComponentFactoryI from './ComponentFactoryI';
 import FlowBuilderI, {SchemaObject} from './FlowBuilderI';
 import {Flow} from './Flow';
+import {PriorityQueueI} from './queue/PriorityQueueI';
+import {Message} from './Message';
 
 export default class FlowFactory {
 	private readonly componentFactory: ComponentFactoryI;
@@ -14,9 +16,12 @@ export default class FlowFactory {
 		this.builder = builder;
 	}
 
-	public async create(schema: SchemaObject): Promise<Flow> {
+	public async create(
+		schema: SchemaObject,
+		drain?: PriorityQueueI<Message>
+	): Promise<Flow> {
 		return new Flow(
-			await this.builder.build(schema, this.componentFactory)
+			await this.builder.build(schema, this.componentFactory, drain)
 		);
 	}
 }
