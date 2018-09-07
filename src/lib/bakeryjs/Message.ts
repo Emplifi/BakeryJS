@@ -160,6 +160,16 @@ export class DataMessage extends CIdentifiable implements IdMessage {
 			this.data[p] = output[p];
 		}
 	}
+
+	public export(): MessageData {
+		const protoChain: MessageData[] = [];
+		let obj = this.data;
+		while (obj !== Object.prototype) {
+			protoChain.unshift(obj);
+			obj = Object.getPrototypeOf(obj) as MessageData;
+		}
+		return Object.assign({}, ...protoChain);
+	}
 }
 
 export function isData(m: Message): m is IdMessage {

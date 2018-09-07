@@ -57,7 +57,7 @@
 			"html",
 			"text"
 		],
-		"testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$",
+		"testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(tsx?|js)?$",
 		"transform": {
 			"^.+\\.tsx?$": "ts-jest"
 		},

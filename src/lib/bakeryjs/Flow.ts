@@ -1,6 +1,7 @@
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Job} from './Job';
 import {DataMessage, Message} from './Message';
+import {SchemaObject} from './FlowBuilderI';
 
 /**
  * We have Boxes set up properly, now we have to interconnect them to the workflow.
@@ -59,4 +60,16 @@ export class Flow {
 		const message = new DataMessage(job);
 		this.queue.push(message, 1);
 	}
+}
+
+type FlowIdDesc = {
+	flow: string;
+};
+
+export type FlowDescription = SchemaObject | FlowIdDesc;
+export function hasFlow(desc: FlowDescription): desc is FlowIdDesc {
+	return (desc as FlowIdDesc).flow !== undefined;
+}
+export function hasProcess(desc: FlowDescription): desc is SchemaObject {
+	return (desc as SchemaObject).process !== undefined;
 }

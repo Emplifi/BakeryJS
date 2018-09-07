@@ -1,4 +1,4 @@
-const {boxFactory} = require(`${__dirname}/../../build/lib/bakeryjs/Box`);
+const {boxFactory} = require('./../../src');
 
 module.exports = boxFactory(
 	'helloWorld',

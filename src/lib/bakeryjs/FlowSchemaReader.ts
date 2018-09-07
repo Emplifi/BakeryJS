@@ -8,6 +8,7 @@ export default class FlowSchemaReader implements FlowSchemaReaderI {
 		this.flowList = require(flowsPath).default;
 	}
 
+	// TODO: (idea2) Lazy read from file upon request?
 	public getFlowSchema(name: string): SchemaObject {
 		if (!this.flowList[name]) {
 			throw new Error(`Flow not found: ${name}`);

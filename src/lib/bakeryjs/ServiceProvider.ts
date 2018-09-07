@@ -1,4 +1,4 @@
-type ServiceContainer = {
+export type ServiceContainer = {
 	[key: string]: any;
 };
 
@@ -15,5 +15,9 @@ export class ServiceProvider {
 		}
 
 		return this.services[name];
+	}
+
+	public setAllIn(theContainer: ServiceContainer): void {
+		Object.assign(this.services, theContainer);
 	}
 }
