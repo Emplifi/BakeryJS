@@ -71,7 +71,7 @@ export type BoxFactorySignature = new (
  * ## Cardinality of the result
  *
   * The box can be in one of the following modes:
- *  > ### TODO: (idea1) can be some particular box some time generator and some time a mapper?  OK
+ *  > ### TODO: can be some particular box some time generator and some time a mapper
  *  > a -- dej mi prvnich 20 commentu vs. dej mi vsechny commenty -- vyhneme se "tupemu" aggregatoru typu "first"
  *  >
  *  > Should the generator/aggregator have different (extended) interface than a mapper?
@@ -83,7 +83,7 @@ export type BoxFactorySignature = new (
  *  2. A *generator* -- a box receives the batch of Messages and creates a sequence of batches of Messages
  *  that can be further directed in the flow.  The Messages can be interspersed with respect to theirs parent in the Batch.
  *
- *  > ### TODO: (idea1) how about push & pull iterations?  Modelled by queue with empty/full events and responses.
+ *  > ### TODO: pull iterations?  Modelled by queue with empty/full events and responses.
  *  > Both regimes are reasonable.
  *  > a. **push** -- e.g. clocks.  Once in a minute, new Message is *pushed* into the flow.  Or subscribed
  *  >  events from DB Query.
@@ -115,12 +115,22 @@ export type BoxFactorySignature = new (
  *  # Means of extension
  *
  * If I want to have a new Box, I have to
- * 1. Subclass a class Box and set metadata in the constructor?
- * 2. Redefine the method processValue?
+ * 1. (Re-)Define all services (logger, statsd, ...) and pass it to a Program
+ * 2. Invoke boxFactory with properly set metadata and
+ * 2. the method processValue?
  *
  * > ### TODO: (code detail) the settings of the box -- pass it to the constructor?  We should have it in the interface, probably.
  *
- * > ### TODO: (idea2) the Box should provide a flag about the operation. Was it success?  Was it error? Was it not ideal but let's go on?
+ * > ### the Box should provide a flag about the operation. Was it success?  Was it error? Was it not ideal but let's go on?
+ * > * Logging is the bare basic.  Every event from the flow (i.e. BoxThrowsError, process termination, ...) must be logged
+ *     into a logger.
+ * > * https://www.npmjs.com/package/debug is the second option
+ * > * tracing is the most advanced option
+ * >
+ * > When a box encounters an exception, it
+ * > 1. TODO: Logs it into a logger
+ * > 2. TODO: Sends the particular message (including the error) into error-drain (so that the user can explore it)
+ * > 3. TODO: Stops the flow
  *
  * > ### TODO: (code detail) Box life-cycle and onClean actions.
  * >
@@ -129,8 +139,6 @@ export type BoxFactorySignature = new (
  *
  *  TODO: (code detail) The Box should produce performance metrics about processing.  In order the Box developer not to care, should it
  *  be in the prototype or in a wrap?
- *
- * TODO: (idea2) logging from the Box.  Should the box log somehow?  Yes, box has internally logger available
  *
  * TODO: (code detail) the Box execution should be membraned (so that it can't alter the global entities)
  *
