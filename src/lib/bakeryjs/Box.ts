@@ -149,6 +149,7 @@ abstract class Box implements BoxInterface {
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
 	private readonly queue: PriorityQueueI<Message>;
+	protected readonly serviceProvider: ServiceProvider;
 
 	/**
 	 * The Box is a basic unit of execution. It comprises of two levels:
@@ -169,10 +170,12 @@ abstract class Box implements BoxInterface {
 	protected constructor(
 		name: string,
 		meta: BoxMeta,
+		serviceProvider: ServiceProvider,
 		queue?: PriorityQueueI<Message>
 	) {
 		this.name = name;
 		this.meta = meta;
+		this.serviceProvider = serviceProvider;
 		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
 	}
 
@@ -180,41 +183,83 @@ abstract class Box implements BoxInterface {
 		throw new VError(
 			{
 				name: 'InconsistentBoxError',
-				message:
-					"Box '%s': Can't invoke `emitCallback` unless being a generator/aggregator! Either set metadata filed 'emits' or 'aggregates'.",
 				info: {
 					name: this.name,
 					meta: this.meta,
 				},
 			},
+			"Box '%s': Can't invoke `emitCallback` unless being a generator/aggregator! Either set metadata filed 'emits' or 'aggregates'.",
 			this.name
 		);
 	}
 
 	private async processMapper(value: DataMessage): Promise<any> {
-		// TODO: (idea1) Handle exceptions!
-		const result = await this.processValue(
-			value.getInput(this.meta.requires),
-			(chunk: MessageData, priority?: number) => this.neverEmitCallback()
-		);
-		value.setOutput(this.meta.provides, result);
-		this.queue.push(value);
-		return;
+		try {
+			const result = await this.processValue(
+				value.getInput(this.meta.requires),
+				(chunk: MessageData, priority?: number) =>
+					this.neverEmitCallback()
+			);
+			value.setOutput(this.meta.provides, result);
+			this.queue.push(value);
+			return;
+		} catch (error) {
+			const wrap = new VError(
+				{
+					name: 'BoxInvocationException',
+					cause: error,
+					info: {
+						mode: 'mapper',
+						box: {
+							name: this.name,
+							meta: this.meta,
+						},
+						value: value.getInput(this.meta.requires),
+					},
+				},
+				"The box '%s' in a %s mode encountered an exception.",
+				this.name,
+				'mapper'
+			);
+
+			throw wrap;
+		}
 	}
 
 	private async processGenerator(value: DataMessage): Promise<any> {
-		//TODO: (idea1) Handle exceptions!
-		const retValue: any = await this.processValue(
-			value.getInput(this.meta.requires),
-			(chunk: MessageData, priority?: number) => {
-				const msg: Message = value.create();
-				msg.setOutput(this.meta.provides, chunk);
-				this.queue.push(msg, priority);
-			}
-		);
+		try {
+			const retValue: any = await this.processValue(
+				value.getInput(this.meta.requires),
+				(chunk: MessageData, priority?: number) => {
+					const msg: Message = value.create();
+					msg.setOutput(this.meta.provides, chunk);
+					this.queue.push(msg, priority);
+				}
+			);
 
-		this.queue.push(new SentinelMessage(retValue, value));
-		return;
+			this.queue.push(new SentinelMessage(retValue, value));
+			return;
+		} catch (error) {
+			const wrap = new VError(
+				{
+					name: 'BoxInvocationException',
+					cause: error,
+					info: {
+						mode: 'generator',
+						box: {
+							name: this.name,
+							meta: this.meta,
+						},
+						value: value.getInput(this.meta.requires),
+					},
+				},
+				"The box '%s' in a %s mode encountered an exception.",
+				this.name,
+				'generator'
+			);
+
+			throw wrap;
+		}
 	}
 
 	private async processAggregator(value: Message): Promise<any> {
@@ -252,10 +297,16 @@ abstract class Box implements BoxInterface {
 			return;
 		} else if (isData(value)) {
 			const dValue: DataMessage = value as DataMessage;
-			if (isMapper) {
-				return await this.processMapper(dValue);
-			} else if (isGenerator) {
-				return await this.processGenerator(dValue);
+			try {
+				if (isMapper) {
+					return await this.processMapper(dValue);
+				} else if (isGenerator) {
+					return await this.processGenerator(dValue);
+				}
+			} catch (error) {
+				this.serviceProvider.get('logger').error(error);
+				// TODO: Stop processing (let it bubble up to the queue processor? And the queue then breaks the flow?)
+				return null;
 			}
 		}
 	}
@@ -291,13 +342,11 @@ export function boxFactory(
 	processValueDef: BoxExecutiveDefinition
 ): BoxFactorySignature {
 	return class extends Box {
-		private readonly serviceProvider: ServiceProvider;
 		public constructor(
 			serviceProvider: ServiceProvider,
 			q?: PriorityQueueI<Message>
 		) {
-			super(name, metadata, q);
-			this.serviceProvider = serviceProvider;
+			super(name, metadata, serviceProvider, q);
 		}
 		protected processValue(
 			msg: MessageData,

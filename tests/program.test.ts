@@ -1,5 +1,5 @@
 import {Program} from '../src';
-import {Message} from '../src/lib/bakeryjs/Message';
+import {MessageData} from '../src/lib/bakeryjs/Message';
 
 test('Store `Hello World!` with all default configuration', async () => {
 	const program = new Program(
@@ -13,12 +13,12 @@ test('Store `Hello World!` with all default configuration', async () => {
 		process: [['helloworld']],
 	};
 
-	const drain: Message[] = [];
+	const drain: MessageData[] = [];
 	// TODO: (idea1) How the hell are we going to notice that all is done?
 	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
 	// 2.  Have some awkward event "All queues are empty"?
 	await new Promise((resolve) => {
-		program.run(job, (msg: Message) => {
+		program.run(job, (msg: MessageData) => {
 			drain.push(msg);
 			resolve();
 		});

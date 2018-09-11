@@ -15,12 +15,12 @@ function boxNotFoundError(name: string, baseURIs: string | string[]): Error {
 	return new VError(
 		{
 			name: 'BoxNotFound',
-			message: "Box '%s' not found in %s.",
 			info: {
 				requestedBoxName: name,
 				factoryBaseUri: baseURIs,
 			},
 		},
+		"Box '%s' not found in %s.",
 		name,
 		joinedUris
 	);
