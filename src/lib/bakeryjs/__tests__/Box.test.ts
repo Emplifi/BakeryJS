@@ -29,6 +29,9 @@ describe('Box', () => {
 		} => {
 			const outQ = {
 				push: jest.fn(),
+				length: 0,
+				source: '__test',
+				target: '__test',
 			} as PriorityQueueI<Message>;
 
 			const box = new MappingBox({} as ServiceProvider, outQ);
@@ -112,6 +115,9 @@ describe('Box', () => {
 		} => {
 			const outQ = {
 				push: jest.fn(),
+				length: 0,
+				source: '__test',
+				target: '__test',
 			} as PriorityQueueI<Message>;
 
 			const box = new GeneratingBox({} as ServiceProvider, outQ);

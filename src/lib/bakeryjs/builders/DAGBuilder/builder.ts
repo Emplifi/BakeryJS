@@ -11,7 +11,7 @@ import ComponentFactoryI from '../../ComponentFactoryI';
 import {PriorityQueueI} from '../../queue/PriorityQueueI';
 import {Message} from '../../Message';
 import {BoxInterface} from '../../BoxI';
-import {QZip, tee} from './joinedQueue';
+import {QZip, Tee} from './joinedQueue';
 import {MemoryPriorityQueue} from '../../queue/MemoryPriorityQueue';
 import {noopQueue} from '../../Box';
 
@@ -149,7 +149,7 @@ export class DAGBuilder implements FlowBuilderI {
 					if (depsQueues.length == 1) {
 						return depsQueues[0];
 					} else {
-						return tee(...depsQueues);
+						return new Tee(...depsQueues);
 					}
 				}
 
@@ -172,7 +172,7 @@ export class DAGBuilder implements FlowBuilderI {
 					// splits into more, and let the Tee be the output
 					boxMeta[boxName].instance = await componentFactory.create(
 						boxName,
-						(returnValue = tee(...depsQueues))
+						(returnValue = new Tee(...depsQueues))
 					);
 				}
 
@@ -183,7 +183,8 @@ export class DAGBuilder implements FlowBuilderI {
 						return await (boxMeta[boxName]
 							.instance as BoxInterface).process(msg);
 					},
-					1
+					1, //TODO: concurrency vzit z metadat boxu
+					boxName
 				);
 
 				// Select the edges (queues) from the graph
@@ -200,7 +201,9 @@ export class DAGBuilder implements FlowBuilderI {
 					if (!boxMeta[parentBox]) {
 						boxMeta[parentBox] = {instance: undefined, outputs: []};
 					}
-					boxMeta[parentBox].outputs.push(inputQs[index]);
+					const inputQ = inputQs[index];
+					inputQ.source = parentBox;
+					boxMeta[parentBox].outputs.push(inputQ);
 				});
 				return returnValue;
 			},

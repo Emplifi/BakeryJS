@@ -1,16 +1,16 @@
 import {PriorityQueueI} from '../../../queue/PriorityQueueI';
-import {QZip, tee} from '../joinedQueue';
+import {QZip, Tee} from '../joinedQueue';
 import {AssertionError} from 'assert';
 import {DataMessage, Message} from '../../../Message';
 
-describe('tee', () => {
+describe('new Tee', () => {
 	function getQueueMock(): PriorityQueueI<any> {
-		return {push: jest.fn()};
+		return {push: jest.fn(), length: 0, target: ''};
 	}
 
 	it('Tee into 2 queues.', () => {
 		const qs = [getQueueMock(), getQueueMock()];
-		const input: PriorityQueueI<string> = tee<string>(...qs);
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
 		input.push('foo');
 
 		expect.assertions(4);
@@ -22,7 +22,7 @@ describe('tee', () => {
 
 	it('Tee into 2 queues with priority.', () => {
 		const qs = [getQueueMock(), getQueueMock()];
-		const input: PriorityQueueI<string> = tee<string>(...qs);
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
 		input.push('bar', 4);
 
 		expect.assertions(4);
@@ -33,7 +33,7 @@ describe('tee', () => {
 	});
 
 	it('Tee into 0 queues throws', () => {
-		expect(() => tee<string>()).toThrowError(AssertionError);
+		expect(() => new Tee<string>()).toThrowError(AssertionError);
 	});
 
 	it('Push into one queue fails', () => {
@@ -41,17 +41,23 @@ describe('tee', () => {
 			push() {
 				throw new Error('Go away!');
 			},
+			length: 0,
+			target: '',
 		};
 
 		const qs = [getQueueMock(), qfail];
-		const input: PriorityQueueI<string> = tee<string>(...qs);
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
 		expect(() => input.push('Money?')).toThrowError(Error);
 	});
 });
 
 describe('QZip', () => {
 	it('Zip of 2 queues', () => {
-		const outQ: PriorityQueueI<Message> = {push: jest.fn()};
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
 		const zip = new QZip(outQ, 2);
 		const qs: PriorityQueueI<Message>[] = zip.inputs;
 
@@ -67,7 +73,11 @@ describe('QZip', () => {
 	});
 
 	it('No output before the join', () => {
-		const outQ: PriorityQueueI<Message> = {push: jest.fn()};
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
 		const zip = new QZip(outQ, 2);
 		const qs: PriorityQueueI<Message>[] = zip.inputs;
 
@@ -80,7 +90,11 @@ describe('QZip', () => {
 	});
 
 	it('Zip of 2 queues with messages coming out of order', () => {
-		const outQ: PriorityQueueI<Message> = {push: jest.fn()};
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
 		const zip = new QZip(outQ, 2);
 		const qs: PriorityQueueI<Message>[] = zip.inputs;
 
@@ -107,7 +121,11 @@ describe('QZip', () => {
 	});
 
 	it('Zip of 2 queues with priority', () => {
-		const outQ: PriorityQueueI<Message> = {push: jest.fn()};
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
 		const zip = new QZip(outQ, 2);
 		const qs: PriorityQueueI<Message>[] = zip.inputs;
 

@@ -8,6 +8,7 @@ import FlowSchemaReader from './FlowSchemaReader';
 import {DataMessage, isData, Message, MessageData} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {DAGBuilder} from './builders/DAGBuilder/builder';
+import {eventEmitter} from './stats';
 
 type UserConfiguration = {
 	componentPaths?: string[];
@@ -23,6 +24,8 @@ function createDrainPush(
 				drainCallback((msg as DataMessage).export());
 			}
 		},
+		length: 0,
+		target: 'drain',
 	};
 }
 
@@ -35,7 +38,6 @@ function createDrainPush(
  * User imports `Program` from BakeryJS into her source code.  Into the instantiation she passes in the services:
  *  - logger: {log(message: any): void, error(message: any): void}
  *  - tracer
- *  - statsd
  *  - arbitrary user defined service
  *  - ... .
  *
@@ -106,6 +108,11 @@ export class Program {
 			new DefaultVisualBuilder()
 		);
 	}
+
+	public on(eventName: string, callback: (...args: any[]) => any): void {
+		eventEmitter.on(eventName, callback);
+	}
+
 	public runFlow(flow: Flow): void {
 		console.log('Program run ----->');
 

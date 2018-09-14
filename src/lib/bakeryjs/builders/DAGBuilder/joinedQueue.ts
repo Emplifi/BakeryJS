@@ -2,6 +2,7 @@ import {PriorityQueueI} from '../../queue/PriorityQueueI';
 import {Options, VError} from 'verror';
 import {Message} from '../../Message';
 import assert from 'assert';
+import {qTrace} from '../../stats';
 
 /**
  * Assume one has several queues already set up.  We wan't a queue-like endpoint
@@ -13,28 +14,60 @@ import assert from 'assert';
  *
  * @throws VError QueueOperationError exception with field *cause*
  */
-export function tee<T>(...queues: PriorityQueueI<T>[]): PriorityQueueI<T> {
-	assert(queues.length > 0, "Can't tee into zero queues!");
-	return {
-		push(pld: T, priority?: number) {
-			try {
-				queues.forEach((q: PriorityQueueI<T>) => q.push(pld, priority));
-			} catch (err) {
-				throw new VError(
-					{
-						name: 'QueueOperationError',
-						cause: err,
-					} as Options,
-					'Push into a queue failed.'
-				);
-			}
-		},
-	};
+export class Tee<T> implements PriorityQueueI<T> {
+	private queues: PriorityQueueI<T>[];
+	public readonly target: string;
+	public readonly length: number = 0;
+	public source: string | undefined;
+	public constructor(...queues: PriorityQueueI<T>[]) {
+		assert(queues.length > 0, "Can't tee into zero queues!");
+		this.queues = queues;
+		this.target = '';
+	}
+
+	@qTrace(false)
+	push(pld: T, priority?: number) {
+		try {
+			this.queues.forEach((q: PriorityQueueI<T>) =>
+				q.push(pld, priority)
+			);
+		} catch (err) {
+			throw new VError(
+				{
+					name: 'QueueOperationError',
+					cause: err,
+				} as Options,
+				'Push into a queue failed.'
+			);
+		}
+	}
 }
 
 function* genEmpty(size: number): IterableIterator<undefined> {
 	for (let k = 0; k < size; k++) {
 		yield undefined;
+	}
+}
+
+class FakeQueue implements PriorityQueueI<Message> {
+	private qzip: QZip;
+	private readonly index: number;
+	public readonly target: string;
+	public source: string | undefined;
+
+	public constructor(qzip: QZip, index: number, target: string) {
+		this.qzip = qzip;
+		this.index = index;
+		this.target = target;
+	}
+
+	@qTrace(false)
+	public push(msg: Message, priority?: number) {
+		return this.qzip._push(this.index, msg, priority);
+	}
+
+	get length() {
+		return this.qzip.length;
 	}
 }
 
@@ -58,7 +91,7 @@ export class QZip {
 
 	/** Hash-map holding state of each *Message*. The *key* is Message.id, the value
 	 * is
-	 * 1. a table input_numer -> arrived,
+	 * 1. a table input_number -> arrived,
 	 * 2. the aggregated priority*/
 	private readonly msgJoinedState: {
 		[index: string]: {
@@ -74,6 +107,10 @@ export class QZip {
 		return this.inputs.length;
 	}
 
+	public get length() {
+		return Object.entries(this.msgJoinedState).length;
+	}
+
 	/**
 	 *
 	 * @param output A queue that the joined message leaves for.
@@ -85,16 +122,7 @@ export class QZip {
 		this.output = output;
 
 		this.inputs = Array.from(genEmpty(inputs)).map(
-			(_, k: number) =>
-				Object.create(null, {
-					push: {
-						value: (msg: Message, priority?: number) =>
-							this._push(k, msg, priority),
-						configurable: false,
-						writable: false,
-					},
-				}) as PriorityQueueI<Message>,
-			this
+			(_, k: number) => new FakeQueue(this, k, this.output.target)
 		);
 	}
 
@@ -109,7 +137,7 @@ export class QZip {
 	 * @param priority Priority the message came with
 	 * @private
 	 */
-	private _push(idxOfInput: number, msg: Message, priority?: number): void {
+	public _push(idxOfInput: number, msg: Message, priority?: number): void {
 		const state =
 			this.msgJoinedState[msg.id] ||
 			(this.msgJoinedState[msg.id] = {

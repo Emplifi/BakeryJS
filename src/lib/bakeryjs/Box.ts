@@ -10,9 +10,12 @@ import {
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 import {ServiceProvider} from './ServiceProvider';
+import {asyncTimer} from './stats';
 
-export const noopQueue = {
+export const noopQueue: PriorityQueueI<any> = {
 	push: (msg: any, priority?: number) => undefined,
+	length: 0,
+	target: '',
 };
 
 /**
@@ -285,6 +288,7 @@ abstract class Box implements BoxInterface {
 	 *
 	 * @publicapi
 	 */
+	@asyncTimer
 	public async process(value: Message): Promise<any> {
 		const isGenerator: boolean = this.meta.emits.length > 0;
 		const isAggregator: boolean = this.meta.aggregates;

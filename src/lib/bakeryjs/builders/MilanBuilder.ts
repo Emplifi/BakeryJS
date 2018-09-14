@@ -111,30 +111,34 @@ export class MilanBuilder implements FlowBuilderI {
 			componentFactory,
 			drain
 		);
-		return new MemoryPriorityQueue(async (task: Message): Promise<void> => {
-			const appliedFcns = serialFunctions.reduce(
-				(
-					previous: Promise<Message>,
-					serialCallback: ProcessingCallback
-				): Promise<Message> => {
-					// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
-					return previous.then(
-						async (msg: Message): Promise<Message> => {
-							await serialCallback(msg);
-							return msg;
+		return new MemoryPriorityQueue(
+			async (task: Message): Promise<void> => {
+				const appliedFcns = serialFunctions.reduce(
+					(
+						previous: Promise<Message>,
+						serialCallback: ProcessingCallback
+					): Promise<Message> => {
+						// TODO: (code later) prvni fce se vykona, dalsi fce nepreda spravne params
+						return previous.then(
+							async (msg: Message): Promise<Message> => {
+								await serialCallback(msg);
+								return msg;
+							}
+						);
+					},
+					Promise.resolve(task)
+				);
+
+				if (drain) {
+					appliedFcns.then(
+						(msg: Message): void => {
+							drain.push(msg);
 						}
 					);
-				},
-				Promise.resolve(task)
-			);
-
-			if (drain) {
-				appliedFcns.then(
-					(msg: Message): void => {
-						drain.push(msg);
-					}
-				);
-			}
-		}, 10);
+				}
+			},
+			10,
+			'__root__'
+		);
 	}
 }

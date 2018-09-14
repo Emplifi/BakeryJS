@@ -5,7 +5,11 @@ import {Message} from '../Message';
 
 describe('Flow', () => {
 	it('enqueues job as a message', () => {
-		const queue = new MemoryPriorityQueue((task: Message) => undefined, 1);
+		const queue = new MemoryPriorityQueue(
+			(task: Message) => undefined,
+			1,
+			'__root__'
+		);
 		const spyOnPush = jest.spyOn(queue, 'push');
 
 		const flow = new Flow(queue);
