@@ -1,0 +1,1 @@
+Jaky bychom meli zvolit ukazkovy priklad.
