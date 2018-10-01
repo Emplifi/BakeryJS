@@ -1,11 +1,10 @@
 module.exports = {
+	preset: 'ts-jest',
 	roots: ['<rootDir>/tests', '<rootDir>/src'],
 	testEnvironment: 'node',
 	collectCoverageFrom: ['src/**/*.{js,ts}'],
 	coverageReporters: ['html', 'text'],
-	testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.(tsx?|js)?$',
-	transform: {
-		'^.+\\.tsx?$': 'ts-jest',
+	moduleNameMapper: {
+		'^bakeryjs': '<rootDir>/src',
 	},
-	moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 };
