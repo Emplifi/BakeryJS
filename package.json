@@ -42,6 +42,6 @@
 		"build": "tsc --pretty",
 		"test": "jest",
 		"lint": "eslint --ext .ts,.js src/ tests/",
-		"doc": "typedoc --out ./Doc/ --target ES6 src/"
+		"doc": "typedoc --out ./docs/ --target ES6 src/"
 	}
 }
