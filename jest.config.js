@@ -3,7 +3,7 @@ module.exports = {
 	roots: ['<rootDir>/tests', '<rootDir>/src'],
 	testEnvironment: 'node',
 	collectCoverageFrom: ['src/**/*.{js,ts}'],
-	coverageReporters: ['html', 'text'],
+	coverageReporters: ['text'],
 	moduleNameMapper: {
 		'^bakeryjs': '<rootDir>/src',
 	},

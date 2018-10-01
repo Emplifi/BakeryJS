@@ -2,6 +2,7 @@
 build/
 .env
 docs/
+junit.xml
 
 ### Node ###
 # Logs

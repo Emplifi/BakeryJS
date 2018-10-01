@@ -24,8 +24,11 @@ lint+test:
     - install
   script:
     - npm run lint
-    - npm run test -- --coverage --color
+    - npm run test -- --color --coverage --reporters=default --reporters=jest-junit
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      junit: junit.xml
 
 pages:
   stage: deploy
