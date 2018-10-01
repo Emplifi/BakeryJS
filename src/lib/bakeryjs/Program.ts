@@ -126,12 +126,18 @@ export class Program {
 			console.log('getting flow from catalog');
 			return this.catalog
 				.getFlow(flowDesc.flow, drain)
-				.then((f) => this.runFlow(f));
+				.then((f) => this.runFlow(f))
+				.catch((error) => {
+					this.serviceProvider.get('logger').error(error);
+				});
 		} else if (hasProcess(flowDesc)) {
 			console.log('building flow from SchemaObject');
 			return this.catalog
 				.buildFlow(flowDesc, drain)
-				.then((f) => this.runFlow(f));
+				.then((f) => this.runFlow(f))
+				.catch((error) => {
+					this.serviceProvider.get('logger').error(error);
+				});
 		} else {
 			throw new TypeError(
 				`Unrecognized flow description. ${JSON.stringify(flowDesc)}`
