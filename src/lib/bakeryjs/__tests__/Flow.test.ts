@@ -1,7 +1,7 @@
-import {Flow} from '../../../src/lib/bakeryjs/Flow';
-import {Job} from '../../../src/lib/bakeryjs/Job';
-import {MemoryPriorityQueue} from '../../../src/lib/bakeryjs/queue/MemoryPriorityQueue';
-import {Message} from '../../../src/lib/bakeryjs/Message';
+import {Flow} from '../Flow';
+import {Job} from '../Job';
+import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
+import {Message} from '../Message';
 
 describe('Flow', () => {
 	it('enqueues job as a message', () => {

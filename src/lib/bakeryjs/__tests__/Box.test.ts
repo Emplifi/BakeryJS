@@ -1,14 +1,8 @@
-import {boxFactory, BoxFactorySignature} from '../../../src/lib/bakeryjs/Box';
-import {
-	DataMessage,
-	Message,
-	MessageData,
-	SentinelMessage,
-} from '../../../src/lib/bakeryjs/Message';
-import {BoxMeta} from './BoxI';
-import {PriorityQueueI} from './queue/PriorityQueueI';
-import {BoxInterface} from '../../../src/lib/bakeryjs/BoxI';
-import {ServiceProvider} from '../../../src/lib/bakeryjs/ServiceProvider';
+import {boxFactory, BoxFactorySignature} from '../Box';
+import {DataMessage, Message, MessageData, SentinelMessage} from '../Message';
+import {BoxMeta, BoxInterface} from '../BoxI';
+import {PriorityQueueI} from '../queue/PriorityQueueI';
+import {ServiceProvider} from '../ServiceProvider';
 
 describe('Box', () => {
 	describe('Mapper', () => {

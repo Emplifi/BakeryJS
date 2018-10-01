@@ -1,4 +1,4 @@
-import {DataMessage} from '../../../src/lib/bakeryjs/Message';
+import {DataMessage} from '../Message';
 
 describe('Message', () => {
 	const inputTestData = [

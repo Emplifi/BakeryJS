@@ -1,10 +1,7 @@
-import {PriorityQueueI} from '../../../../../src/lib/bakeryjs/queue/PriorityQueueI';
-import {
-	QZip,
-	tee,
-} from '../../../../../src/lib/bakeryjs/builders/DAGBuilder/joinedQueue';
+import {PriorityQueueI} from '../../../queue/PriorityQueueI';
+import {QZip, tee} from '../joinedQueue';
 import {AssertionError} from 'assert';
-import {DataMessage, Message} from '../../../../../src/lib/bakeryjs/Message';
+import {DataMessage, Message} from '../../../Message';
 
 describe('tee', () => {
 	function getQueueMock(): PriorityQueueI<any> {
