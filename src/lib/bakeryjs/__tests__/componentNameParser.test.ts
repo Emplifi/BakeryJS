@@ -1,4 +1,4 @@
-import {parseComponentName} from '../../../src/lib/bakeryjs/componentNameParser';
+import {parseComponentName} from '../componentNameParser';
 
 type PathTestDefinition = {
 	path: string;

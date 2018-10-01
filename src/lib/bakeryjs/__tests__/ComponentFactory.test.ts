@@ -1,9 +1,7 @@
-import {ServiceProvider} from '../../../src/lib/bakeryjs/ServiceProvider';
-import {
-	ComponentFactory,
-	MultiComponentFactory,
-} from '../../../src/lib/bakeryjs/ComponentFactory';
+import {ServiceProvider} from '../ServiceProvider';
+import {ComponentFactory, MultiComponentFactory} from '../ComponentFactory';
 import VError = require('verror');
+import {resolve} from 'path';
 
 const serviceProvider = new ServiceProvider({
 	logger: {
@@ -11,22 +9,20 @@ const serviceProvider = new ServiceProvider({
 	},
 });
 
+const componentsDir = resolve(__dirname, '..', '..', '..', 'components') + '/';
+const testDataDir =
+	resolve(__dirname, '..', '..', '..', '..', 'test-data') + '/';
+
 describe('Component Factory', () => {
 	it('create builtin box', async () => {
-		const factory = new ComponentFactory(
-			`${__dirname}/../../../src/components/`,
-			serviceProvider
-		);
+		const factory = new ComponentFactory(componentsDir, serviceProvider);
 
 		const tickBox = await factory.create('tick');
 		expect(tickBox).not.toBe(undefined);
 	});
 
 	it('create nonexistent box throws', () => {
-		const factory = new ComponentFactory(
-			`${__dirname}/../../../src/components/`,
-			serviceProvider
-		);
+		const factory = new ComponentFactory(componentsDir, serviceProvider);
 
 		factory.create('fick').catch((reason) => {
 			expect.assertions(2);
@@ -39,16 +35,10 @@ describe('Component Factory', () => {
 		it('create a builtin box', async () => {
 			const multiFactory = new MultiComponentFactory();
 			multiFactory.push(
-				new ComponentFactory(
-					`${__dirname}/../../../src/components/`,
-					serviceProvider
-				)
+				new ComponentFactory(componentsDir, serviceProvider)
 			);
 			multiFactory.push(
-				new ComponentFactory(
-					`${__dirname}/../../../test-data/`,
-					serviceProvider
-				)
+				new ComponentFactory(testDataDir, serviceProvider)
 			);
 
 			const tickBox = await multiFactory.create('tick');
@@ -58,16 +48,10 @@ describe('Component Factory', () => {
 		it('create a user-defined', async () => {
 			const multiFactory = new MultiComponentFactory();
 			multiFactory.push(
-				new ComponentFactory(
-					`${__dirname}/../../../src/components/`,
-					serviceProvider
-				)
+				new ComponentFactory(componentsDir, serviceProvider)
 			);
 			multiFactory.push(
-				new ComponentFactory(
-					`${__dirname}/../../../test-data/`,
-					serviceProvider
-				)
+				new ComponentFactory(testDataDir, serviceProvider)
 			);
 
 			const tickBox = await multiFactory.create('helloworld');
@@ -76,7 +60,7 @@ describe('Component Factory', () => {
 
 		it('create nonexistent box throws', () => {
 			const factory = new ComponentFactory(
-				`${__dirname}/../../../src/components/`,
+				componentsDir,
 				serviceProvider
 			);
 
