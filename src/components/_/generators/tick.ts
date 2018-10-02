@@ -13,7 +13,7 @@ const Tick: BoxFactorySignature = boxFactory(
 	function processValue(
 		serviceProvider: ServiceProvider,
 		value: MessageData,
-		emitCallback: (chunk: MessageData, priority?: number) => void
+		emitCallback: (chunk: MessageData[], priority?: number) => void
 	): Promise<any> {
 		let i = 0;
 		return new Promise(
@@ -24,7 +24,7 @@ const Tick: BoxFactorySignature = boxFactory(
 						resolve();
 					}
 					i += 1;
-					emitCallback({raw: i}, 1);
+					emitCallback([{raw: i}], 1);
 				}, 1000);
 			}
 		);

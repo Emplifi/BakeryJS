@@ -14,14 +14,24 @@ type UserConfiguration = {
 	componentPaths?: string[];
 };
 
-type DrainCallback = (msg: MessageData) => void;
+type DrainCallback = (msgs: MessageData[]) => void;
 function createDrainPush(
 	drainCallback: DrainCallback
 ): PriorityQueueI<Message> {
 	return {
-		push(msg: Message, priority?: number) {
-			if (isData(msg)) {
-				drainCallback((msg as DataMessage).export());
+		push(msg: Message | Message[], priority?: number) {
+			let msgs: Message[];
+			if (msg instanceof Array) {
+				msgs = msg;
+			} else {
+				msgs = [msg];
+			}
+
+			const toDrain = msgs
+				.filter((msg) => isData(msg))
+				.map((msg) => (msg as DataMessage).export());
+			if (toDrain.length > 0) {
+				drainCallback(toDrain);
 			}
 		},
 		length: 0,

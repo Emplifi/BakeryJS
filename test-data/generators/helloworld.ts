@@ -7,10 +7,15 @@ module.exports = boxFactory(
 	{
 		provides: ['msg'],
 		requires: [],
-		emits: [],
+		emits: ['msg'],
 		aggregates: false,
 	},
-	function(serviceProvider: ServiceProvider, value: MessageData) {
-		return {msg: 'Hello World!'};
+	async function(
+		serviceProvider: ServiceProvider,
+		value: MessageData,
+		emit: (chunk: MessageData[], priority?: number) => void
+	) {
+		emit([{msg: 'Hello World!'}]);
+		return;
 	}
 );

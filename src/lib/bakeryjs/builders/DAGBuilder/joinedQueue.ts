@@ -43,12 +43,6 @@ export class Tee<T> implements PriorityQueueI<T> {
 	}
 }
 
-function* genEmpty(size: number): IterableIterator<undefined> {
-	for (let k = 0; k < size; k++) {
-		yield undefined;
-	}
-}
-
 class FakeQueue implements PriorityQueueI<Message> {
 	private qzip: QZip;
 	private readonly index: number;
@@ -62,8 +56,12 @@ class FakeQueue implements PriorityQueueI<Message> {
 	}
 
 	@qTrace(false)
-	public push(msg: Message, priority?: number) {
-		return this.qzip._push(this.index, msg, priority);
+	public push(msgs: Message | Message[], priority?: number) {
+		if (msgs instanceof Array) {
+			msgs.forEach((msg) => this.qzip._push(this.index, msg, priority));
+		} else {
+			return this.qzip._push(this.index, msgs, priority);
+		}
 	}
 
 	get length() {
@@ -95,7 +93,7 @@ export class QZip {
 	 * 2. the aggregated priority*/
 	private readonly msgJoinedState: {
 		[index: string]: {
-			flags: Array<true | undefined>;
+			flags: Array<boolean>;
 			priority: number | undefined;
 		};
 	};
@@ -121,9 +119,9 @@ export class QZip {
 		this.msgJoinedState = {};
 		this.output = output;
 
-		this.inputs = Array.from(genEmpty(inputs)).map(
-			(_, k: number) => new FakeQueue(this, k, this.output.target)
-		);
+		this.inputs = Array(inputs)
+			.fill(undefined, 0)
+			.map((_, k: number) => new FakeQueue(this, k, this.output.target));
 	}
 
 	/**
@@ -141,7 +139,7 @@ export class QZip {
 		const state =
 			this.msgJoinedState[msg.id] ||
 			(this.msgJoinedState[msg.id] = {
-				flags: Array.from(genEmpty(this.size)),
+				flags: Array(this.size).fill(false, 0),
 				priority: undefined,
 			});
 
@@ -152,7 +150,7 @@ export class QZip {
 				state.priority !== undefined ? state.priority : -Infinity
 			);
 		}
-		if (state.flags.every((val) => val === true)) {
+		if (state.flags.every((val) => val)) {
 			this.output.push(msg, state.priority);
 			delete this.msgJoinedState[msg.id];
 		}

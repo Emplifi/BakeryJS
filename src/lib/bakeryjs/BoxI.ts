@@ -20,5 +20,5 @@ export interface BoxInterface {
 	// cleaning actions, e.g. disconnecting the DBs, cleaning internal cache, etc.
 	readonly onClean: OnCleanCallback[];
 	// the processing function itself
-	process(value: Message): Promise<void>;
+	process(batch: Message[]): Promise<void>;
 }

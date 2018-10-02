@@ -28,19 +28,23 @@ function qTrace(statsd: boolean = false): MethodDecorator {
 		descriptor.value = function(...argsList: any[]) {
 			const src = (this as any).source;
 			const tgt = (this as any).target;
+			const batchSize: number =
+				Array.isArray(argsList[0]) ? argsList[0].length : 1;
 
 			if (src && tgt) {
 				eventEmitter.emit(
 					'sent',
 					Date.now(),
 					(this as any).source,
-					(this as any).target
+					(this as any).target,
+					batchSize
 				);
 			}
 
 			if (statsd) {
 				eventEmitter.emit('queue_in', {
 					boxName: (this as any).target,
+					batchSize: batchSize,
 				});
 			}
 			return originValue.apply(this as any, argsList);

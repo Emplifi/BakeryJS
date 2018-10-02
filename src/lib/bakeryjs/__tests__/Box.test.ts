@@ -45,10 +45,10 @@ describe('Box', () => {
 					const pushMock = setups.push;
 					const msg = new DataMessage({jobId: 'ttt', foo: 'hoo'});
 
-					await box.process(msg);
+					await box.process([msg]);
 					expect.assertions(3);
 					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(pushMock).toHaveBeenCalledWith(msg);
+					expect(pushMock).toHaveBeenCalledWith([msg]);
 					expect(
 						msg.getInput(['jobId', 'foo', 'bar', 'baz'])
 					).toEqual({
@@ -69,9 +69,9 @@ describe('Box', () => {
 						parMsg
 					);
 
-					await box.process(msg);
+					await box.process([msg]);
 					expect.assertions(4);
-					expect(pushMock).toHaveBeenCalledWith(msg);
+					expect(pushMock).toHaveBeenCalledWith([msg]);
 					expect(pushMock).toHaveBeenCalledTimes(1);
 					expect(msg.finished).toEqual(true);
 					expect(msg.data).toEqual(
@@ -95,7 +95,7 @@ describe('Box', () => {
 			async function processValue(
 				serviceProvider: ServiceProvider,
 				value: MessageData,
-				emit?: (val: MessageData, priority?: number) => void
+				emit?: (val: MessageData[], priority?: number) => void
 			): Promise<any> {
 				if (!emit) {
 					throw TypeError(
@@ -103,8 +103,8 @@ describe('Box', () => {
 					);
 				}
 				const foo = value['foo'];
-				emit({bar: `${foo}1`, baz: "this value won't make it."});
-				emit({bar: `${foo}2`, baz: "this value won't make it."});
+				emit([{bar: `${foo}1`, baz: "this value won't make it."}]);
+				emit([{bar: `${foo}2`, baz: "this value won't make it."}]);
 				return;
 			}
 		);
@@ -131,12 +131,12 @@ describe('Box', () => {
 					const pushMock = setups.push;
 					const msg = new DataMessage({jobId: 'ggg', foo: 'hoo'});
 
-					await box.process(msg);
+					await box.process([msg]);
 
 					expect.assertions(5);
 					expect(pushMock).toHaveBeenCalledTimes(3);
 					expect(
-						pushMock.mock.calls[0][0].getInput([
+						pushMock.mock.calls[0][0][0].getInput([
 							'foo',
 							'bar',
 							'baz',
@@ -147,7 +147,7 @@ describe('Box', () => {
 						baz: undefined,
 					});
 					expect(
-						pushMock.mock.calls[1][0].getInput([
+						pushMock.mock.calls[1][0][0].getInput([
 							'foo',
 							'bar',
 							'baz',
@@ -158,7 +158,7 @@ describe('Box', () => {
 						baz: undefined,
 					});
 					expect(pushMock.mock.calls[2][0].finished).toEqual(true);
-					expect(pushMock.mock.calls[2][0].data).toBe(undefined);
+					expect(pushMock.mock.calls[2][0].data).toEqual([undefined]);
 				}),
 
 			(setups: {box: BoxInterface; push: any}) =>
@@ -171,10 +171,10 @@ describe('Box', () => {
 					});
 					const msg = new SentinelMessage(5, parentMsg);
 
-					await box.process(msg);
+					await box.process([msg]);
 					expect.assertions(2);
 					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(pushMock).toHaveBeenCalledWith(msg);
+					expect(pushMock).toHaveBeenCalledWith([msg]);
 				}),
 		];
 

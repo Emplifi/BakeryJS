@@ -7,13 +7,15 @@ const program = new Program(
 		componentPaths: [`${__dirname}/../test-data/`],
 	}
 );
-program.on('sent', (timestamp, source, target) => {
-	console.log(`${new Date(timestamp)} Sent: ${source} --> ${target}`);
+program.on('sent', (timestamp, source, target, batchSize) => {
+	console.log(
+		`${new Date(timestamp)} Sent: ${source} --> ${target} (${batchSize})`
+	);
 });
 
 test('Store `Hello World!` with all default configuration', async () => {
 	const job = {
-		process: [['helloworld']],
+		process: [[{helloworld: [['print']]}]],
 	};
 
 	const transitions: any[] = [];
@@ -26,8 +28,8 @@ test('Store `Hello World!` with all default configuration', async () => {
 	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
 	// 2.  Have some awkward event "All queues are empty"?
 	await new Promise((resolve) => {
-		program.run(job, (msg: MessageData) => {
-			drain.push(msg);
+		program.run(job, (msgs: MessageData[]) => {
+			drain.push(...msgs);
 			resolve();
 		});
 	});
@@ -40,8 +42,8 @@ test('Store `Hello World!` with all default configuration', async () => {
 
 test('Store `Hello World! with dependencies` with all default configuration', async () => {
 	const transitions: any[] = [];
-	program.on('sent', (timestamp, src, tgt) =>
-		transitions.push({from: src, to: tgt})
+	program.on('sent', (timestamp, src, tgt, batchSize) =>
+		transitions.push({from: src, to: tgt, size: batchSize})
 	);
 
 	const job = {
@@ -53,8 +55,8 @@ test('Store `Hello World! with dependencies` with all default configuration', as
 	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
 	// 2.  Have some awkward event "All queues are empty/idle"?
 	await new Promise((resolve) => {
-		program.run(job, (msg: MessageData) => {
-			drain.push(msg);
+		program.run(job, (msgs: MessageData[]) => {
+			drain.push(...msgs);
 			resolve();
 		});
 	});
@@ -65,9 +67,29 @@ test('Store `Hello World! with dependencies` with all default configuration', as
 	expect(drain[0]).toHaveProperty('words', 3);
 	expect(drain[0]).toHaveProperty('punct', 3);
 
-	expect(transitions).toContainEqual({from: '_root_', to: 'helloworld'});
-	expect(transitions).toContainEqual({from: 'helloworld', to: 'punctcount'});
-	expect(transitions).toContainEqual({from: 'helloworld', to: 'wordcount'});
-	expect(transitions).toContainEqual({from: 'punctcount', to: 'checksum'});
-	expect(transitions).toContainEqual({from: 'wordcount', to: 'checksum'});
+	expect(transitions).toContainEqual({
+		from: '_root_',
+		to: 'helloworld',
+		size: 1,
+	});
+	expect(transitions).toContainEqual({
+		from: 'helloworld',
+		to: 'punctcount',
+		size: 1,
+	});
+	expect(transitions).toContainEqual({
+		from: 'helloworld',
+		to: 'wordcount',
+		size: 1,
+	});
+	expect(transitions).toContainEqual({
+		from: 'punctcount',
+		to: 'checksum',
+		size: 1,
+	});
+	expect(transitions).toContainEqual({
+		from: 'wordcount',
+		to: 'checksum',
+		size: 1,
+	});
 });

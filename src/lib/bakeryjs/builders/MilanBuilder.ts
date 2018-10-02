@@ -34,7 +34,7 @@ export class MilanBuilder implements FlowBuilderI {
 			name,
 			queue
 		);
-		return (msg: Message): Promise<void> => component.process(msg);
+		return (msg: Message): Promise<void> => component.process([msg]);
 	}
 
 	private async buildConcurrentFunctions(

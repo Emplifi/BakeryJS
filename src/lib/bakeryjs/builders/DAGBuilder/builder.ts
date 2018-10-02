@@ -181,7 +181,7 @@ export class DAGBuilder implements FlowBuilderI {
 				const joinedQ = new MemoryPriorityQueue(
 					async (msg: Message) => {
 						return await (boxMeta[boxName]
-							.instance as BoxInterface).process(msg);
+							.instance as BoxInterface).process([msg]);
 					},
 					1, //TODO: concurrency vzit z metadat boxu
 					boxName

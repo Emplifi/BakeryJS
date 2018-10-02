@@ -22,7 +22,7 @@ export class MemoryPriorityQueue<T extends Message>
 	}
 
 	@qTrace(true)
-	public push(message: T, priority = DEFAULT_PRIORITY): void {
+	public push(message: T | T[], priority = DEFAULT_PRIORITY): void {
 		this.queue.push(message, priority);
 	}
 

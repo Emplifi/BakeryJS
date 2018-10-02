@@ -13,7 +13,7 @@ const Print: BoxFactorySignature = boxFactory(
 	function processValue(
 		services: ServiceProvider,
 		input: MessageData,
-		neverEmit: (chunk: MessageData, priority?: number) => void
+		neverEmit: (chunk: MessageData[], priority?: number) => void
 	): MessageData {
 		services.get('logger').log({printBox: JSON.stringify(input)});
 		return {};
