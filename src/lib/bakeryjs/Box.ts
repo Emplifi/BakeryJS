@@ -1,4 +1,10 @@
-import {BoxInterface, BoxMeta, OnCleanCallback} from './BoxI';
+import {
+	BatchingBoxInterface,
+	BatchingBoxMeta,
+	BoxInterface,
+	BoxMeta,
+	OnCleanCallback,
+} from './BoxI';
 import {
 	DataMessage,
 	isData,
@@ -10,7 +16,7 @@ import {
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 import {ServiceProvider} from './ServiceProvider';
-import {asyncTimer} from './stats';
+import {AssertionError} from 'assert';
 
 export const noopQueue: PriorityQueueI<any> = {
 	push: (msg: any, priority?: number) => undefined,
@@ -80,6 +86,11 @@ export type BoxFactorySignature = new (
 	serviceProvider: ServiceProvider,
 	q?: PriorityQueueI<Message>
 ) => BoxInterface;
+
+export type BatchingBoxFactorySignature = new (
+	serviceProvider: ServiceProvider,
+	q?: PriorityQueueI<Message>
+) => BatchingBoxInterface;
 
 /**
  * # Box
@@ -224,17 +235,15 @@ abstract class Box implements BoxInterface {
 		);
 	}
 
-	private async processMapper(batch: DataMessage[]): Promise<any> {
+	private async processMapper(msg: DataMessage): Promise<any> {
 		try {
 			const result = await this.processValue(
-				batch.map((msg) => msg.getInput(this.meta.requires)),
+				msg.getInput(this.meta.requires),
 				(chunk: MessageData[], priority?: number) =>
 					this.neverEmitCallback()
 			);
-			result.forEach((msg: MessageData, index: number) =>
-				batch[index].setOutput(this.meta.provides, msg)
-			);
-			this.queue.push(batch);
+			msg.setOutput(this.meta.provides, result);
+			this.queue.push(msg);
 			return;
 		} catch (error) {
 			const wrap = new VError(
@@ -247,9 +256,7 @@ abstract class Box implements BoxInterface {
 							name: this.name,
 							meta: this.meta,
 						},
-						batch: batch.map((msg) =>
-							msg.getInput(this.meta.requires)
-						),
+						value: msg.getInput(this.meta.requires),
 					},
 				},
 				"The box '%s' in a %s mode encountered an exception.",
@@ -264,16 +271,16 @@ abstract class Box implements BoxInterface {
 	private async processGenerator(value: DataMessage): Promise<any> {
 		try {
 			const retValue: any = await this.processValue(
-				[value.getInput(this.meta.requires)],
-				(chunk: MessageData[], priority?: number) => {
-					const output = chunk.map((msg) => {
-						const parent: Message = value.create();
-						parent.setOutput(this.meta.provides, msg);
-						return parent;
-					});
-
-					this.queue.push(output, priority);
-				}
+				value.getInput(this.meta.requires),
+				(chunk: MessageData[], priority?: number) =>
+					this.queue.push(
+						chunk.map((msg) => {
+							const parent: Message = value.create();
+							parent.setOutput(this.meta.provides, msg);
+							return parent;
+						}),
+						priority
+					)
 			);
 
 			this.queue.push(new SentinelMessage(retValue, value));
@@ -295,6 +302,203 @@ abstract class Box implements BoxInterface {
 				"The box '%s' in a %s mode encountered an exception.",
 				this.name,
 				'generator'
+			);
+
+			throw wrap;
+		}
+	}
+
+	private async processAggregator(msg: Message): Promise<any> {
+		throw new VError(
+			{
+				name: 'NotImplementedError',
+				message: "Box '%s': Aggregator has not been implemented yet.",
+				info: {
+					name: this.name,
+					meta: this.meta,
+				},
+			},
+			this.name
+		);
+	}
+
+	/**
+	 *  The processing function -- dispatcher on metadata information
+	 *  invokes either `processAggregator` or `processMapper` or `processGenerator`
+	 *
+	 *  ## The operation
+	 *
+	 *  - the box is a *mapper*.  The batch is filtered and splitted into @SentinelMessage[]
+	 *     and @DataMessage[]. The sentinels are pushed into output queue directly,
+	 *     the DataMessage batch is passed into the mapper, the response
+	 *     is awaited and pushed into the output queue.
+	 *
+	 *  - the box is a *generator*.  The batch is filtered and splitted into @SentinelMessage[]
+	 *    and @DataMessage[].  The sentinels are pushed into output queue directly.
+	 *    The DataMessages are then *sequentially* passed into the generator.  The generator
+	 *    is awaited, so that the processing of the batch is sequential.
+	 *
+	 *  - the box is an *aggregator*. The whole batch is sent into the aggregator.
+	 *
+	 * @param batch A Message[] to act on
+	 * @returns Promise -- just an indication of finished processing
+	 *
+	 * @internalapi
+	 */
+	public async process(msg: Message): Promise<any> {
+		const isGenerator: boolean = this.meta.emits.length > 0;
+		const isAggregator: boolean = this.meta.aggregates;
+		const isMapper: boolean = !isAggregator && !isGenerator;
+
+		if (isAggregator) {
+			return await this.processAggregator(msg);
+		}
+
+		if (isSentinel(msg)) {
+			this.queue.push(msg);
+			return;
+		}
+
+		try {
+			if (isMapper) {
+				return await this.processMapper(msg as DataMessage);
+			} else if (isGenerator) {
+				await this.processGenerator(msg as DataMessage);
+				return true;
+			} else {
+				throw new AssertionError({
+					message:
+						'Box that is neither Mapper nor Generator nor Aggregator',
+				});
+			}
+		} catch (error) {
+			this.serviceProvider.get('logger').error(error);
+			// TODO: Stop processing (let it bubble up to the queue processor? And the queue then breaks the flow?)
+			// TODO: Send the batch into error-drain
+			return null;
+		}
+	}
+
+	/**
+	 * Type of the executing code of the Box's boilerplate.
+	 *
+	 * The routine that contains the business logic of the Box.  The capability of the function are stated
+	 * in the metadata, namely *provides*, *emits* and *aggregates*.
+	 *
+	 * ### The box does not *aggregate*
+	 * - When called with `value` only -> it serves as a mapper and *must* return (promise) of MessageData[],
+	 * - when called with both `value` and `emit` -> it serves as a generator and
+	 *   - each new message emits by calling `emit([data], priority?)`
+	 *   - when finished with generating, resolves the returned Promise.  The resolved value is thrown away
+	 *     the promise only marks the generation complete.
+	 *   - If an error occurres, reject the returned Promise with an Error instance
+	 *
+	 * ### The box *aggregates*
+	 * TODO: (idea1) how is the api for aggregation?
+	 *
+	 * @internalapi
+	 */
+	protected abstract processValue(
+		msg: MessageData,
+		emit: (batch: MessageData[], priority?: number) => void
+	): Promise<MessageData> | MessageData | Promise<any>;
+}
+
+abstract class BatchingBox implements BatchingBoxInterface {
+	public readonly name: string;
+	public readonly meta: BatchingBoxMeta;
+	public readonly onClean: OnCleanCallback[] = [];
+	private readonly queue: PriorityQueueI<Message>;
+	private readonly requireSet: Set<string>;
+	protected readonly serviceProvider: ServiceProvider;
+
+	/**
+	 * The Box is a basic unit of execution. It comprises of two levels:
+	 * 1. Receiving layer from the flow (the method `process`).  Decomposes the Message, invokes `processValue` and
+	 * reacts on its return.
+	 *
+	 * 2. Executing layer, meant to be overridden in subclasses.
+	 *
+	 * TODO: (idea2) The 1. layer should be moved into the flow executor.
+	 *
+	 * @param name
+	 *  name/identifier of the box
+	 * @param meta metadata of the Box.  Should be immutable.  One should be able to instantiate the Box without knowing \
+	 * them. The created instance should have the metadata set.
+	 * @param serviceProvider container of system & user defined services (logger, ...)
+	 *
+	 * @param queue - the output connection of the Box.  Everyone should push to that queue. Mapper, Generator, Aggregator.
+	 */
+	protected constructor(
+		name: string,
+		meta: BatchingBoxMeta,
+		serviceProvider: ServiceProvider,
+		queue?: PriorityQueueI<Message>
+	) {
+		this.name = name;
+		this.meta = meta;
+		this.serviceProvider = serviceProvider;
+		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
+		this.requireSet = new Set(this.meta.requires);
+	}
+
+	private async processMapper(batch: DataMessage[]): Promise<any> {
+		try {
+			const result = await this.processValue(
+				// Entering the user-defined code.  Let's handle a case when the box
+				// requests batching but the code treats the input as a single message.
+				new Proxy(
+					batch.map((msg) => msg.getInput(this.meta.requires)),
+					{
+						get: (target: MessageData[], prop: any, receiver) => {
+							if (
+								this.requireSet.has(prop) &&
+								!Number.isInteger(prop) &&
+								!Array.prototype[prop]
+							) {
+								throw new VError(
+									{
+										name: 'BatchError',
+										info: {
+											property: prop,
+										},
+									},
+									'Accessing property %s on the whole batch.  Probably the box requires batching but the executive code assumes single message.',
+									prop
+								);
+							} else {
+								return Reflect.get(target, prop, receiver);
+							}
+						},
+					}
+				)
+			);
+			this.queue.push(
+				result.map((msg: MessageData, index: number) => {
+					batch[index].setOutput(this.meta.provides, msg);
+					return batch[index];
+				})
+			);
+			return;
+		} catch (error) {
+			const wrap = new VError(
+				{
+					name: 'BoxInvocationException',
+					cause: error,
+					info: {
+						mode: 'mapper',
+						box: {
+							name: this.name,
+							meta: this.meta,
+						},
+						batch: batch.map((msg) =>
+							msg.getInput(this.meta.requires)
+						),
+					},
+				},
+				"The box '%s' in a %s mode encountered an exception.",
+				this.name,
+				'mapper'
 			);
 
 			throw wrap;
@@ -338,11 +542,9 @@ abstract class Box implements BoxInterface {
 	 *
 	 * @internalapi
 	 */
-	@asyncTimer
 	public async process(batch: Message[]): Promise<any> {
-		const isGenerator: boolean = this.meta.emits.length > 0;
 		const isAggregator: boolean = this.meta.aggregates;
-		const isMapper: boolean = !isAggregator && !isGenerator;
+		const isMapper: boolean = !isAggregator;
 
 		if (isAggregator) {
 			return await this.processAggregator(batch);
@@ -360,11 +562,11 @@ abstract class Box implements BoxInterface {
 			try {
 				if (isMapper) {
 					return await this.processMapper(data);
-				} else if (isGenerator) {
-					for (const dValue of data) {
-						await this.processGenerator(dValue);
-					}
-					return true;
+				} else {
+					throw new AssertionError({
+						message:
+							'BatchingBox that is neither aggregator nor mapper!',
+					});
 				}
 			} catch (error) {
 				this.serviceProvider.get('logger').error(error);
@@ -395,9 +597,76 @@ abstract class Box implements BoxInterface {
 	 * @internalapi
 	 */
 	protected abstract processValue(
-		msgBatch: MessageData[],
-		emit: (batch: MessageData[], priority?: number) => void
+		msgBatch: MessageData[]
 	): Promise<MessageData[]> | MessageData[] | Promise<any>;
+}
+
+/**
+ * A basic mean of creating your own boxes.
+ *
+ * Each box has to be in its own file, the filename being the box's identificator (name).
+ * The file is a JS (TS) module that `exports default` the return value of `boxFactory`.
+ *
+ * @param name String that would be used in error messages.  The box is identified by its *filename*.
+ * @param metadata Information about intended operation of the code. This is an information
+ *    the framework decides upon about the invocation of your box code.
+ * @param processValueDef The code of your box.
+ * @returns a box model.  It must be the *default export* of the module.
+ *
+ * @internalapi
+ */
+function boxSingleFactory(
+	name: string,
+	metadata: BoxMeta,
+	processValueDef: BoxExecutiveDefinition
+): BoxFactorySignature {
+	return class extends Box {
+		public constructor(
+			serviceProvider: ServiceProvider,
+			q?: PriorityQueueI<Message>
+		) {
+			super(name, metadata, serviceProvider, q);
+		}
+		protected processValue(
+			msg: MessageData,
+			emit: (msgs: MessageData[], priority?: number) => void
+		) {
+			return processValueDef(this.serviceProvider, msg, emit);
+		}
+	};
+}
+
+/**
+ * A basic mean of creating your own boxes.
+ *
+ * Each box has to be in its own file, the filename being the box's identificator (name).
+ * The file is a JS (TS) module that `exports default` the return value of `boxBatchingFactory`.
+ *
+ * @param name String that would be used in error messages.  The box is identified by its *filename*.
+ * @param metadata Information about intended operation of the code. This is an information
+ *    the framework decides upon about the invocation of your box code.  As the box should
+ *    operate in batching mode, don't forgett to specify *batch* data.
+ * @param processValueDef The code of your box.
+ * @returns a box model.  It must be the *default export* of the module.
+ *
+ * @internalapi
+ */
+function boxBatchingFactory(
+	name: string,
+	metadata: BatchingBoxMeta,
+	processValueDef: BoxExecutiveBatchDefinition
+): BatchingBoxFactorySignature {
+	return class extends BatchingBox {
+		public constructor(
+			serviceProvider: ServiceProvider,
+			q?: PriorityQueueI<Message>
+		) {
+			super(name, metadata, serviceProvider, q);
+		}
+		protected processValue(msgs: MessageData[]) {
+			return processValueDef(this.serviceProvider, msgs);
+		}
+	};
 }
 
 /**
@@ -416,69 +685,20 @@ abstract class Box implements BoxInterface {
  */
 export function boxFactory(
 	name: string,
-	metadata: BoxMeta,
-	processValueDef: BoxExecutiveDefinition
-): BoxFactorySignature {
-	return class extends Box {
-		public constructor(
-			serviceProvider: ServiceProvider,
-			q?: PriorityQueueI<Message>
-		) {
-			super(name, metadata, serviceProvider, q);
-		}
-		protected processValue(
-			msgs: MessageData[],
-			emit: (msg: MessageData[], priority?: number) => void
-		) {
-			const retValue: MessageData[] = msgs.reduce(
-				(previous: MessageData[], current: MessageData) => {
-					previous.push(
-						(previous.length
-							? previous[previous.length - 1]
-							: Promise.resolve()
-						).then(() =>
-							processValueDef(this.serviceProvider, current, emit)
-						)
-					);
-					return previous;
-				},
-				[] as MessageData[]
-			);
-
-			return Promise.all(retValue);
-		}
-	};
-}
-
-/**
- * A basic mean of creating your own boxes.
- *
- * Each box has to be in its own file, the filename being the box's identificator (name).
- * The file is a JS (TS) module that `exports default` the return value of `boxBatchingFactory`.
- *
- * @param name String that would be used in error messages.  The box is identified by its *filename*.
- * @param metadata Information about intended operation of the code. This is an information
- *    the framework decides upon about the invocation of your box code.  As the box should
- *    operate in batching mode, don't forgett to specify *batch* data.
- * @param processValueDef The code of your box.
- * @returns a box model.  It must be the *default export* of the module.
- *
- * @publicapi
- */
-export function boxBatchingFactory(
-	name: string,
-	metadata: BoxMeta,
-	processValueDef: BoxExecutiveBatchDefinition
-): BoxFactorySignature {
-	return class extends Box {
-		public constructor(
-			serviceProvider: ServiceProvider,
-			q?: PriorityQueueI<Message>
-		) {
-			super(name, metadata, serviceProvider, q);
-		}
-		protected processValue(msgs: MessageData[]) {
-			return processValueDef(this.serviceProvider, msgs);
-		}
-	};
+	metadata: BoxMeta | BatchingBoxMeta,
+	processValueDef: BoxExecutiveDefinition | BoxExecutiveBatchDefinition
+): BoxFactorySignature | BatchingBoxFactorySignature {
+	if ((metadata as BatchingBoxMeta).batch) {
+		return boxBatchingFactory(
+			name,
+			metadata as BatchingBoxMeta,
+			processValueDef as BoxExecutiveBatchDefinition
+		);
+	} else {
+		return boxSingleFactory(
+			name,
+			metadata as BoxMeta,
+			processValueDef as BoxExecutiveDefinition
+		);
+	}
 }

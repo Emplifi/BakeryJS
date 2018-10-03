@@ -98,7 +98,6 @@ describe('Message', () => {
 		it("Write into the message doesn't touch the parent", () => {
 			message.setOutput(['baz'], {baz: 'world!'});
 
-			expect.assertions(2);
 			expect(message.getInput(['baz'])).toEqual({baz: 'world!'});
 			expect(parentMessage.getInput(['baz'])).toEqual({baz: undefined});
 		});
@@ -109,7 +108,6 @@ describe('Message', () => {
 
 		it('Sentinel with undefined return value', () => {
 			const sentinel = parentMessage.createSentinel();
-			expect.assertions(2);
 
 			expect(sentinel.data).toEqual(undefined);
 			expect(sentinel.parent).toEqual(parentMessage);
@@ -126,7 +124,6 @@ describe('Message', () => {
 			const theError = new TypeError('Whoa!');
 			const sentinel = parentMessage.createSentinel(theError);
 
-			expect.assertions(2);
 			expect(sentinel.data).toEqual(theError);
 			expect(sentinel.parent).toEqual(parentMessage);
 		});

@@ -10,11 +10,16 @@ import {DiGraph, Edge} from 'jsnetworkx';
 import ComponentFactoryI from '../../ComponentFactoryI';
 import {PriorityQueueI} from '../../queue/PriorityQueueI';
 import {Message} from '../../Message';
-import {BoxInterface} from '../../BoxI';
+import {BatchingBoxInterface, BoxInterface} from '../../BoxI';
 import {QZip, Tee} from './joinedQueue';
-import {MemoryPriorityQueue} from '../../queue/MemoryPriorityQueue';
+import {
+	MemoryPriorityBatchQueue,
+	MemoryPrioritySingleQueue,
+} from '../../queue/MemoryPriorityQueue';
 import {noopQueue} from '../../Box';
+import {ok as assert} from 'assert';
 
+const DEFAULT_BATCH_TIMEOUT_SEC = 0.2;
 /**
  * Build recursively a directed graph from the SchemaObject.
  * TODO: (idea2) Analyze the graph in external logical program (SWI Prolog)
@@ -108,7 +113,7 @@ export class DAGBuilder implements FlowBuilderI {
 		// outputs: array of flow-outgoing queues from the box.
 		const boxMeta: {
 			[index: string]: {
-				instance: BoxInterface | undefined;
+				instance: BoxInterface | BatchingBoxInterface | undefined;
 				outputs: PriorityQueueI<Message>[];
 			};
 		} = {};
@@ -178,14 +183,33 @@ export class DAGBuilder implements FlowBuilderI {
 
 				// The box is instantiated, let's instantiate feeding queues
 				// notice that boxMeta[boxName].instance is populated in the if -- else above
-				const joinedQ = new MemoryPriorityQueue(
-					async (msg: Message) => {
-						return await (boxMeta[boxName]
-							.instance as BoxInterface).process([msg]);
-					},
-					1, //TODO: concurrency vzit z metadat boxu
-					boxName
-				);
+				assert(boxMeta[boxName].instance !== undefined);
+
+				const selfSingle: BoxInterface = boxMeta[boxName]
+					.instance as BoxInterface;
+				const selfBatch: BatchingBoxInterface = boxMeta[boxName]
+					.instance as BatchingBoxInterface;
+				const joinedQ = selfBatch.meta.batch
+					? new MemoryPriorityBatchQueue(
+							(msgs: Message[]) => selfBatch.process(msgs),
+							{
+								concurrency: selfBatch.meta.concurrency || 1,
+								batch: {
+									size: selfBatch.meta.batch.maxSize,
+									waitms:
+										(selfBatch.meta.batch.timeoutSeconds ||
+											DEFAULT_BATCH_TIMEOUT_SEC) * 1000,
+								},
+							},
+							boxName
+					  )
+					: new MemoryPrioritySingleQueue(
+							(msg: Message) => selfSingle.process(msg),
+							{
+								concurrency: selfSingle.meta.concurrency || 1,
+							},
+							boxName
+					  );
 
 				// Select the edges (queues) from the graph
 				// and prepare the same number of of queues joining into `joinedQ`

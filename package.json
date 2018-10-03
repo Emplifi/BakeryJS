@@ -19,12 +19,14 @@
 	"dependencies": {
 		"ajv": "^6.5.4",
 		"async": "^2.6.1",
+		"better-queue": "^3.8.10",
 		"debug": "^4.0.1",
 		"jsnetworkx": "^0.3.4",
 		"verror": "^1.10.0"
 	},
 	"devDependencies": {
 		"@types/async": "^2.0.49",
+		"@types/better-queue": "^3.8.0",
 		"@types/jest": "^23.3.2",
 		"@types/node": "^10.11.3",
 		"@types/verror": "^1.10.3",

@@ -1,12 +1,12 @@
-import {boxFactory, BoxFactorySignature} from '../Box';
+import {boxFactory} from '../Box';
 import {DataMessage, Message, MessageData, SentinelMessage} from '../Message';
-import {BoxMeta, BoxInterface} from '../BoxI';
+import {BoxMeta, BoxInterface, BatchingBoxInterface} from '../BoxI';
 import {PriorityQueueI} from '../queue/PriorityQueueI';
 import {ServiceProvider} from '../ServiceProvider';
 
 describe('Box', () => {
 	describe('Mapper', () => {
-		const MappingBox: BoxFactorySignature = boxFactory(
+		const MappingBox = boxFactory(
 			'MapperTest',
 			{
 				requires: ['foo'],
@@ -24,7 +24,7 @@ describe('Box', () => {
 		);
 
 		const setupFunction = (): {
-			box: BoxInterface;
+			box: BoxInterface | BatchingBoxInterface;
 			push: (arg: any) => void;
 		} => {
 			const outQ = {
@@ -39,16 +39,15 @@ describe('Box', () => {
 		};
 
 		const scenarios = [
-			(setups: {box: BoxInterface; push: any}) =>
+			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
 				it('Stores `provided` fields skips other.', async () => {
-					const box: BoxInterface = setups.box;
+					const box = setups.box as BoxInterface;
 					const pushMock = setups.push;
 					const msg = new DataMessage({jobId: 'ttt', foo: 'hoo'});
 
-					await box.process([msg]);
-					expect.assertions(3);
+					await box.process(msg);
 					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(pushMock).toHaveBeenCalledWith([msg]);
+					expect(pushMock).toHaveBeenCalledWith(msg);
 					expect(
 						msg.getInput(['jobId', 'foo', 'bar', 'baz'])
 					).toEqual({
@@ -59,9 +58,9 @@ describe('Box', () => {
 					});
 				}),
 
-			(setups: {box: BoxInterface; push: any}) =>
+			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
 				it('Sentinel value is passed.', async () => {
-					const box: BoxInterface = setups.box;
+					const box: BoxInterface = setups.box as BoxInterface;
 					const pushMock = setups.push;
 					const parMsg = new DataMessage({jobId: '111'});
 					const msg = new SentinelMessage(
@@ -69,9 +68,8 @@ describe('Box', () => {
 						parMsg
 					);
 
-					await box.process([msg]);
-					expect.assertions(4);
-					expect(pushMock).toHaveBeenCalledWith([msg]);
+					await box.process(msg);
+					expect(pushMock).toHaveBeenCalledWith(msg);
 					expect(pushMock).toHaveBeenCalledTimes(1);
 					expect(msg.finished).toEqual(true);
 					expect(msg.data).toEqual(
@@ -84,7 +82,7 @@ describe('Box', () => {
 	});
 
 	describe('Generator', () => {
-		const GeneratingBox: BoxFactorySignature = boxFactory(
+		const GeneratingBox = boxFactory(
 			'GeneratingTest',
 			{
 				requires: ['foo'],
@@ -103,14 +101,17 @@ describe('Box', () => {
 					);
 				}
 				const foo = value['foo'];
-				emit([{bar: `${foo}1`, baz: "this value won't make it."}]);
+				emit([
+					{bar: `${foo}1`, baz: "this value won't make it."},
+					{bar: `${foo}3`, baz: "this value won't make it."},
+				]);
 				emit([{bar: `${foo}2`, baz: "this value won't make it."}]);
 				return;
 			}
 		);
 
 		const setupFunction = (): {
-			box: BoxInterface;
+			box: BoxInterface | BatchingBoxInterface;
 			push: (arg: any) => void;
 		} => {
 			const outQ = {
@@ -125,15 +126,14 @@ describe('Box', () => {
 		};
 
 		const scenarios = [
-			(setups: {box: BoxInterface; push: any}) =>
+			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
 				it('Generates into queue', async () => {
-					const box = setups.box;
+					const box = setups.box as BoxInterface;
 					const pushMock = setups.push;
 					const msg = new DataMessage({jobId: 'ggg', foo: 'hoo'});
 
-					await box.process([msg]);
+					await box.process(msg);
 
-					expect.assertions(5);
 					expect(pushMock).toHaveBeenCalledTimes(3);
 					expect(
 						pushMock.mock.calls[0][0][0].getInput([
@@ -144,6 +144,17 @@ describe('Box', () => {
 					).toEqual({
 						foo: 'hoo',
 						bar: 'hoo1',
+						baz: undefined,
+					});
+					expect(
+						pushMock.mock.calls[0][0][1].getInput([
+							'foo',
+							'bar',
+							'baz',
+						])
+					).toEqual({
+						foo: 'hoo',
+						bar: 'hoo3',
 						baz: undefined,
 					});
 					expect(
@@ -158,12 +169,12 @@ describe('Box', () => {
 						baz: undefined,
 					});
 					expect(pushMock.mock.calls[2][0].finished).toEqual(true);
-					expect(pushMock.mock.calls[2][0].data).toEqual([undefined]);
+					expect(pushMock.mock.calls[2][0].data).toBeUndefined();
 				}),
 
-			(setups: {box: BoxInterface; push: any}) =>
+			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
 				it('passes sentinel Message', async () => {
-					const box = setups.box;
+					const box = setups.box as BoxInterface;
 					const pushMock = setups.push;
 					const parentMsg = new DataMessage({
 						jobId: 'ggg',
@@ -171,10 +182,9 @@ describe('Box', () => {
 					});
 					const msg = new SentinelMessage(5, parentMsg);
 
-					await box.process([msg]);
-					expect.assertions(2);
+					await box.process(msg);
 					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(pushMock).toHaveBeenCalledWith([msg]);
+					expect(pushMock).toHaveBeenCalledWith(msg);
 				}),
 		];
 

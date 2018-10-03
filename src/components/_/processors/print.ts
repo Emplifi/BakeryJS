@@ -1,8 +1,8 @@
 import {MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
-import {boxFactory, BoxFactorySignature} from '../../../lib/bakeryjs/Box';
+import {boxFactory} from '../../../lib/bakeryjs/Box';
 
-const Print: BoxFactorySignature = boxFactory(
+const Print = boxFactory(
 	'print',
 	{
 		requires: ['jobId', 'raw'],

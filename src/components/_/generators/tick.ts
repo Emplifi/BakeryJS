@@ -1,8 +1,8 @@
-import {boxFactory, BoxFactorySignature} from '../../../lib/bakeryjs/Box';
+import {boxFactory} from '../../../lib/bakeryjs/Box';
 import {MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
-const Tick: BoxFactorySignature = boxFactory(
+const Tick = boxFactory(
 	'tick',
 	{
 		requires: ['jobId'],

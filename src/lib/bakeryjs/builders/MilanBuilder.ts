@@ -3,11 +3,12 @@ import FlowBuilderI, {
 	SchemaObject,
 	SerialSchemaComponent,
 } from '../FlowBuilderI';
-import {BoxInterface} from '../BoxI';
+import {BatchingBoxInterface, BoxInterface} from '../BoxI';
 import ComponentFactoryI from '../ComponentFactoryI';
 import {PriorityQueueI} from '../queue/PriorityQueueI';
 import {Message} from '../Message';
-import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
+import {MemoryPrioritySingleQueue} from '../queue/MemoryPriorityQueue';
+import {AssertionError} from 'assert';
 
 type ProcessingCallback = (msg: Message) => Promise<void> | void;
 
@@ -30,11 +31,19 @@ export class MilanBuilder implements FlowBuilderI {
 		name: string,
 		queue?: PriorityQueueI<Message>
 	) {
-		const component: BoxInterface = await componentFactory.create(
-			name,
-			queue
-		);
-		return (msg: Message): Promise<void> => component.process([msg]);
+		const component:
+			| BoxInterface
+			| BatchingBoxInterface = await componentFactory.create(name, queue);
+		const selfSingle: BoxInterface = component as BoxInterface;
+		const selfBatch: BatchingBoxInterface = component as BatchingBoxInterface;
+
+		if (selfBatch.meta.batch) {
+			throw new AssertionError({
+				message: "MilanBuilder can't use BatchingBox!",
+			});
+		}
+
+		return (msg: Message) => selfSingle.process(msg);
 	}
 
 	private async buildConcurrentFunctions(
@@ -111,7 +120,7 @@ export class MilanBuilder implements FlowBuilderI {
 			componentFactory,
 			drain
 		);
-		return new MemoryPriorityQueue(
+		return new MemoryPrioritySingleQueue(
 			async (task: Message): Promise<void> => {
 				const appliedFcns = serialFunctions.reduce(
 					(
@@ -137,7 +146,9 @@ export class MilanBuilder implements FlowBuilderI {
 					);
 				}
 			},
-			10,
+			{
+				concurrency: 10,
+			},
 			'__root__'
 		);
 	}

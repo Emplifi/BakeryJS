@@ -1,44 +1,114 @@
-import {AsyncPriorityQueue, priorityQueue} from 'async';
 import {PriorityQueueI} from './PriorityQueueI';
 import {Message} from '../Message';
-import {qTrace, sampleLength} from '../stats';
+import {qTrace, sampleStats} from '../stats';
+import BetterQueue = require('better-queue');
 
 const DEFAULT_PRIORITY = 5;
 
-@sampleLength
-export class MemoryPriorityQueue<T extends Message>
-	implements PriorityQueueI<T> {
+type TaskWrap<T> = {
+	m: T;
+	p: number;
+};
+
+export interface QueueConfig {
+	concurrency?: number;
+}
+export interface BatchQueueConfig extends QueueConfig {
+	batch: {
+		size: number;
+		waitms: number;
+	};
+}
+
+type Worker<T> = (task: T) => Promise<void>;
+type BatchWorker<T> = (task: T[]) => Promise<void>;
+
+@sampleStats
+export class AQueue<T extends Message> implements PriorityQueueI<T> {
 	private src: string | undefined;
-	private readonly queue: AsyncPriorityQueue<T>;
+	protected readonly queue: BetterQueue<any, any>;
 	public readonly target: string;
 
 	public constructor(
-		worker: (task: T) => Promise<void> | void,
-		concurrency: number,
-		target: string
+		target: string,
+		worker: (j: any, cb: (e: any, v: any) => void) => void,
+		config: Partial<BetterQueue.QueueOptions<any, any>>
 	) {
-		this.queue = priorityQueue(worker, concurrency);
 		this.target = target;
+		this.queue = new BetterQueue(worker, config);
 	}
 
 	@qTrace(true)
 	public push(message: T | T[], priority = DEFAULT_PRIORITY): void {
-		this.queue.push(message, priority);
+		//TODO Fragile detection. What if T is subclass/instance of Array?
+		if (Array.isArray(message)) {
+			message.forEach((m) => this.queue.push({m: m, p: priority}));
+		} else {
+			this.queue.push({m: message, p: priority});
+		}
 	}
 
 	public get length(): number {
-		return this.queue.length();
+		const len: number = this.queue.getStats().peak;
+		this.queue.resetStats();
+		return len;
 	}
 
 	public set source(value: string | undefined) {
 		if (!this.src) {
 			this.src = value;
 		} else {
-			throw TypeError('The attribute source is already set!');
+			throw new TypeError('The attribute source is already set!');
 		}
 	}
 
 	public get source(): string | undefined {
 		return this.src;
+	}
+}
+
+export class MemoryPrioritySingleQueue<T extends Message> extends AQueue<T>
+	implements PriorityQueueI<T> {
+	public constructor(worker: Worker<T>, config: QueueConfig, target: string) {
+		super(
+			target,
+			(task: TaskWrap<T>, cb) =>
+				// TODO? The push to the other queue is part of the task itself
+				// Would it be much more legible, if the push would take part
+				// outside of the task (here)?
+				worker(task.m).finally(() => cb(undefined, undefined)),
+			{
+				concurrent: config.concurrency,
+				priority: (t, cb) => cb(undefined, t.p),
+			}
+		);
+	}
+}
+
+export class MemoryPriorityBatchQueue<T extends Message> extends AQueue<T>
+	implements PriorityQueueI<T> {
+	public constructor(
+		worker: BatchWorker<T>,
+		config: BatchQueueConfig,
+		target: string
+	) {
+		super(
+			target,
+			(tasks: TaskWrap<T>[], cb) =>
+				// TODO? The push to the other queue is part of the task itself
+				// Would it be much more legible, if the push would take part
+				// outside of the task (here)?
+				worker(tasks.map((t) => t.m)).finally(() =>
+					cb(undefined, undefined)
+				),
+			{
+				concurrent: config.concurrency,
+				batchSize: config.batch.size,
+				batchDelay: config.batch.waitms,
+				batchDelayTimeout: config.batch.waitms,
+				afterProcessDelay: config.batch.waitms,
+				priority: (t, cb) => cb(undefined, t.p),
+			}
+		);
 	}
 }

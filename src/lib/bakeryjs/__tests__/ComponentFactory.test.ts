@@ -18,7 +18,7 @@ describe('Component Factory', () => {
 		const factory = new ComponentFactory(componentsDir, serviceProvider);
 
 		const tickBox = await factory.create('tick');
-		expect(tickBox).not.toBe(undefined);
+		expect(tickBox).not.toBeUndefined();
 	});
 
 	it('create nonexistent box throws', () => {
@@ -42,7 +42,7 @@ describe('Component Factory', () => {
 			);
 
 			const tickBox = await multiFactory.create('tick');
-			expect(tickBox).not.toBe(undefined);
+			expect(tickBox).not.toBeUndefined();
 		});
 
 		it('create a user-defined', async () => {
@@ -55,7 +55,7 @@ describe('Component Factory', () => {
 			);
 
 			const tickBox = await multiFactory.create('helloworld');
-			expect(tickBox).not.toBe(undefined);
+			expect(tickBox).not.toBeUndefined();
 		});
 
 		it('create nonexistent box throws', () => {
@@ -65,7 +65,6 @@ describe('Component Factory', () => {
 			);
 
 			factory.create('fick').catch((reason) => {
-				expect.assertions(2);
 				expect(reason).toBeInstanceOf(VError);
 				expect(reason.name).toBe('BoxNotFound');
 			});

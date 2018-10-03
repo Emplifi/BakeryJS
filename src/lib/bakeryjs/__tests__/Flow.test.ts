@@ -1,13 +1,13 @@
 import {Flow} from '../Flow';
 import {Job} from '../Job';
-import {MemoryPriorityQueue} from '../queue/MemoryPriorityQueue';
+import {MemoryPrioritySingleQueue} from '../queue/MemoryPriorityQueue';
 import {Message} from '../Message';
 
 describe('Flow', () => {
 	it('enqueues job as a message', () => {
-		const queue = new MemoryPriorityQueue(
-			(task: Message) => undefined,
-			1,
+		const queue = new MemoryPrioritySingleQueue(
+			(task: Message) => Promise.resolve(),
+			{concurrency: 1},
 			'__root__'
 		);
 		const spyOnPush = jest.spyOn(queue, 'push');

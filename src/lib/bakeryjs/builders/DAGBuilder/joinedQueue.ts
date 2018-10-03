@@ -26,7 +26,7 @@ export class Tee<T> implements PriorityQueueI<T> {
 	}
 
 	@qTrace(false)
-	push(pld: T, priority?: number) {
+	public push(pld: T, priority?: number) {
 		try {
 			this.queues.forEach((q: PriorityQueueI<T>) =>
 				q.push(pld, priority)
@@ -58,13 +58,14 @@ class FakeQueue implements PriorityQueueI<Message> {
 	@qTrace(false)
 	public push(msgs: Message | Message[], priority?: number) {
 		if (msgs instanceof Array) {
+			//TODO: fragile detection. What if Message is instanceof Array?
 			msgs.forEach((msg) => this.qzip._push(this.index, msg, priority));
 		} else {
 			return this.qzip._push(this.index, msgs, priority);
 		}
 	}
 
-	get length() {
+	public get length() {
 		return this.qzip.length;
 	}
 }

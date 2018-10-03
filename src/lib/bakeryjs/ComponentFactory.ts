@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import {BoxInterface} from './BoxI';
+import {BatchingBoxInterface, BoxInterface} from './BoxI';
 import ComponentFactoryI from './ComponentFactoryI';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
@@ -44,14 +44,16 @@ export class ComponentFactory implements ComponentFactoryI {
 	public async create(
 		name: string,
 		queue?: PriorityQueueI<Message>
-	): Promise<BoxInterface> {
+	): Promise<BoxInterface | BatchingBoxInterface> {
 		if (!this.availableComponents[name]) {
 			return Promise.reject(boxNotFoundError(name, this.baseURI));
 		}
 		try {
 			// TODO: (code detail) Is it necessary to always import the file?
 			const box = await import(this.availableComponents[name]);
-			return new box.default(this.serviceProvider, queue) as BoxInterface;
+			return new box.default(this.serviceProvider, queue) as
+				| BoxInterface
+				| BatchingBoxInterface;
 		} catch (error) {
 			return Promise.reject(
 				new VError(
@@ -108,9 +110,12 @@ export class MultiComponentFactory implements ComponentFactoryI {
 	public async create(
 		name: string,
 		queue?: PriorityQueueI<Message>
-	): Promise<BoxInterface> {
+	): Promise<BoxInterface | BatchingBoxInterface> {
 		const futureBoxes = this.factories.map(async (f) => {
 			return await f.create(name, queue).catch((reason) => {
+				if (!(reason instanceof Error)) {
+					reason = new Error(reason);
+				}
 				if (VError.hasCauseWithName(reason, 'BoxNotFound')) {
 					return;
 				}
@@ -131,9 +136,7 @@ export class MultiComponentFactory implements ComponentFactoryI {
 		});
 
 		const resolvedBoxes = await Promise.all(futureBoxes);
-		const result = resolvedBoxes.find(
-			(resp: void | BoxInterface) => resp !== undefined
-		);
+		const result = resolvedBoxes.find((resp: any) => resp !== undefined);
 		if (result) {
 			return result;
 		}
