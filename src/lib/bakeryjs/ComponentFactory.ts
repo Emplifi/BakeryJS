@@ -48,9 +48,27 @@ export class ComponentFactory implements ComponentFactoryI {
 		if (!this.availableComponents[name]) {
 			return Promise.reject(boxNotFoundError(name, this.baseURI));
 		}
-		// TODO: (code detail) Is it necessary to always import the file?
-		const box = await import(this.availableComponents[name]);
-		return new box.default(this.serviceProvider, queue);
+		try {
+			// TODO: (code detail) Is it necessary to always import the file?
+			const box = await import(this.availableComponents[name]);
+			return new box.default(this.serviceProvider, queue) as
+				| BoxInterface
+				| BatchingBoxInterface;
+		} catch (error) {
+			return Promise.reject(
+				new VError(
+					{
+						name: 'ComponentLoadError',
+						cause: error,
+						info: {
+							componentName: name,
+						},
+					},
+					'Error loading component %s',
+					name
+				)
+			);
+		}
 	}
 
 	private findComponents(
