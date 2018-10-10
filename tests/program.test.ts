@@ -1,5 +1,6 @@
 import {Program} from '../src';
 import {MessageData} from '../src/lib/bakeryjs/Message';
+import {FlowDescription} from '../src/lib/bakeryjs/Flow';
 
 const program = new Program(
 	{},
@@ -147,4 +148,12 @@ test('Store batching `Hello World! with dependencies` with all default configura
 		to: 'checksum',
 		size: 3,
 	});
+});
+
+test('Validation error for invalid job', () => {
+	const job = {
+		process: 'bad value',
+	};
+
+	expect(() => program.run((job as any) as FlowDescription)).toThrowError();
 });

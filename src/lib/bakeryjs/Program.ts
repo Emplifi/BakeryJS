@@ -1,4 +1,10 @@
-import {Flow, FlowDescription, hasFlow, hasProcess} from './Flow';
+import {
+	Flow,
+	FlowDescription,
+	FlowIdDescValidation,
+	hasFlow,
+	hasProcess,
+} from './Flow';
 import {Job} from './Job';
 import {ServiceContainer, ServiceProvider} from './ServiceProvider';
 import {ComponentFactory, MultiComponentFactory} from './ComponentFactory';
@@ -9,6 +15,10 @@ import {DataMessage, isData, Message, MessageData} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {DAGBuilder} from './builders/DAGBuilder/builder';
 import {eventEmitter} from './stats';
+import ajv from 'ajv';
+import {SchemaObjectValidation} from './FlowBuilderI';
+import {MultiError} from 'verror';
+import VError = require('verror');
 
 type UserConfiguration = {
 	componentPaths?: string[];
@@ -64,6 +74,7 @@ export class Program {
 	private readonly serviceProvider: ServiceProvider;
 	private readonly multiComponentFactory: MultiComponentFactory;
 	private readonly catalog: FlowCatalog;
+	private readonly ajv: ajv.Ajv;
 
 	public constructor(
 		serviceContainer: ServiceContainer,
@@ -111,6 +122,10 @@ export class Program {
 			new DAGBuilder(),
 			new DefaultVisualBuilder()
 		);
+
+		this.ajv = new ajv({
+			schemas: [FlowIdDescValidation, SchemaObjectValidation],
+		});
 	}
 
 	public on(eventName: string, callback: (...args: any[]) => any): void {
@@ -129,6 +144,39 @@ export class Program {
 		flowDesc: FlowDescription,
 		drainCallback?: DrainCallback
 	): Promise<any> {
+		if (
+			!this.ajv.validate(
+				{
+					oneOf: [
+						{$ref: 'bakeryjs/flow'},
+						{$ref: 'bakeryjs/flowbuilder'},
+					],
+				},
+				flowDesc
+			)
+		) {
+			const errs = this.ajv.errors;
+			if (errs) {
+				throw new VError(
+					{
+						name: 'JobValidationError',
+						cause: new MultiError(
+							errs
+								.filter((e) => e.dataPath !== '')
+								.map((e) => new VError(e.message))
+						),
+						info: {
+							schema: [
+								this.ajv.getSchema('bakeryjs/flowbuilder'),
+								this.ajv.getSchema('bakeryjs/flow'),
+							],
+						},
+					},
+					'Job definition should match exactly one of the two schemes.',
+					true
+				);
+			}
+		}
 		const drain = drainCallback
 			? createDrainPush(drainCallback)
 			: undefined;

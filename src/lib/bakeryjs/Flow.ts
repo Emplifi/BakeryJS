@@ -66,6 +66,21 @@ type FlowIdDesc = {
 	flow: string;
 };
 
+// TODO: generate this from type FlowIdDesc
+export const FlowIdDescValidation = {
+	type: 'object',
+	$id: 'bakeryjs/flow',
+	title: 'Flow defined by its id',
+	required: ['flow'],
+	properties: {
+		flow: {
+			description: 'Identifier of the flow in the flow catalog.',
+			type: 'string',
+			minLength: 1,
+		},
+	},
+};
+
 export type FlowDescription = SchemaObject | FlowIdDesc;
 export function hasFlow(desc: FlowDescription): desc is FlowIdDesc {
 	return (desc as FlowIdDesc).flow !== undefined;
