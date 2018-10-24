@@ -16,6 +16,10 @@
 		"node": ">=8.11",
 		"npm": ">=5.6"
 	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Socialbakers/BakeryJS.git"
+	},
 	"dependencies": {
 		"ajv": "^6.5.4",
 		"async": "^2.6.1",
