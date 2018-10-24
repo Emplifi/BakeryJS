@@ -43,6 +43,6 @@ Anyone asked to stop unacceptable behavior is expected to comply immediately. If
 
 ## Thanks
 
-This code of conduct is based on the [@TwitterOSS Code of Conduct.](https://github.com/twitter/code-of-conduct/blob/master/code-of-conduct.md) from the [Twitter](http://twitter.com).
+This code of conduct is based on the [@TwitterOSS Code of Conduct](https://github.com/twitter/code-of-conduct/blob/master/code-of-conduct.md) from [Twitter](https://twitter.com).
 
 We are thankful for their work and all the communities who have paved the way with code of conducts.
