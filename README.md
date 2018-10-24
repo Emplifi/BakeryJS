@@ -1,5 +1,8 @@
 # ![BakeryJS](assets/logo.png)
 
+[![npm version](https://img.shields.io/npm/v/bakeryjs.svg?style=flat-square)](https://www.npmjs.com/package/bakeryjs)
+[![Travis build status](https://img.shields.io/travis/com/Socialbakers/BakeryJS.svg?style=flat-square)](https://travis-ci.com/Socialbakers/BakeryJS)
+
 BakeryJS is a Node.js framework for handling common data processing needs.
 
 Why would you need it? Think of how you process data with many small-scale data manipulations. The data is retrieved, shaped, extended, stored, and sent to UI. Imagine you divide complex data processing tasks into smaller reusable components or “Boxes” (Black box with your business logic). BakeryJS gives you straightforward options to connect these boxes into data flows to solve your tasks.
