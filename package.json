@@ -53,6 +53,7 @@
 		"start": "npm run build:live",
 		"build:live": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/index.ts all",
 		"build": "tsc --pretty",
+		"prepare": "npm run build",
 		"test": "jest",
 		"lint": "eslint --ext .ts,.js src/ tests/",
 		"doc": "typedoc --out ./docs/ --target ES6 src/"
