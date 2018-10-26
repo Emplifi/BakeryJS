@@ -237,3 +237,35 @@ test('Validation error for invalid job', () => {
 
 	expect(() => program.run((job as any) as FlowDescription)).toThrowError();
 });
+
+test('Store `Hello World!` with initial value', async () => {
+	const job = {
+		process: [['checksum']],
+	};
+
+	const transitions: any[] = [];
+	program.on('sent', (timestamp, src, tgt) =>
+		transitions.push({from: src, to: tgt})
+	);
+
+	const drain: MessageData[] = [];
+	// TODO: (idea1) How the hell are we going to notice that all is done?
+	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
+	// 2.  Have some awkward event "All queues are empty"?
+	await new Promise((resolve) => {
+		program.run(
+			job,
+			(msg: MessageData) => {
+				drain.push(msg);
+				resolve();
+			},
+			{words: 4, punct: 1}
+		);
+	});
+
+	expect(drain).toHaveLength(1);
+	expect(drain[0]).toHaveProperty('checksum', 1 + 4 * Math.sqrt(2));
+	expect(drain[0]).toHaveProperty('words', 4);
+	expect(drain[0]).toHaveProperty('punct', 1);
+	expect(transitions).toContainEqual({from: '_root_', to: 'checksum'});
+});

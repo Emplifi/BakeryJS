@@ -132,17 +132,30 @@ export class Program {
 		eventEmitter.on(eventName, callback);
 	}
 
-	public runFlow(flow: Flow): void {
+	public runFlow(flow: Flow, jobInitialValue?: MessageData): void {
 		console.log('Program run ----->');
 
-		flow.process(new Job());
+		flow.process(new Job(jobInitialValue));
 
 		// setTimeout(() => flow.process(new Job()),2000);
 	}
 
+	/**
+	 * Runs a flow and receive messages that leave the flow through drain.
+	 *
+	 * @param flowDesc Description of the flow.
+	 * @param drainCallback Drain.  Any box that is terminal in the flow (no other box consumes its output) outputs into
+	 *     drain. Single message can enter drain multiple times (from each leaf of the flow graph).
+	 * @param jobInitialValue Initial value (the very first message entering the flow).  Beware of conflicts with fields
+	 *     provided by boxes in the flow.  The behaviour in conflict between initial value and provided value is
+	 *     not defined.
+	 *
+	 * @publicapi
+	 */
 	public run(
 		flowDesc: FlowDescription,
-		drainCallback?: DrainCallback
+		drainCallback?: DrainCallback,
+		jobInitialValue?: MessageData
 	): Promise<any> {
 		if (
 			!this.ajv.validate(
@@ -185,7 +198,7 @@ export class Program {
 			console.log('getting flow from catalog');
 			return this.catalog
 				.getFlow(flowDesc.flow, drain)
-				.then((f) => this.runFlow(f))
+				.then((f) => this.runFlow(f, jobInitialValue))
 				.catch((error) => {
 					this.serviceProvider.get('logger').error(error);
 				});
@@ -193,7 +206,7 @@ export class Program {
 			console.log('building flow from SchemaObject');
 			return this.catalog
 				.buildFlow(flowDesc, drain)
-				.then((f) => this.runFlow(f))
+				.then((f) => this.runFlow(f, jobInitialValue))
 				.catch((error) => {
 					this.serviceProvider.get('logger').error(error);
 				});
