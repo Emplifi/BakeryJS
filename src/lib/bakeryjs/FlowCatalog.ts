@@ -2,7 +2,7 @@ import {Flow} from './Flow';
 import FlowSchemaReaderI from './FlowSchemaReaderI';
 import FlowFactory from './FlowFactory';
 import ComponentFactoryI from './ComponentFactoryI';
-import FlowBuilderI, {SchemaObject} from './FlowBuilderI';
+import FlowBuilderI, {FlowExplicitDescription} from './FlowBuilderI';
 import {VisualBuilder} from './builders/VisualBuilder';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
@@ -34,7 +34,7 @@ export class FlowCatalog {
 	}
 
 	public async buildFlow(
-		schema: SchemaObject,
+		schema: FlowExplicitDescription,
 		drain?: PriorityQueueI<Message>
 	): Promise<Flow> {
 		console.log(await this.visualBuilder.build(schema));

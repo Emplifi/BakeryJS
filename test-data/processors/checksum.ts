@@ -9,8 +9,17 @@ module.exports = boxFactory(
 		requires: ['words', 'punct'],
 		emits: [],
 		aggregates: false,
+		parameters: {
+			title: 'Parameter of the box -- positive number',
+			type: 'number',
+			minimum: 0,
+		},
 	},
 	function(serviceProvider: ServiceProvider, value: MessageData) {
-		return {checksum: Math.sqrt(2) * value.words + value.punct};
+		return {
+			checksum:
+				Math.sqrt(serviceProvider.parameters || 2) * value.words +
+				value.punct,
+		};
 	}
 );

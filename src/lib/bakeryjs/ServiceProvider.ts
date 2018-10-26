@@ -13,6 +13,7 @@ export type ServiceContainer = {
 export class ServiceProvider {
 	/** @internalapi */
 	private readonly services: ServiceContainer;
+	public readonly parameters: any;
 
 	/** @internalapi */
 	public constructor(services: ServiceContainer) {
@@ -31,5 +32,10 @@ export class ServiceProvider {
 	/** @internalapi */
 	public setAllIn(theContainer: ServiceContainer): void {
 		Object.assign(this.services, theContainer);
+	}
+
+	/** @internalapi */
+	public addParameters(params: any): ServiceProvider {
+		return Object.create(this, {parameters: {value: params}});
 	}
 }

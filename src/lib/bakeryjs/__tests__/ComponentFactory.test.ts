@@ -1,7 +1,7 @@
 import {ServiceProvider} from '../ServiceProvider';
 import {ComponentFactory, MultiComponentFactory} from '../ComponentFactory';
-import VError = require('verror');
 import {resolve} from 'path';
+import VError = require('verror');
 
 const serviceProvider = new ServiceProvider({
 	logger: {

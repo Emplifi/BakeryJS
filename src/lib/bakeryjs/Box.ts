@@ -17,6 +17,7 @@ import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 import {ServiceProvider} from './ServiceProvider';
 import {AssertionError} from 'assert';
+import ajv from 'ajv';
 
 export const noopQueue: PriorityQueueI<any> = {
 	push: (msg: any, priority?: number) => undefined,
@@ -39,14 +40,19 @@ export const noopQueue: PriorityQueueI<any> = {
  * ### The box *aggregates*
  * TODO: (idea1) how is the api for aggregation?
  *
- * @param serviceProvider A container holding built-in and used defined services (logger, statsd, ...)
- *    Your code can freely use the services, e.g. `serviceProvider.get('logger').log(...)`.
+ * @param serviceParamsProvider A container holding built-in and used defined services (logger, statsd, ...) and
+ *    run time parameters of the box.
+ *    Your code can freely use the services, e.g. `serviceParamsProvider.get('logger').log(...)` or parameters
+ *    `serviceParamsProvider.parameters`.
  * @param value The data input into your box.  The data object will have only those attributes that are
  *     explicitly required in the box metadata.  Your code can set any attributes to the message, but only those
  *     explicitly stated in the metadata will be confirmed.  The other will be discarded.
  * @param emit When your box is a generator, this is a means of outputting the particular data without
  *    leaving the box.  Just call `emit(<array of MessageData>, <priority>)`.  Only such attributes of the output
  *    messages are persisted, that are stated explicitly in the box's metadata.
+ * @param parameters The box can (but it does not have to) receive run-time parameters from the job.  The parameters
+ *     are passed if and only if the box has properly defined validation scheme in metadata.  If the passed parameters
+ *     don't match the flow won't build.
  * @publicapi
  */
 export type BoxExecutiveDefinition = (
@@ -69,26 +75,31 @@ export type BoxExecutiveDefinition = (
  * ### The box *aggregates*
  * TODO: (idea1) how is the api for aggregation?
  *
- ** @param serviceProvider A container holding built-in and used defined services (logger, statsd, ...)
- *    Your code can freely use the services, e.g. `serviceProvider.get('logger').log(...)`.
+ ** @param serviceParamsProvider A container holding built-in and used defined services (logger, statsd, ...) and
+ *    run time parameters of the box.
+ *    Your code can freely use the services, e.g. `serviceParamsProvider.get('logger').log(...)` or parameters
+ *    `serviceParamsProvider.parameters`.
  * @param batch The array of data input into your box.  The data objects will have only those attributes that are
  *     explicitly required in the box metadata.  Your code can set any attributes to any message, but only those
  *     explicitly stated in the metadata will be confirmed.  The other will be discarded.
+ * @param parameters The box can (but it does not have to) receive run-time parameters from the job.  The parameters
+ *     are passed if and only if the box has properly defined validation scheme in metadata.  If the passed parameters
+ *     don't match the flow won't build.
  *
  * @publicapi
  */
 export type BoxExecutiveBatchDefinition = (
-	serviceProvider: ServiceProvider,
+	serviceParamsProvider: ServiceProvider,
 	batch: MessageData[]
 ) => Promise<MessageData[]> | MessageData[];
 
 export type BoxFactorySignature = new (
-	serviceProvider: ServiceProvider,
+	serviceParamsProvider: ServiceProvider,
 	q?: PriorityQueueI<Message>
 ) => BoxInterface;
 
 export type BatchingBoxFactorySignature = new (
-	serviceProvider: ServiceProvider,
+	serviceParamsProvider: ServiceProvider,
 	q?: PriorityQueueI<Message>
 ) => BatchingBoxInterface;
 
@@ -190,7 +201,7 @@ abstract class Box implements BoxInterface {
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
 	private readonly queue: PriorityQueueI<Message>;
-	protected readonly serviceProvider: ServiceProvider;
+	protected readonly serviceParamsProvider: ServiceProvider;
 
 	/**
 	 * The Box is a basic unit of execution. It comprises of two levels:
@@ -208,17 +219,44 @@ abstract class Box implements BoxInterface {
 	 * @param serviceProvider container of system & user defined services (logger, ...)
 	 *
 	 * @param queue - the output connection of the Box.  Everyone should push to that queue. Mapper, Generator, Aggregator.
+	 * @param parameters - any run-time configuration passed from the Job
 	 */
 	protected constructor(
 		name: string,
 		meta: BoxMeta,
 		serviceProvider: ServiceProvider,
-		queue?: PriorityQueueI<Message>
+		queue?: PriorityQueueI<Message>,
+		parameters?: any
 	) {
 		this.name = name;
 		this.meta = meta;
-		this.serviceProvider = serviceProvider;
+		this.serviceParamsProvider = serviceProvider;
 		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
+		if (this.meta.parameters && parameters) {
+			const ajvValidator = new ajv();
+			if (ajvValidator.validate(this.meta.parameters, parameters)) {
+				this.serviceParamsProvider = serviceProvider.addParameters(
+					parameters
+				);
+			} else {
+				const errs = ajvValidator.errors;
+				throw new VError(
+					{
+						name: 'BoxParametersValidationError',
+						info: {
+							schema: this.meta.parameters,
+							parameters: parameters,
+							validationErrors: errs,
+						},
+					},
+					'Box parameters must conform to the schema defined in the box. Schema: %s, parameters: %s',
+					JSON.stringify(this.meta.parameters),
+					JSON.stringify(parameters)
+				);
+			}
+		} else {
+			this.serviceParamsProvider = serviceProvider;
+		}
 	}
 
 	protected neverEmitCallback(): void {
@@ -372,7 +410,7 @@ abstract class Box implements BoxInterface {
 				});
 			}
 		} catch (error) {
-			this.serviceProvider.get('logger').error(error);
+			this.serviceParamsProvider.get('logger').error(error);
 			// TODO: Stop processing (let it bubble up to the queue processor? And the queue then breaks the flow?)
 			// TODO: Send the batch into error-drain
 			return null;
@@ -410,7 +448,7 @@ abstract class BatchingBox implements BatchingBoxInterface {
 	public readonly onClean: OnCleanCallback[] = [];
 	private readonly queue: PriorityQueueI<Message>;
 	private readonly requireSet: Set<string>;
-	protected readonly serviceProvider: ServiceProvider;
+	protected readonly serviceParamsProvider: ServiceProvider;
 
 	/**
 	 * The Box is a basic unit of execution. It comprises of two levels:
@@ -433,13 +471,39 @@ abstract class BatchingBox implements BatchingBoxInterface {
 		name: string,
 		meta: BatchingBoxMeta,
 		serviceProvider: ServiceProvider,
-		queue?: PriorityQueueI<Message>
+		queue?: PriorityQueueI<Message>,
+		parameters?: any
 	) {
 		this.name = name;
 		this.meta = meta;
-		this.serviceProvider = serviceProvider;
+
 		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
 		this.requireSet = new Set(this.meta.requires);
+		if (this.meta.parameters && parameters) {
+			const ajvValidator = new ajv();
+			if (ajvValidator.validate(this.meta.parameters, parameters)) {
+				this.serviceParamsProvider = serviceProvider.addParameters(
+					parameters
+				);
+			} else {
+				const errs = ajvValidator.errors;
+				throw new VError(
+					{
+						name: 'BoxParametersValidationError',
+						info: {
+							schema: this.meta.parameters,
+							parameters: parameters,
+							validationErrors: errs,
+						},
+					},
+					'Box parameters must conform to the schema defined in the box. Schema: %s, parameters: %s',
+					JSON.stringify(this.meta.parameters),
+					JSON.stringify(parameters)
+				);
+			}
+		} else {
+			this.serviceParamsProvider = serviceProvider;
+		}
 	}
 
 	private async processMapper(batch: DataMessage[]): Promise<any> {
@@ -569,7 +633,7 @@ abstract class BatchingBox implements BatchingBoxInterface {
 					});
 				}
 			} catch (error) {
-				this.serviceProvider.get('logger').error(error);
+				this.serviceParamsProvider.get('logger').error(error);
 				// TODO: Stop processing (let it bubble up to the queue processor? And the queue then breaks the flow?)
 				// TODO: Send the batch into error-drain
 				return null;
@@ -623,15 +687,16 @@ function boxSingleFactory(
 	return class extends Box {
 		public constructor(
 			serviceProvider: ServiceProvider,
-			q?: PriorityQueueI<Message>
+			q?: PriorityQueueI<Message>,
+			parameters?: any
 		) {
-			super(name, metadata, serviceProvider, q);
+			super(name, metadata, serviceProvider, q, parameters);
 		}
 		protected processValue(
 			msg: MessageData,
 			emit: (msgs: MessageData[], priority?: number) => void
 		) {
-			return processValueDef(this.serviceProvider, msg, emit);
+			return processValueDef(this.serviceParamsProvider, msg, emit);
 		}
 	};
 }
@@ -659,12 +724,13 @@ function boxBatchingFactory(
 	return class extends BatchingBox {
 		public constructor(
 			serviceProvider: ServiceProvider,
-			q?: PriorityQueueI<Message>
+			q?: PriorityQueueI<Message>,
+			parameters?: any
 		) {
-			super(name, metadata, serviceProvider, q);
+			super(name, metadata, serviceProvider, q, parameters);
 		}
 		protected processValue(msgs: MessageData[]) {
-			return processValueDef(this.serviceProvider, msgs);
+			return processValueDef(this.serviceParamsProvider, msgs);
 		}
 	};
 }

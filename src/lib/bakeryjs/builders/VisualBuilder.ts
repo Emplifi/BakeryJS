@@ -1,5 +1,5 @@
-import {SchemaObject} from '../FlowBuilderI';
+import {FlowExplicitDescription} from '../FlowBuilderI';
 
 export interface VisualBuilder {
-	build(schema: SchemaObject): Promise<string> | string;
+	build(schema: FlowExplicitDescription): Promise<string> | string;
 }

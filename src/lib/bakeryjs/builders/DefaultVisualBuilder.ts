@@ -1,6 +1,7 @@
 import {VisualBuilder} from './VisualBuilder';
 import {
 	ConcurrentSchemaComponent,
+	FlowExplicitDescription,
 	SchemaObject,
 	SerialSchemaComponent,
 } from '../FlowBuilderI';
@@ -8,8 +9,8 @@ import {
 const TERMINAL_WIDTH = 80;
 
 export class DefaultVisualBuilder implements VisualBuilder {
-	public build(schema: SchemaObject): string {
-		return this.printSchema(schema);
+	public build(schema: FlowExplicitDescription): string {
+		return this.printSchema({process: schema.process});
 	}
 
 	private printSchema(schema: SchemaObject, indent: string = ''): string {

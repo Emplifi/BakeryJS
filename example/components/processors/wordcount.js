@@ -9,7 +9,7 @@ module.exports = boxFactory(
 		emits: [],
 		aggregates: false,
 	},
-	// serviceProvider may contain some shared modules, like logger
+	// serviceParamsProvider may contain some shared modules, like logger
 	// second parameter is an object with properties corresponding to 'requires'
 	function(serviceProvider, {msg}) {
 		return {words: msg.split(/\W+/).length};

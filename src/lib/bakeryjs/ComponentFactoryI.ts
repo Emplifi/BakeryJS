@@ -5,6 +5,7 @@ import {Message} from './Message';
 export default interface ComponentFactoryI {
 	create(
 		name: string,
-		queue?: PriorityQueueI<Message>
+		queue?: PriorityQueueI<Message>,
+		parameters?: any
 	): Promise<BoxInterface | BatchingBoxInterface>;
 }

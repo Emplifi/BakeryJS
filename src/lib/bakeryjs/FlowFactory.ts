@@ -1,5 +1,5 @@
 import ComponentFactoryI from './ComponentFactoryI';
-import FlowBuilderI, {SchemaObject} from './FlowBuilderI';
+import FlowBuilderI, {FlowExplicitDescription} from './FlowBuilderI';
 import {Flow} from './Flow';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
@@ -17,7 +17,7 @@ export default class FlowFactory {
 	}
 
 	public async create(
-		schema: SchemaObject,
+		schema: FlowExplicitDescription,
 		drain?: PriorityQueueI<Message>
 	): Promise<Flow> {
 		return new Flow(

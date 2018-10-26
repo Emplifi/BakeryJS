@@ -1,7 +1,7 @@
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Job} from './Job';
 import {DataMessage, Message} from './Message';
-import {SchemaObject} from './FlowBuilderI';
+import {FlowExplicitDescription} from './FlowBuilderI';
 
 /**
  * We have Boxes set up properly, now we have to interconnect them to the workflow.
@@ -81,10 +81,12 @@ export const FlowIdDescValidation = {
 	},
 };
 
-export type FlowDescription = SchemaObject | FlowIdDesc;
+export type FlowDescription = FlowExplicitDescription | FlowIdDesc;
 export function hasFlow(desc: FlowDescription): desc is FlowIdDesc {
 	return (desc as FlowIdDesc).flow !== undefined;
 }
-export function hasProcess(desc: FlowDescription): desc is SchemaObject {
-	return (desc as SchemaObject).process !== undefined;
+export function hasProcess(
+	desc: FlowDescription
+): desc is FlowExplicitDescription {
+	return (desc as FlowExplicitDescription).process !== undefined;
 }

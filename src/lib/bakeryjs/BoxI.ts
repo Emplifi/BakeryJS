@@ -6,6 +6,7 @@ export type BoxMeta = {
 	emits: string[];
 	aggregates: boolean;
 	concurrency?: number;
+	parameters?: object | string;
 };
 
 export type BatchingBoxMeta = {
@@ -17,6 +18,7 @@ export type BatchingBoxMeta = {
 		maxSize: number;
 		timeoutSeconds?: number;
 	};
+	parameters?: object | string;
 };
 
 export type OnCleanCallback = () => Promise<void> | void;

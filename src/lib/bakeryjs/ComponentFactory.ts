@@ -43,7 +43,8 @@ export class ComponentFactory implements ComponentFactoryI {
 
 	public async create(
 		name: string,
-		queue?: PriorityQueueI<Message>
+		queue?: PriorityQueueI<Message>,
+		parameters?: any
 	): Promise<BoxInterface | BatchingBoxInterface> {
 		if (!this.availableComponents[name]) {
 			return Promise.reject(boxNotFoundError(name, this.baseURI));
@@ -51,7 +52,7 @@ export class ComponentFactory implements ComponentFactoryI {
 		try {
 			// TODO: (code detail) Is it necessary to always import the file?
 			const box = await import(this.availableComponents[name]);
-			return new box.default(this.serviceProvider, queue) as
+			return new box.default(this.serviceProvider, queue, parameters) as
 				| BoxInterface
 				| BatchingBoxInterface;
 		} catch (error) {
@@ -59,7 +60,8 @@ export class ComponentFactory implements ComponentFactoryI {
 				new VError(
 					{
 						name: 'ComponentLoadError',
-						cause: error,
+						cause:
+							error instanceof Error ? error : new Error(error),
 						info: {
 							componentName: name,
 						},
@@ -109,10 +111,11 @@ export class MultiComponentFactory implements ComponentFactoryI {
 
 	public async create(
 		name: string,
-		queue?: PriorityQueueI<Message>
+		queue?: PriorityQueueI<Message>,
+		parameters?: any
 	): Promise<BoxInterface | BatchingBoxInterface> {
 		const futureBoxes = this.factories.map(async (f) => {
-			return await f.create(name, queue).catch((reason) => {
+			return await f.create(name, queue, parameters).catch((reason) => {
 				if (!(reason instanceof Error)) {
 					reason = new Error(reason);
 				}

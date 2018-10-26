@@ -1,6 +1,7 @@
 import {
 	ConcurrentSchemaComponent,
 	default as FlowBuilderI,
+	FlowExplicitDescription,
 	SchemaComponent,
 	SchemaObject,
 	SerialSchemaComponent,
@@ -99,7 +100,7 @@ function analyzeSchema(schema: SerialSchemaComponent): DiGraph {
  */
 export class DAGBuilder implements FlowBuilderI {
 	public async build(
-		schema: SchemaObject,
+		schema: FlowExplicitDescription,
 		componentFactory: ComponentFactoryI,
 		drain?: PriorityQueueI<Message>
 	): Promise<PriorityQueueI<Message>> {
@@ -158,11 +159,18 @@ export class DAGBuilder implements FlowBuilderI {
 					}
 				}
 
+				const myParams: any = schema.parameters
+					? ((schema.parameters as any)[boxName] as any)
+					: undefined;
 				if (depsQueues.length == 0) {
 					// no queues from me, no dependencies => I am a terminal box
 					// output goes into drain
 					boxMeta[boxName] = {
-						instance: await componentFactory.create(boxName, drain),
+						instance: await componentFactory.create(
+							boxName,
+							drain,
+							myParams
+						),
 						outputs: [],
 					};
 					returnValue = noopQueue;
@@ -170,14 +178,16 @@ export class DAGBuilder implements FlowBuilderI {
 					// I have a single dependency, so set it to be the output queue
 					boxMeta[boxName].instance = await componentFactory.create(
 						boxName,
-						(returnValue = depsQueues[0])
+						(returnValue = depsQueues[0]),
+						myParams
 					);
 				} else {
 					// I have more dependencies.  Create a Tee -- single queue that
 					// splits into more, and let the Tee be the output
 					boxMeta[boxName].instance = await componentFactory.create(
 						boxName,
-						(returnValue = new Tee(...depsQueues))
+						(returnValue = new Tee(...depsQueues)),
+						myParams
 					);
 				}
 

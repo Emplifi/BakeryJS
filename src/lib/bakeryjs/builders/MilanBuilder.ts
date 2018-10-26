@@ -1,5 +1,6 @@
 import FlowBuilderI, {
 	ConcurrentSchemaComponent,
+	FlowExplicitDescription,
 	SchemaObject,
 	SerialSchemaComponent,
 } from '../FlowBuilderI';
@@ -14,12 +15,12 @@ type ProcessingCallback = (msg: Message) => Promise<void> | void;
 
 export class MilanBuilder implements FlowBuilderI {
 	public async build(
-		schema: SchemaObject,
+		schema: FlowExplicitDescription,
 		componentFactory: ComponentFactoryI,
 		drain?: PriorityQueueI<Message>
 	): Promise<PriorityQueueI<Message>> {
 		return await this.buildPriorityQueue(
-			schema,
+			{process: schema.process},
 			'process',
 			componentFactory,
 			drain
