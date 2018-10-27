@@ -104,8 +104,6 @@ export class SentinelMessage extends CIdentifiable implements IdSentinel {
  *
  * - Message holds the computed information in fields.  The information in a field is *immutable* once written.
  * - As Message flows through Boxes, each Box adds one or more field with arbitrary information.
- * - The Box can't get access to other fields than it is *requiring*. (TODO: (code detail) throws TypeError?)
- * - The Box can set only fields that is *providing*. (TODO: (code detail) throws TypeError?)
  * - The trace of the Message passage is reported by the flow executor into an API passed into Program
  *
  * @internalapi

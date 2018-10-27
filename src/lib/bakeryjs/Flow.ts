@@ -8,7 +8,7 @@ import {FlowExplicitDescription} from './FlowBuilderI';
  * There will be probably more interpretations of the workflow network.  Currently,
  * we have these two in mind:
  *
- * 1. TODO: (idea1) (polish example) Parallel/Serial waterfall of commands, e.g.
+ * 1. Parallel/Serial waterfall of commands, e.g.
  *   a. Take a Job and push it into Box A.
  *   b. the messages from A push into boxes B and C -- each processes the Messagese independently on the other.
  *      The contributions of the both Boxes to single Message is merged again into the single respective Message.
@@ -41,13 +41,9 @@ import {FlowExplicitDescription} from './FlowBuilderI';
  *  set up in Programm (used by the flow executor) --- e.g. opentracing/opentracing-javascript
  *
  * - ToDo: (idea2) The Flow must handle unhandled exceptions of the Boxes. Each flow on its own,
- or some common layer/wrapper/applicator?
+ *   or some common layer/wrapper/applicator?
  * - ToDo: (idea2) The Flow may have a finalization stage, that returns some aggregated document/statistics + flags (all Boxes OK, Box A error for 5% Messages)  of all the output messages?
- *   Pro vystup do fronty/db/response/api krabicku.  Message ktera opousti krabicku a neni navazana na dalsi, *vstupuje do drainu*.
- *   Jak se to bude chovat, kdyz zustanou viset dve vetve s ruznou dimenzi?
- *
- * - Todo: (idea2) How the Flow realizes the input and the output? Queues? OK
- * - ToDo: (idea2) The Flow provides performance/monitoring metrics of the DAG edges? OK
+ * - ToDo: (idea2) The Flow provides performance/monitoring metrics of the DAG edges.
  */
 export class Flow {
 	private queue: PriorityQueueI<Message>;

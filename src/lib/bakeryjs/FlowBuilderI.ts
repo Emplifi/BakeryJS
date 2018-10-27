@@ -57,7 +57,7 @@ export const SchemaObjectValidation = {
 	},
 };
 
-// TODO: (code detail) Why I won't get Flow, if I run `build` of FlowBuilderI?
+// I am building Flow and receive the entry to it (the Queue)
 export default interface FlowBuilderI {
 	build(
 		schema: FlowExplicitDescription,

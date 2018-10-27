@@ -147,7 +147,7 @@ export type BatchingBoxFactorySignature = new (
  *  > Both can be modeled by a queue and generator responding/not responding to events "empty" and "full"
  *  >
  *
- *  > ### TODO: (idea2) generator adds new **dimension** of data, it should be in metadata.
+ *  > ### generator adds new **dimension** of data, it should be in metadata.
  *  >
  *  > In the beginning the job's data have 0 dimensions. It is only a "point" == a single job description info.
  *  > Further in the flow, a generator produces batches of FB posts, the job's data have single *dimension*
@@ -188,9 +188,6 @@ export type BatchingBoxFactorySignature = new (
  * >
  * > If Box reads from DB, who maintains connection? Box (and will dispose of it), or the BoxFactory
  * > (somewhere in catalog)?
- *
- *  TODO: (code detail) The Box should produce performance metrics about processing.  In order the Box developer not to care, should it
- *  be in the prototype or in a wrap?
  *
  * TODO: (code detail) the Box execution should be membraned (so that it can't alter the global entities)
  *
