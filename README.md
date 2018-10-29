@@ -62,6 +62,10 @@ BakeryJS was originally inspired by [Apache NiFi](https://nifi.apache.org/) and 
 -   [awesome-pipeline](https://github.com/pditommaso/awesome-pipeline)
 -   [awesome-frp-js](https://github.com/stoeffel/awesome-frp-js) for Functional Reactive Programming in JavaScript
 
+## Resources
+
+- Article [Bake Your Data With BakeryJS](https://medium.com/socialbakers-engineering/bake-your-data-with-bakeryjs-3a7636cfff82)
+
 ## License
 
 MIT
