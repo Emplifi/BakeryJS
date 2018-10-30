@@ -133,9 +133,11 @@ export class Program {
 	}
 
 	public runFlow(flow: Flow, jobInitialValue?: MessageData): void {
+		const job = new Job(jobInitialValue);
 		console.log('Program run ----->');
-
-		flow.process(new Job(jobInitialValue));
+		// TODO: separate this from stats EE -- it is shared accross various flows
+		eventEmitter.emit('run', flow, job);
+		flow.process(job);
 
 		// setTimeout(() => flow.process(new Job()),2000);
 	}
