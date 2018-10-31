@@ -14,8 +14,8 @@ declare module 'jsnetworkx' {
 		public addNode(n: string, attribs?: AttributeDict): void;
 		public addEdge(u: string, v: string, attribs?: AttributeDict): void;
 		public addEdgesFrom(ebunch: Edge[], attribs?: AttributeDict): void;
-		public outEdges(u: string, withData?: boolean): Edge[];
-		public inEdges(u: string, withData?: boolean): Edge[];
+		public outEdges(u?: string, withData?: boolean): Edge[];
+		public inEdges(u?: string, withData?: boolean): Edge[];
 	}
 
 	export function topologicalSort(g: DiGraph, optNBunch?: string[]): string[];

@@ -11,7 +11,12 @@ import {DiGraph, Edge} from 'jsnetworkx';
 import ComponentFactoryI from '../../ComponentFactoryI';
 import {PriorityQueueI} from '../../queue/PriorityQueueI';
 import {Message} from '../../Message';
-import {BatchingBoxInterface, BoxInterface} from '../../BoxI';
+import {
+	BatchingBoxInterface,
+	BoxInterface,
+	BatchingBoxMeta,
+	BoxMeta,
+} from '../../BoxI';
 import {QZip, Tee} from './joinedQueue';
 import {
 	MemoryPriorityBatchQueue,
@@ -19,6 +24,7 @@ import {
 } from '../../queue/MemoryPriorityQueue';
 import {noopQueue} from '../../Box';
 import {ok as assert} from 'assert';
+import {eventEmitter} from '../../stats';
 
 const DEFAULT_BATCH_TIMEOUT_SEC = 0.2;
 /**
@@ -92,6 +98,47 @@ function analyzeSchema(schema: SerialSchemaComponent): DiGraph {
 	graph.addNode('_root_');
 	return _analyzeRecursive(schema, ['_root_'], graph);
 }
+type BoxBuildMetadata = {
+	[index: string]: {
+		instance: BoxInterface | BatchingBoxInterface | undefined;
+		outputs: PriorityQueueI<Message>[];
+	};
+};
+
+type FlowBoxesMetadata = {
+	[index: string]: BoxMeta | BatchingBoxMeta;
+};
+
+/**
+ *
+ * @param boxNames names of the boxes in the flow
+ * @param boxBMeta building metainformation collected while building the DAG
+ * @param schema the definition of the schema, to identify "source" of the event
+ */
+//TODO: extract into EEmiter of the flow itself
+// when emitting from stats EE, we can't distinguish events of various flows
+function emitFlowSchema(
+	boxNames: Array<keyof BoxBuildMetadata>,
+	boxBMeta: BoxBuildMetadata,
+	graph: DiGraph,
+	schema: FlowExplicitDescription
+): void {
+	const edges = graph.inEdges();
+	const boxMetas: FlowBoxesMetadata = boxNames.reduce(
+		(metas, name) => {
+			if (boxBMeta[name].instance) {
+				const meta = (boxBMeta[name].instance as
+					| BoxInterface
+					| BatchingBoxInterface).meta;
+				metas[name] = meta;
+			}
+			return metas;
+		},
+		{} as FlowBoxesMetadata
+	);
+	eventEmitter.emit('flowSchema', schema, boxMetas, edges);
+	return;
+}
 
 /**
  * Builder that connects the boxes into directed acyclic graph based on their dependences.
@@ -112,12 +159,7 @@ export class DAGBuilder implements FlowBuilderI {
 		// storage of metadata to box.
 		// instance: box instance -- we need to reference it when instantiating flow-incoming queue into the box.
 		// outputs: array of flow-outgoing queues from the box.
-		const boxMeta: {
-			[index: string]: {
-				instance: BoxInterface | BatchingBoxInterface | undefined;
-				outputs: PriorityQueueI<Message>[];
-			};
-		} = {};
+		const boxMeta: BoxBuildMetadata = {};
 
 		// See https://en.wikipedia.org/wiki/Topological_sorting
 		//
@@ -152,6 +194,7 @@ export class DAGBuilder implements FlowBuilderI {
 
 				// we are at the root element.  This is the input into the graph.
 				if (boxName === '_root_') {
+					emitFlowSchema(boxBuildOrder, boxMeta, graph, schema);
 					if (depsQueues.length == 1) {
 						return depsQueues[0];
 					} else {
