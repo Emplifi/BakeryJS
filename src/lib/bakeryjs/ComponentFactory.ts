@@ -5,7 +5,7 @@ import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
 import {parseComponentName} from './componentNameParser';
 import {ServiceProvider} from './ServiceProvider';
-import VError = require('verror');
+import {VError} from 'verror';
 
 const debug = require('debug')('bakeryjs:componentProvider');
 
