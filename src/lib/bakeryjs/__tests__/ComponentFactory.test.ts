@@ -10,6 +10,7 @@ const serviceProvider = new ServiceProvider({
 });
 
 const componentsDir = resolve(__dirname, '..', '..', '..', 'components') + '/';
+const componentsDirWSlash = resolve(__dirname, '..', '..', '..', 'components');
 const testDataDir =
 	resolve(__dirname, '..', '..', '..', '..', 'test-data') + '/';
 
@@ -28,6 +29,31 @@ describe('Component Factory', () => {
 			expect.assertions(2);
 			expect(reason).toBeInstanceOf(VError);
 			expect(reason.name).toBe('BoxNotFound');
+		});
+	});
+
+	describe('Component Factory -- path without ending slash', () => {
+		it('create builtin box', async () => {
+			const factory = new ComponentFactory(
+				componentsDirWSlash,
+				serviceProvider
+			);
+
+			const tickBox = await factory.create('tick');
+			expect(tickBox).not.toBeUndefined();
+		});
+
+		it('create nonexistent box throws', () => {
+			const factory = new ComponentFactory(
+				componentsDirWSlash,
+				serviceProvider
+			);
+
+			factory.create('fick').catch((reason) => {
+				expect.assertions(2);
+				expect(reason).toBeInstanceOf(VError);
+				expect(reason.name).toBe('BoxNotFound');
+			});
 		});
 	});
 

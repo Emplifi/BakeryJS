@@ -77,13 +77,18 @@ export class ComponentFactory implements ComponentFactoryI {
 		componentsPath: string,
 		parentDir: string = ''
 	): void {
-		const files = fs.readdirSync(componentsPath);
+		const componentsPathSanit = componentsPath.endsWith('/')
+			? componentsPath
+			: `${componentsPath}/`;
+		const files = fs.readdirSync(componentsPathSanit);
 		files.forEach(
 			(file: string): void => {
-				if (fs.statSync(`${componentsPath}${file}`).isDirectory()) {
+				if (
+					fs.statSync(`${componentsPathSanit}${file}`).isDirectory()
+				) {
 					if (file !== '.' && file !== '..') {
 						this.findComponents(
-							`${componentsPath}${file}/`,
+							`${componentsPathSanit}${file}/`,
 							`${parentDir}${file}/`
 						);
 					}
@@ -92,7 +97,9 @@ export class ComponentFactory implements ComponentFactoryI {
 					if (name == null) {
 						return;
 					}
-					this.availableComponents[name] = `${componentsPath}${file}`;
+					this.availableComponents[
+						name
+					] = `${componentsPathSanit}${file}`;
 				}
 			}
 		);
