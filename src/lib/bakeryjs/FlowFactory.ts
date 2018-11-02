@@ -20,8 +20,6 @@ export default class FlowFactory {
 		schema: FlowExplicitDescription,
 		drain?: PriorityQueueI<Message>
 	): Promise<Flow> {
-		return new Flow(
-			await this.builder.build(schema, this.componentFactory, drain)
-		);
+		return this.builder.build(schema, this.componentFactory, drain);
 	}
 }

@@ -6,15 +6,20 @@ import {
 	SchemaObject,
 	SerialSchemaComponent,
 } from '../../FlowBuilderI';
-import * as jsnx from 'jsnetworkx';
-import {DiGraph, Edge} from 'jsnetworkx';
+import {
+	DiGraph,
+	Edge,
+	EdgeWithAttribs,
+	NodeWithAttribs,
+	topologicalSort,
+} from 'jsnetworkx';
 import ComponentFactoryI from '../../ComponentFactoryI';
 import {PriorityQueueI} from '../../queue/PriorityQueueI';
 import {Message} from '../../Message';
 import {
 	BatchingBoxInterface,
-	BoxInterface,
 	BatchingBoxMeta,
+	BoxInterface,
 	BoxMeta,
 } from '../../BoxI';
 import {QZip, Tee} from './joinedQueue';
@@ -25,8 +30,11 @@ import {
 import {noopQueue} from '../../Box';
 import {ok as assert} from 'assert';
 import {eventEmitter} from '../../stats';
+import {Flow} from '../../Flow';
 
 const DEFAULT_BATCH_TIMEOUT_SEC = 0.2;
+export const ROOT_NODE = '_root_';
+
 /**
  * Build recursively a directed graph from the SchemaObject.
  * TODO: (idea2) Analyze the graph in external logical program (SWI Prolog)
@@ -94,16 +102,10 @@ function _analyzeRecursive(
  * @private
  */
 function analyzeSchema(schema: SerialSchemaComponent): DiGraph {
-	const graph: DiGraph = new jsnx.DiGraph();
-	graph.addNode('_root_');
-	return _analyzeRecursive(schema, ['_root_'], graph);
+	const graph: DiGraph = new DiGraph();
+	graph.addNode(ROOT_NODE);
+	return _analyzeRecursive(schema, [ROOT_NODE], graph);
 }
-type BoxBuildMetadata = {
-	[index: string]: {
-		instance: BoxInterface | BatchingBoxInterface | undefined;
-		outputs: PriorityQueueI<Message>[];
-	};
-};
 
 type FlowBoxesMetadata = {
 	[index: string]: BoxMeta | BatchingBoxMeta;
@@ -118,24 +120,29 @@ type FlowBoxesMetadata = {
 //TODO: extract into EEmiter of the flow itself
 // when emitting from stats EE, we can't distinguish events of various flows
 function emitFlowSchema(
-	boxNames: Array<keyof BoxBuildMetadata>,
-	boxBMeta: BoxBuildMetadata,
+	boxNames: string[],
 	graph: DiGraph,
 	schema: FlowExplicitDescription
 ): void {
 	const edges = graph.inEdges();
-	const boxMetas: FlowBoxesMetadata = boxNames.reduce(
-		(metas, name) => {
-			if (boxBMeta[name].instance) {
-				const meta = (boxBMeta[name].instance as
-					| BoxInterface
-					| BatchingBoxInterface).meta;
-				metas[name] = meta;
-			}
-			return metas;
-		},
-		{} as FlowBoxesMetadata
-	);
+	const boxMetas: FlowBoxesMetadata = graph
+		.nodes(true)
+		.filter((n: NodeWithAttribs) => n[0] !== ROOT_NODE)
+		.map((n: NodeWithAttribs) => {
+			return {
+				name: n[0],
+				meta: (n[1].instance as BoxInterface | BatchingBoxInterface)
+					.meta,
+			};
+		})
+		.reduce(
+			(metas, item) => {
+				metas[item.name] = item.meta;
+				return metas;
+			},
+			{} as FlowBoxesMetadata
+		);
+
 	eventEmitter.emit('flowSchema', schema, boxMetas, edges);
 	return;
 }
@@ -150,7 +157,7 @@ export class DAGBuilder implements FlowBuilderI {
 		schema: FlowExplicitDescription,
 		componentFactory: ComponentFactoryI,
 		drain?: PriorityQueueI<Message>
-	): Promise<PriorityQueueI<Message>> {
+	): Promise<Flow> {
 		// Directed graph of connected boxes.  Notice, that we are going to build the boxes from the end, i.e.
 		// create the last box first, then a queue directing to it, then a box feeding the directing queue etc.
 		//
@@ -159,17 +166,16 @@ export class DAGBuilder implements FlowBuilderI {
 		// storage of metadata to box.
 		// instance: box instance -- we need to reference it when instantiating flow-incoming queue into the box.
 		// outputs: array of flow-outgoing queues from the box.
-		const boxMeta: BoxBuildMetadata = {};
 
 		// See https://en.wikipedia.org/wiki/Topological_sorting
 		//
 		// As we have the graph oriented conversely (see comments above), we get array of box names sorted in such a way
 		// that for a particular box `A` all the boxes requiring A are listed before the `A` itself.
-		const boxBuildOrder: string[] = jsnx.topologicalSort(graph);
+		const boxBuildOrder: string[] = topologicalSort(graph);
 		// Now, go through the boxes and
 		// 1. instantiate the box (as all its flow-dependents are already instantiated, inlcuding their queues, we have all the information)
 		// 2. instantiate all the flow-incoming queues (i.e. where the messages will come into this box)
-		return await boxBuildOrder.reduce(
+		const rootQ = await boxBuildOrder.reduce(
 			/**
 			 * @param prevBoxReady -- the outgoing queue of the last instantiated box
 			 * It has no sense until the last box is `_root_`.  Then it is a desired
@@ -186,15 +192,15 @@ export class DAGBuilder implements FlowBuilderI {
 				await prevBoxReady;
 				let returnValue: PriorityQueueI<Message>;
 
-				// All my depenencies are done, as well as the queues feeding them.
+				// All my dependencies are done, as well as the queues feeding them.
 				// Or I am a terminal box without dependencies
-				const depsQueues: PriorityQueueI<Message>[] = boxMeta[boxName]
-					? boxMeta[boxName].outputs
-					: [];
+				const depsQueues: PriorityQueueI<Message>[] = graph
+					.inEdges(boxName, true)
+					.map((edgeInfo: EdgeWithAttribs) => edgeInfo[2].queue);
 
 				// we are at the root element.  This is the input into the graph.
-				if (boxName === '_root_') {
-					emitFlowSchema(boxBuildOrder, boxMeta, graph, schema);
+				if (boxName === ROOT_NODE) {
+					emitFlowSchema(boxBuildOrder, graph, schema);
 					if (depsQueues.length == 1) {
 						return depsQueues[0];
 					} else {
@@ -208,40 +214,42 @@ export class DAGBuilder implements FlowBuilderI {
 				if (depsQueues.length == 0) {
 					// no queues from me, no dependencies => I am a terminal box
 					// output goes into drain
-					boxMeta[boxName] = {
+					graph.addNode(boxName, {
 						instance: await componentFactory.create(
 							boxName,
 							drain,
 							myParams
 						),
-						outputs: [],
-					};
+					});
 					returnValue = noopQueue;
 				} else if (depsQueues.length == 1) {
 					// I have a single dependency, so set it to be the output queue
-					boxMeta[boxName].instance = await componentFactory.create(
-						boxName,
-						(returnValue = depsQueues[0]),
-						myParams
-					);
+					graph.addNode(boxName, {
+						instance: await componentFactory.create(
+							boxName,
+							(returnValue = depsQueues[0]),
+							myParams
+						),
+					});
 				} else {
 					// I have more dependencies.  Create a Tee -- single queue that
 					// splits into more, and let the Tee be the output
-					boxMeta[boxName].instance = await componentFactory.create(
-						boxName,
-						(returnValue = new Tee(...depsQueues)),
-						myParams
-					);
+					graph.addNode(boxName, {
+						instance: await componentFactory.create(
+							boxName,
+							(returnValue = new Tee(...depsQueues)),
+							myParams
+						),
+					});
 				}
 
 				// The box is instantiated, let's instantiate feeding queues
 				// notice that boxMeta[boxName].instance is populated in the if -- else above
-				assert(boxMeta[boxName].instance !== undefined);
+				const instance = (graph.node.get(boxName) as any).instance;
+				assert(instance !== undefined);
 
-				const selfSingle: BoxInterface = boxMeta[boxName]
-					.instance as BoxInterface;
-				const selfBatch: BatchingBoxInterface = boxMeta[boxName]
-					.instance as BatchingBoxInterface;
+				const selfSingle: BoxInterface = instance as BoxInterface;
+				const selfBatch: BatchingBoxInterface = instance as BatchingBoxInterface;
 				const joinedQ = selfBatch.meta.batch
 					? new MemoryPriorityBatchQueue(
 							(msgs: Message[]) => selfBatch.process(msgs),
@@ -263,6 +271,7 @@ export class DAGBuilder implements FlowBuilderI {
 							},
 							boxName
 					  );
+				graph.addNode(boxName, {input: joinedQ});
 
 				// Select the edges (queues) from the graph
 				// and prepare the same number of of queues joining into `joinedQ`
@@ -271,20 +280,21 @@ export class DAGBuilder implements FlowBuilderI {
 					inputs.length === 1
 						? [joinedQ]
 						: new QZip(joinedQ, inputs.length).inputs;
+
 				// Store the queues in metadata storage by boxes I am dependent of
 				inputs.forEach((inEdge: Edge, index: number) => {
 					// Edge == [from (i.e. me), parent]
-					const parentBox: string = inEdge[1];
-					if (!boxMeta[parentBox]) {
-						boxMeta[parentBox] = {instance: undefined, outputs: []};
-					}
+					const providingBox: string = inEdge[1];
 					const inputQ = inputQs[index];
-					inputQ.source = parentBox;
-					boxMeta[parentBox].outputs.push(inputQ);
+					inputQ.source = providingBox;
+					graph.addEdge(boxName, providingBox, {queue: inputQ});
 				});
 				return returnValue;
 			},
 			Promise.resolve(noopQueue)
 		);
+
+		graph.addNode(ROOT_NODE, {input: rootQ});
+		return new Flow(rootQ, graph);
 	}
 }

@@ -2,6 +2,7 @@ import {Flow} from '../Flow';
 import {Job} from '../Job';
 import {MemoryPrioritySingleQueue} from '../queue/MemoryPriorityQueue';
 import {Message} from '../Message';
+import {DiGraph} from 'jsnetworkx';
 
 describe('Flow', () => {
 	it('enqueues job as a message', () => {
@@ -12,7 +13,7 @@ describe('Flow', () => {
 		);
 		const spyOnPush = jest.spyOn(queue, 'push');
 
-		const flow = new Flow(queue);
+		const flow = new Flow(queue, new DiGraph());
 		flow.process(new Job());
 
 		expect(spyOnPush).toHaveBeenCalledTimes(1);

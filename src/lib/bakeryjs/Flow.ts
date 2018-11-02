@@ -2,6 +2,9 @@ import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Job} from './Job';
 import {DataMessage, Message} from './Message';
 import {FlowExplicitDescription} from './FlowBuilderI';
+import {DiGraph} from 'jsnetworkx';
+import {EventEmitter} from 'events';
+import {ROOT_NODE} from './builders/DAGBuilder/builder';
 
 /**
  * We have Boxes set up properly, now we have to interconnect them to the workflow.
@@ -44,18 +47,29 @@ import {FlowExplicitDescription} from './FlowBuilderI';
  *   or some common layer/wrapper/applicator?
  * - ToDo: (idea2) The Flow may have a finalization stage, that returns some aggregated document/statistics + flags (all Boxes OK, Box A error for 5% Messages)  of all the output messages?
  * - ToDo: (idea2) The Flow provides performance/monitoring metrics of the DAG edges.
+ *
+ * ## Events:
+ * - process: (FlowExplicitDescription, Job)
+ * - flowSchema: ({name: BoxMeta}[], Edge[])
+ * - drain: ()
  */
-export class Flow {
+export class Flow extends EventEmitter {
 	private queue: PriorityQueueI<Message>;
+	private graph: DiGraph;
 
-	public constructor(queue: PriorityQueueI<Message>) {
+	public constructor(queue: PriorityQueueI<Message>, graph: DiGraph) {
+		super();
 		this.queue = queue;
+		this.graph = graph;
 	}
 
 	public process(job: Job): void {
 		const message = new DataMessage(job);
 		this.queue.push(message, 1);
+		this.graph.node.get(ROOT_NODE);
 	}
+
+	public async destroy(): Promise<any> {}
 }
 
 type FlowIdDesc = {
