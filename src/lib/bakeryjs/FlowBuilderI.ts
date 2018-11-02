@@ -1,6 +1,7 @@
 import ComponentFactoryI from './ComponentFactoryI';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
+import {Flow} from './Flow';
 
 // eslint-disable-next-line typescript/no-use-before-define
 export type SchemaComponent = string | SchemaObject;
@@ -63,5 +64,5 @@ export default interface FlowBuilderI {
 		schema: FlowExplicitDescription,
 		componentFactory: ComponentFactoryI,
 		drain?: PriorityQueueI<Message>
-	): Promise<PriorityQueueI<Message>> | PriorityQueueI<Message>;
+	): Promise<Flow> | Flow;
 }
