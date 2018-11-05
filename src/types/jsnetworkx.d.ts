@@ -3,9 +3,11 @@ declare module 'jsnetworkx' {
 		[index: string]: any;
 	}
 
+	export type Node = number | string | object;
+
 	export interface Edge {
-		0: string;
-		1: string;
+		0: Node;
+		1: Node;
 	}
 
 	export interface EdgeWithAttribs extends Edge {
@@ -13,26 +15,24 @@ declare module 'jsnetworkx' {
 	}
 
 	export interface NodeWithAttribs {
-		0: string;
+		0: Node;
 		1: AttributeDict;
 	}
 
 	export class DiGraph {
-		public node: Map<string, AttributeDict>;
+		public node: Map<Node, AttributeDict>;
 		public constructor();
-		public addNode(n: string, attribs?: AttributeDict): void;
-		public addEdge(u: string, v: string, attribs?: AttributeDict): void;
+		public addNode(n: Node, attribs?: AttributeDict): void;
+		public addEdge(u: Node, v: Node, attribs?: AttributeDict): void;
 		public addEdgesFrom(ebunch: Edge[], attribs?: AttributeDict): void;
-		public outEdges(u?: string | string[], withData?: false): Edge[];
-		public outEdges(
-			u: string | string[],
-			withData: true
-		): EdgeWithAttribs[];
-		public inEdges(u?: string | string[], withData?: false): Edge[];
-		public inEdges(u: string | string[], withData: true): EdgeWithAttribs[];
-		public nodes(optData?: false): string[];
+		public outEdges(u?: Node | Node[], withData?: false): Edge[];
+		public outEdges(u: Node | Node[], withData: true): EdgeWithAttribs[];
+		public inEdges(u?: Node | Node[], withData?: false): Edge[];
+		public inEdges(u: Node | Node[], withData: true): EdgeWithAttribs[];
+		public nodes(optData?: false): Node[];
 		public nodes(optData: true): NodeWithAttribs[];
+		public hasNode(n: Node): boolean;
 	}
 
-	export function topologicalSort(g: DiGraph, optNBunch?: string[]): string[];
+	export function topologicalSort(g: DiGraph, optNBunch?: Node[]): Node[];
 }
