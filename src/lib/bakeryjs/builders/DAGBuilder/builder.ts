@@ -137,7 +137,7 @@ function emitFlowSchema(
 		})
 		.reduce(
 			(metas, item) => {
-				metas[item.name] = item.meta;
+				metas[item.name as string] = item.meta;
 				return metas;
 			},
 			{} as FlowBoxesMetadata
@@ -171,7 +171,7 @@ export class DAGBuilder implements FlowBuilderI {
 		//
 		// As we have the graph oriented conversely (see comments above), we get array of box names sorted in such a way
 		// that for a particular box `A` all the boxes requiring A are listed before the `A` itself.
-		const boxBuildOrder: string[] = topologicalSort(graph);
+		const boxBuildOrder: string[] = topologicalSort(graph) as string[];
 		// Now, go through the boxes and
 		// 1. instantiate the box (as all its flow-dependents are already instantiated, inlcuding their queues, we have all the information)
 		// 2. instantiate all the flow-incoming queues (i.e. where the messages will come into this box)
@@ -284,7 +284,7 @@ export class DAGBuilder implements FlowBuilderI {
 				// Store the queues in metadata storage by boxes I am dependent of
 				inputs.forEach((inEdge: Edge, index: number) => {
 					// Edge == [from (i.e. me), parent]
-					const providingBox: string = inEdge[1];
+					const providingBox: string = inEdge[1] as string;
 					const inputQ = inputQs[index];
 					inputQ.source = providingBox;
 					graph.addEdge(boxName, providingBox, {queue: inputQ});
