@@ -1,7 +1,8 @@
 language: node_js
 node_js:
-  - stable
+  - node
   - lts/*
+  - lts/carbon
 
 cache:
   directories:
