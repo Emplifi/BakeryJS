@@ -1,7 +1,7 @@
 import assert from 'assert';
 import {EventEmitter} from 'events';
-import Timer = NodeJS.Timer;
 import {AQueue} from './queue/MemoryPriorityQueue';
+import Timer = NodeJS.Timer;
 
 const STATS_SAMPLING_MS = 900;
 
@@ -9,9 +9,11 @@ const STATS_SAMPLING_MS = 900;
 // If every push for each Message and each queue emits a message, will it overwhelm the nodejs system?
 /**
  * Events emitted:
+ * TODO: flow-related:
  *  - 'sent', timestamp, source, target, batchSize
  *  - 'queue_in', {boxName: string, batchSize: number}
  *  - 'queue_stats', {boxName: string, size: number}
+ *  (end of flow-related)
  *  - 'box_timing', {boxName: string, duration: number}
  */
 const eventEmitter = new EventEmitter();

@@ -203,6 +203,7 @@ export class Program {
 				.then((f) => this.runFlow(f, jobInitialValue))
 				.catch((error) => {
 					this.serviceProvider.get('logger').error(error);
+					throw error;
 				});
 		} else if (hasProcess(flowDesc)) {
 			console.log('building flow from SchemaObject');
@@ -211,6 +212,7 @@ export class Program {
 				.then((f) => this.runFlow(f, jobInitialValue))
 				.catch((error) => {
 					this.serviceProvider.get('logger').error(error);
+					throw error;
 				});
 		} else {
 			throw new TypeError(
