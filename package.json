@@ -38,16 +38,16 @@
 		"eslint-config-prettier": "^3.1.0",
 		"eslint-plugin-jest": "^21.24.0",
 		"eslint-plugin-prettier": "^3.0.0",
-		"eslint-plugin-typescript": "^0.12.0",
+		"eslint-plugin-typescript": "^0.13.0",
 		"jest": "^23.6.0",
 		"jest-junit": "^5.2.0",
 		"nodemon": "^1.18.4",
 		"prettier": "1.14.3",
 		"ts-jest": "^23.10.3",
 		"ts-node": "^7.0.1",
-		"typedoc": "^0.12.0",
+		"typedoc": "^0.13.0",
 		"typescript": "^3.1.1",
-		"typescript-eslint-parser": "^19.0.2"
+		"typescript-eslint-parser": "^20.1.1"
 	},
 	"scripts": {
 		"start": "npm run build:live",
