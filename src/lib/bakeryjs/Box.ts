@@ -5,19 +5,14 @@ import {
 	BoxMeta,
 	OnCleanCallback,
 } from './BoxI';
-import {
-	DataMessage,
-	isData,
-	isSentinel,
-	Message,
-	MessageData,
-	SentinelMessage,
-} from './Message';
+import {DataMessage, isData, isSentinel, Message, MessageData} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 import {ServiceProvider} from './ServiceProvider';
 import {AssertionError} from 'assert';
 import ajv from 'ajv';
+import {boxEvents} from './BoxEvents';
+import {EventEmitter} from 'events';
 
 export const noopQueue: PriorityQueueI<any> = {
 	push: (msg: any, priority?: number) => undefined,
@@ -193,7 +188,7 @@ export type BatchingBoxFactorySignature = new (
  *
  * @internalapi
  */
-abstract class Box implements BoxInterface {
+abstract class Box extends EventEmitter implements BoxInterface {
 	public readonly name: string;
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
@@ -217,6 +212,7 @@ abstract class Box implements BoxInterface {
 	 *
 	 * @param queue - the output connection of the Box.  Everyone should push to that queue. Mapper, Generator, Aggregator.
 	 * @param parameters - any run-time configuration passed from the Job
+	 * @emits 'msg_finished'
 	 */
 	protected constructor(
 		name: string,
@@ -225,10 +221,15 @@ abstract class Box implements BoxInterface {
 		queue?: PriorityQueueI<Message>,
 		parameters?: any
 	) {
+		super();
+		const {generatorTrace} = boxEvents(this);
 		this.name = name;
 		this.meta = meta;
 		this.serviceParamsProvider = serviceProvider;
-		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
+		this.queue = generatorTrace(
+			queue || (noopQueue as PriorityQueueI<Message>),
+			name
+		);
 		if (this.meta.parameters && parameters) {
 			const ajvValidator = new ajv();
 			if (ajvValidator.validate(this.meta.parameters, parameters)) {
@@ -305,22 +306,54 @@ abstract class Box implements BoxInterface {
 
 	private async processGenerator(value: DataMessage): Promise<any> {
 		try {
+			let siblingsCount = 0;
+			// Prevent the queue from being pushed after generator has resolved
+			const {guardQueue} = boxEvents(this);
+			const guardedQ = guardQueue(this.queue);
+
 			const retValue: any = await this.processValue(
 				value.getInput(this.meta.requires),
-				(chunk: MessageData[], priority?: number) =>
-					this.queue.push(
+				(chunk: MessageData[], priority?: number) => {
+					siblingsCount += chunk.length;
+					guardedQ.push(
 						chunk.map((msg) => {
 							const parent: Message = value.create();
 							parent.setOutput(this.meta.provides, msg);
 							return parent;
 						}),
 						priority
-					)
+					);
+				}
 			);
 
-			this.queue.push(new SentinelMessage(retValue, value));
+			guardedQ.revoke();
+			this.queue.push(value.createSentinel(siblingsCount, retValue));
 			return;
 		} catch (error) {
+			if (
+				error instanceof TypeError &&
+				error.message.includes('revoked')
+			) {
+				throw new VError(
+					{
+						name: 'GeneratorMisbehaveException',
+						info: {
+							mode: 'generator',
+							box: {
+								name: this.name,
+								meta: this.meta,
+							},
+							value: value.getInput(this.meta.requires),
+							description:
+								'Generator should return a promise that would be resolved once all the messages had been emitted.' +
+								'  This error occurs when generator attempts to emit messages after its promise has been resolved.' +
+								'  The code of the generator should be repaired to keep the contract.',
+						},
+					},
+					'Generator %s emitted messages after its promise had been resolved.',
+					this.name
+				);
+			}
 			const wrap = new VError(
 				{
 					name: 'BoxInvocationException',
@@ -439,7 +472,8 @@ abstract class Box implements BoxInterface {
 	): Promise<MessageData> | MessageData | Promise<any>;
 }
 
-abstract class BatchingBox implements BatchingBoxInterface {
+abstract class BatchingBox extends EventEmitter
+	implements BatchingBoxInterface {
 	public readonly name: string;
 	public readonly meta: BatchingBoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
@@ -471,10 +505,16 @@ abstract class BatchingBox implements BatchingBoxInterface {
 		queue?: PriorityQueueI<Message>,
 		parameters?: any
 	) {
+		super();
+		const {generatorTrace} = boxEvents(this);
+
 		this.name = name;
 		this.meta = meta;
 
-		this.queue = queue || (noopQueue as PriorityQueueI<Message>);
+		this.queue = generatorTrace(
+			queue || (noopQueue as PriorityQueueI<Message>),
+			name
+		);
 		this.requireSet = new Set(this.meta.requires);
 		if (this.meta.parameters && parameters) {
 			const ajvValidator = new ajv();

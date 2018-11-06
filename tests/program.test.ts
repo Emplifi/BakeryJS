@@ -212,32 +212,6 @@ test('Store batching `Hello World! with dependencies` with custom configuration'
 	});
 });
 
-test('Fail to build flow with invalid custom configuration', async () => {
-	const job = {
-		parameters: {
-			checksum: {invalid: 'value'},
-		},
-		process: [
-			['hellobatchworld'],
-			['wordbatchcount', 'punctcount'],
-			['checksum'],
-		],
-	};
-
-	program.run((job as any) as FlowDescription).catch((err) => {
-		expect(err).toBeInstanceOf(VError);
-		expect(err.name).toEqual('BoxParametersValidationError');
-	});
-});
-
-test('Validation error for invalid job', () => {
-	const job = {
-		process: 'bad value',
-	};
-
-	expect(() => program.run((job as any) as FlowDescription)).toThrowError();
-});
-
 test('Store `Hello World!` with initial value', async () => {
 	const job = {
 		process: [['checksum']],
@@ -268,4 +242,30 @@ test('Store `Hello World!` with initial value', async () => {
 	expect(drain[0]).toHaveProperty('words', 4);
 	expect(drain[0]).toHaveProperty('punct', 1);
 	expect(transitions).toContainEqual({from: '_root_', to: 'checksum'});
+});
+
+test('Fail to build flow with invalid custom configuration', async () => {
+	const job = {
+		parameters: {
+			checksum: {invalid: 'value'},
+		},
+		process: [
+			['hellobatchworld'],
+			['wordbatchcount', 'punctcount'],
+			['checksum'],
+		],
+	};
+
+	program.run((job as any) as FlowDescription).catch((err) => {
+		expect(err).toBeInstanceOf(VError);
+		expect(err.name).toEqual('BoxParametersValidationError');
+	});
+});
+
+test('Validation error for invalid job', () => {
+	const job = {
+		process: 'bad value',
+	};
+
+	expect(() => program.run((job as any) as FlowDescription)).toThrowError();
 });

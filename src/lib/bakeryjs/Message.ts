@@ -13,7 +13,7 @@ interface IdMessage {
 	readonly id: string;
 	readonly parent: IdMessage | undefined;
 	create(values: MessageData): IdMessage;
-	createSentinel(retValue?: any): IdSentinel;
+	createSentinel(messageCount: number, retValue?: any): IdSentinel;
 	getInput(requires: string[]): MessageData;
 	setOutput(provides: string[], output: MessageData): void;
 
@@ -32,8 +32,10 @@ interface IdMessage {
  * the *id* of the Message the bunch belongs to but can't realize whether it has process all Messages to
  * the particular parent Message *id*.
  *
- * The *Sentinel Message* is the information. Though it has a unique *id* (as every other *Message*)
- * the information it is taking reads "I am the last" of the parent *id*.
+ * The *Sentinel Message* contains the information. Though it has a unique *id* (as every other *Message*)
+ * the information is the number of its siblings (having the same parent id) generated.  We cannot rely
+ * on the order of Messages (due to parallel processing & prioritization) so the SentinelMessage
+ * cannot just mean "all the data have arrived before me".
  *
  * The field *data* has different semantics.  You can't access to fields of the parent *Message* through it.
  * It holds a *Return Value* of the generator -- `undefined`, Error instance, Warning instance, etc.
@@ -42,6 +44,7 @@ interface IdSentinel {
 	readonly id: string;
 	readonly parent: IdMessage;
 	readonly data: any;
+	readonly dataMessageCount: number;
 	/**
 	 * ## Flag of the sentinel message.
 	 *
@@ -91,11 +94,13 @@ export class SentinelMessage extends CIdentifiable implements IdSentinel {
 	public readonly parent: IdMessage;
 	public readonly data: any;
 	public readonly finished: true = true;
+	public readonly dataMessageCount: number;
 
-	public constructor(retValue: any, parent: IdMessage) {
+	public constructor(messageCount: number, parent: IdMessage, retValue: any) {
 		super(parent);
 		this.parent = parent; // WTF!!! without this, there is an error "My property parent is not set!"
 		this.data = retValue;
+		this.dataMessageCount = messageCount;
 	}
 }
 
@@ -124,8 +129,11 @@ export class DataMessage extends CIdentifiable implements IdMessage {
 		return new DataMessage(newData, this);
 	}
 
-	public createSentinel(retValue?: any): IdSentinel {
-		return new SentinelMessage(retValue, this);
+	public createSentinel(
+		dataMessageCount: number,
+		retValue?: any
+	): IdSentinel {
+		return new SentinelMessage(dataMessageCount, this, retValue);
 	}
 
 	// TODO: (code detail) the flow executor should create a Data Access Object that will guard the fields and

@@ -47,7 +47,7 @@ describe('Box', () => {
 
 					await box.process(msg);
 					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(pushMock).toHaveBeenCalledWith(msg);
+					expect(pushMock).toHaveBeenCalledWith(msg, undefined);
 					expect(
 						msg.getInput(['jobId', 'foo', 'bar', 'baz'])
 					).toEqual({
@@ -63,18 +63,35 @@ describe('Box', () => {
 					const box: BoxInterface = setups.box as BoxInterface;
 					const pushMock = setups.push;
 					const parMsg = new DataMessage({jobId: '111'});
-					const msg = new SentinelMessage(
-						new Error('Sample of possible values.'),
-						parMsg
+					const msg = parMsg.createSentinel(
+						0,
+						new Error('Sample of possible values.')
 					);
 
 					await box.process(msg);
-					expect(pushMock).toHaveBeenCalledWith(msg);
+					expect(pushMock).toHaveBeenCalledWith(msg, undefined);
 					expect(pushMock).toHaveBeenCalledTimes(1);
 					expect(msg.finished).toEqual(true);
 					expect(msg.data).toEqual(
 						new Error('Sample of possible values.')
 					);
+				}),
+
+			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
+				it('Emits `msg_finished` event.', async () => {
+					const box = setups.box as BoxInterface;
+					const msg = new DataMessage({jobId: 'ttt', foo: 'hoo'});
+
+					expect.assertions(3);
+					box.on('msg_finished', (msgsEvents: any[]) => {
+						expect(msgsEvents[0]).toHaveProperty(
+							'boxName',
+							'MapperTest'
+						);
+						expect(msgsEvents[0]).toHaveProperty('messageId');
+						expect(msgsEvents[0]).toHaveProperty('parentMsgId');
+					});
+					await box.process(msg);
 				}),
 		];
 
@@ -180,11 +197,33 @@ describe('Box', () => {
 						jobId: 'ggg',
 						foo: 'nee',
 					});
-					const msg = new SentinelMessage(5, parentMsg);
+					const msg = new SentinelMessage(0, parentMsg, 5);
 
 					await box.process(msg);
 					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(pushMock).toHaveBeenCalledWith(msg);
+					expect(pushMock).toHaveBeenCalledWith(msg, undefined);
+				}),
+
+			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
+				it('emits event for each emitted message', async () => {
+					const box = setups.box as BoxInterface;
+					const msg = new DataMessage({
+						jobId: 'ggg',
+						foo: 'nee',
+					});
+
+					expect.assertions(12);
+					box.on('msg_finished', (msgs: any[]) => {
+						msgs.forEach((m) => {
+							expect(m).toHaveProperty(
+								'boxName',
+								'GeneratingTest'
+							);
+							expect(m).toHaveProperty('parentMsgId', msg.id);
+							expect(m).toHaveProperty('messageId');
+						});
+					});
+					await box.process(msg);
 				}),
 		];
 
