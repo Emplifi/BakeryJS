@@ -1,7 +1,7 @@
 # ![BakeryJS](assets/logo.png)
 
 [![npm version](https://img.shields.io/npm/v/bakeryjs.svg?style=flat-square)](https://www.npmjs.com/package/bakeryjs)
-[![Travis build status](https://img.shields.io/travis/com/Socialbakers/BakeryJS.svg?style=flat-square)](https://travis-ci.com/Socialbakers/BakeryJS) [![Greenkeeper badge](https://badges.greenkeeper.io/Socialbakers/BakeryJS.svg)](https://greenkeeper.io/)
+[![Travis build status](https://img.shields.io/travis/com/Socialbakers/BakeryJS.svg?style=flat-square)](https://travis-ci.com/Socialbakers/BakeryJS) [![Greenkeeper badge](https://badges.greenkeeper.io/Socialbakers/BakeryJS.svg?style=flat-square)](https://greenkeeper.io/)
 
 BakeryJS is a Node.js framework for handling common data processing needs.
 
