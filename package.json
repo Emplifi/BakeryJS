@@ -32,7 +32,7 @@
 		"@types/async": "^2.0.50",
 		"@types/better-queue": "^3.8.0",
 		"@types/jest": "^23.3.9",
-		"@types/node": "^10.12.2",
+		"@types/node": "^10.12.6",
 		"@types/verror": "^1.10.3",
 		"eslint": "^5.8.0",
 		"eslint-config-prettier": "^3.3.0",
