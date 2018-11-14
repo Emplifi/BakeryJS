@@ -7,6 +7,8 @@ import {EventEmitter} from 'events';
 import {ROOT_NODE} from './builders/DAGBuilder/builder';
 import {BatchingBoxMeta, BoxMeta} from './BoxI';
 import {deepStrictEqual} from 'assert';
+import {TracingModel} from './tracingModel';
+import {MsgEvent} from './BoxEvents';
 
 /**
  * We have Boxes set up properly, now we have to interconnect them to the workflow.
@@ -59,20 +61,67 @@ export class Flow extends EventEmitter {
 	private queue: PriorityQueueI<Message>;
 	private graph: DiGraph;
 	private dimensionGraph: DiGraph;
+	private tracingModel: TracingModel;
+	private jobPromises: Map<string, {resolve: Function; reject: Function}>;
 
 	public constructor(queue: PriorityQueueI<Message>, graph: DiGraph) {
 		super();
 		this.queue = queue;
 		this.graph = graph;
 		this.dimensionGraph = this.analyzeDimensions(this.graph);
-		// do nothing
-		this.dimensionGraph.node.get([]);
-		this.graph.node.get(ROOT_NODE);
+		this.jobPromises = new Map();
+
+		this.tracingModel = new TracingModel(
+			this.graph,
+			this.dimensionGraph,
+			(msgId: string) => {
+				const promiseCallbacks = this.jobPromises.get(msgId);
+				this.jobPromises.delete(msgId);
+				if (promiseCallbacks) {
+					promiseCallbacks.resolve();
+				} else {
+					throw new TypeError('Resolving callback not registered!');
+				}
+				this.emit('task_finish', msgId);
+			}
+		);
+
+		// subscribe for the events from boxes
+		for (const boxWithAttribs of this.graph.nodesIter(true)) {
+			if (boxWithAttribs[0] === ROOT_NODE) {
+				continue;
+			}
+			const boxAttribs: AttributeDict = boxWithAttribs[1];
+			boxAttribs.instance.on('msg_finished', (msgInfos: MsgEvent[]) =>
+				msgInfos.forEach((msgInfo) => {
+					if (msgInfo.isSentinel) {
+						this.tracingModel.setDimensionComplete(
+							msgInfo.parentMsgId || '-',
+							msgInfo.boxName
+						);
+					} else {
+						this.tracingModel.addMsg(
+							msgInfo.messageId,
+							msgInfo.parentMsgId || '-',
+							msgInfo.boxName
+						);
+					}
+				})
+			);
+		}
 	}
 
-	public process(job: Job): void {
+	public process(job: Job): Promise<void> {
 		const message = new DataMessage(job);
 		this.queue.push(message, 1);
+		return new Promise((resolve, reject) => {
+			this.jobPromises.set(message.id, {resolve, reject});
+			// in case of degenerated jobs (usually the testing ones), the call `addMsg`
+			// can synchronously mark the job as fulfilled and invoke the `resolve`.
+			// For that cases, the invocation of `addMsg` must be *after* having stored
+			// `resolve`/`reject` into `jobPromises`.
+			this.tracingModel.addMsg(message.id, '-', ROOT_NODE);
+		});
 	}
 
 	public async destroy(): Promise<any> {}
