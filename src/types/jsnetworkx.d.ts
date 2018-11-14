@@ -32,6 +32,8 @@ declare module 'jsnetworkx' {
 		public nodes(optData?: false): Node[];
 		public nodes(optData: true): NodeWithAttribs[];
 		public hasNode(n: Node): boolean;
+		public nodesIter(optData?: false): Iterable<Node>;
+		public nodesIter(optData: true): Iterable<NodeWithAttribs>;
 	}
 
 	export function topologicalSort(g: DiGraph, optNBunch?: Node[]): Node[];

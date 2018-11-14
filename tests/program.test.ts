@@ -27,15 +27,7 @@ test('Store `Hello World!` with all default configuration', async () => {
 	);
 
 	const drain: MessageData[] = [];
-	// TODO: (idea1) How the hell are we going to notice that all is done?
-	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
-	// 2.  Have some awkward event "All queues are empty"?
-	await new Promise((resolve) => {
-		program.run(job, (msg: MessageData) => {
-			drain.push(msg);
-			resolve();
-		});
-	});
+	await program.run(job, (msg: MessageData) => drain.push(msg));
 
 	expect(drain).toHaveLength(1);
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
@@ -53,15 +45,7 @@ test('Store `Hello World! with dependencies` with all default configuration', as
 	};
 
 	const drain: MessageData[] = [];
-	// TODO: (idea1) How the hell are we going to notice that all is done?
-	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
-	// 2.  Have some awkward event "All queues are empty/idle"?
-	await new Promise((resolve) => {
-		program.run(job, (msg: MessageData) => {
-			drain.push(msg);
-			resolve();
-		});
-	});
+	await program.run(job, (msg: MessageData) => drain.push(msg));
 
 	expect(drain).toHaveLength(1);
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
@@ -110,15 +94,7 @@ test('Store batching `Hello World! with dependencies` with all default configura
 	};
 
 	const drain: MessageData[] = [];
-	// TODO: (idea1) How the hell are we going to notice that all is done?
-	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
-	// 2.  Have some awkward event "All queues are empty/idle"?
-	await new Promise((resolve) => {
-		program.run(job, (msg: MessageData) => drain.push(msg));
-
-		// depends on wait times in wordbatchcount
-		setTimeout(resolve, 1000);
-	});
+	await program.run(job, (msg: MessageData) => drain.push(msg));
 
 	expect(drain).toHaveLength(5);
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
@@ -170,15 +146,7 @@ test('Store batching `Hello World! with dependencies` with custom configuration'
 	};
 
 	const drain: MessageData[] = [];
-	// TODO: (idea1) How the hell are we going to notice that all is done?
-	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
-	// 2.  Have some awkward event "All queues are empty/idle"?
-	await new Promise((resolve) => {
-		program.run(job, (msg: MessageData) => drain.push(msg));
-
-		// depends on wait times in wordbatchcount
-		setTimeout(resolve, 1000);
-	});
+	await program.run(job, (msg: MessageData) => drain.push(msg));
 
 	expect(drain).toHaveLength(5);
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
@@ -223,18 +191,9 @@ test('Store `Hello World!` with initial value', async () => {
 	);
 
 	const drain: MessageData[] = [];
-	// TODO: (idea1) How the hell are we going to notice that all is done?
-	// 1.  I must have a generator on the top level (and then I have a SentinelMessage)
-	// 2.  Have some awkward event "All queues are empty"?
-	await new Promise((resolve) => {
-		program.run(
-			job,
-			(msg: MessageData) => {
-				drain.push(msg);
-				resolve();
-			},
-			{words: 4, punct: 1}
-		);
+	await program.run(job, (msg: MessageData) => drain.push(msg), {
+		words: 4,
+		punct: 1,
 	});
 
 	expect(drain).toHaveLength(1);

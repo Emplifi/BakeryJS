@@ -132,12 +132,12 @@ export class Program {
 		eventEmitter.on(eventName, callback);
 	}
 
-	public runFlow(flow: Flow, jobInitialValue?: MessageData): void {
+	public runFlow(flow: Flow, jobInitialValue?: MessageData): Promise<void> {
 		const job = new Job(jobInitialValue);
 		console.log('Program run ----->');
 		// TODO: separate this from stats EE -- it is shared accross various flows
 		eventEmitter.emit('run', flow, job);
-		flow.process(job);
+		return flow.process(job);
 
 		// setTimeout(() => flow.process(new Job()),2000);
 	}
@@ -152,6 +152,7 @@ export class Program {
 	 *     provided by boxes in the flow.  The behaviour in conflict between initial value and provided value is
 	 *     not defined.
 	 *
+	 * @returns promise of job being done
 	 * @publicapi
 	 */
 	public run(

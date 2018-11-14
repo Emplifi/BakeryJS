@@ -81,7 +81,7 @@ abstract class CIdentifiable {
 	public readonly parent: IdMessage | undefined;
 
 	public get id(): string {
-		return (this.parent ? `${this.parent.id};` : '') + '/' + this._id;
+		return (this.parent ? `${this.parent.id}` : '') + '/' + this._id;
 	}
 
 	protected constructor(parent: IdMessage | undefined) {
