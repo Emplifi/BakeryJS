@@ -52,9 +52,12 @@ export class ComponentFactory implements ComponentFactoryI {
 		try {
 			// TODO: (code detail) Is it necessary to always import the file?
 			const box = await import(this.availableComponents[name]);
-			return new box.default(this.serviceProvider, queue, parameters) as
-				| BoxInterface
-				| BatchingBoxInterface;
+			return new box.default(
+				name,
+				this.serviceProvider,
+				queue,
+				parameters
+			) as BoxInterface | BatchingBoxInterface;
 		} catch (error) {
 			return Promise.reject(
 				new VError(

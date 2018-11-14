@@ -3,7 +3,6 @@ import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 import {boxFactory} from '../../../lib/bakeryjs/Box';
 
 const Print = boxFactory(
-	'print',
 	{
 		requires: ['jobId', 'raw'],
 		provides: [],

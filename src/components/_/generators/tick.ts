@@ -3,7 +3,6 @@ import {MessageData} from '../../../lib/bakeryjs/Message';
 import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
 
 const Tick = boxFactory(
-	'tick',
 	{
 		requires: ['jobId'],
 		provides: ['raw'],

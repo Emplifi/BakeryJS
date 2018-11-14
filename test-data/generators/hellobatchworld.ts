@@ -3,7 +3,6 @@ import {ServiceProvider} from '../../src/lib/bakeryjs/ServiceProvider';
 import {MessageData} from '../../src/lib/bakeryjs/Message';
 
 module.exports = boxFactory(
-	'helloBatchWorld',
 	{
 		provides: ['msg'],
 		requires: [],
