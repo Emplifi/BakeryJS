@@ -89,11 +89,13 @@ export type BoxExecutiveBatchDefinition = (
 ) => Promise<MessageData[]> | MessageData[];
 
 export type BoxFactorySignature = new (
+	providedName: string,
 	serviceParamsProvider: ServiceProvider,
 	q?: PriorityQueueI<Message>
 ) => BoxInterface;
 
 export type BatchingBoxFactorySignature = new (
+	providedName: string,
 	serviceParamsProvider: ServiceProvider,
 	q?: PriorityQueueI<Message>
 ) => BatchingBoxInterface;
@@ -717,17 +719,17 @@ abstract class BatchingBox extends EventEmitter
  * @internalapi
  */
 function boxSingleFactory(
-	name: string,
 	metadata: BoxMeta,
 	processValueDef: BoxExecutiveDefinition
 ): BoxFactorySignature {
 	return class extends Box {
 		public constructor(
+			providedName: string,
 			serviceProvider: ServiceProvider,
 			q?: PriorityQueueI<Message>,
 			parameters?: any
 		) {
-			super(name, metadata, serviceProvider, q, parameters);
+			super(providedName, metadata, serviceProvider, q, parameters);
 		}
 		protected processValue(
 			msg: MessageData,
@@ -754,17 +756,17 @@ function boxSingleFactory(
  * @internalapi
  */
 function boxBatchingFactory(
-	name: string,
 	metadata: BatchingBoxMeta,
 	processValueDef: BoxExecutiveBatchDefinition
 ): BatchingBoxFactorySignature {
 	return class extends BatchingBox {
 		public constructor(
+			providedName: string,
 			serviceProvider: ServiceProvider,
 			q?: PriorityQueueI<Message>,
 			parameters?: any
 		) {
-			super(name, metadata, serviceProvider, q, parameters);
+			super(providedName, metadata, serviceProvider, q, parameters);
 		}
 		protected processValue(msgs: MessageData[]) {
 			return processValueDef(this.serviceParamsProvider, msgs);
@@ -787,19 +789,16 @@ function boxBatchingFactory(
  * @publicapi
  */
 export function boxFactory(
-	name: string,
 	metadata: BoxMeta | BatchingBoxMeta,
 	processValueDef: BoxExecutiveDefinition | BoxExecutiveBatchDefinition
 ): BoxFactorySignature | BatchingBoxFactorySignature {
 	if ((metadata as BatchingBoxMeta).batch) {
 		return boxBatchingFactory(
-			name,
 			metadata as BatchingBoxMeta,
 			processValueDef as BoxExecutiveBatchDefinition
 		);
 	} else {
 		return boxSingleFactory(
-			name,
 			metadata as BoxMeta,
 			processValueDef as BoxExecutiveDefinition
 		);

@@ -3,7 +3,6 @@ import {MessageData} from '../../src/lib/bakeryjs/Message';
 import {boxFactory} from '../../src/lib/bakeryjs/Box';
 
 module.exports = boxFactory(
-	'wordBatchCount',
 	{
 		provides: ['words'],
 		requires: ['msg'],

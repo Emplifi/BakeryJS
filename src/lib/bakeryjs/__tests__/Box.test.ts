@@ -7,7 +7,6 @@ import {ServiceProvider} from '../ServiceProvider';
 describe('Box', () => {
 	describe('Mapper', () => {
 		const MappingBox = boxFactory(
-			'MapperTest',
 			{
 				requires: ['foo'],
 				provides: ['bar'],
@@ -34,7 +33,11 @@ describe('Box', () => {
 				target: '__test',
 			} as PriorityQueueI<Message>;
 
-			const box = new MappingBox({} as ServiceProvider, outQ);
+			const box = new MappingBox(
+				'MapperTest',
+				{} as ServiceProvider,
+				outQ
+			);
 			return {box: box, push: outQ.push};
 		};
 
@@ -100,7 +103,6 @@ describe('Box', () => {
 
 	describe('Generator', () => {
 		const GeneratingBox = boxFactory(
-			'GeneratingTest',
 			{
 				requires: ['foo'],
 				provides: ['bar'],
@@ -138,7 +140,11 @@ describe('Box', () => {
 				target: '__test',
 			} as PriorityQueueI<Message>;
 
-			const box = new GeneratingBox({} as ServiceProvider, outQ);
+			const box = new GeneratingBox(
+				'GeneratingTest',
+				{} as ServiceProvider,
+				outQ
+			);
 			return {box: box, push: outQ.push};
 		};
 
