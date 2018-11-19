@@ -1,6 +1,6 @@
 {
 	"name": "bakeryjs",
-	"version": "0.0.1-beta.6",
+	"version": "0.0.1-beta.7",
 	"description": "FBP-inspired library",
 	"main": "build/index",
 	"types": "build/index",
@@ -57,15 +57,15 @@
 		"test": "jest",
 		"lint": "eslint --ext .ts,.js src/ tests/",
 		"doc": "typedoc --out ./docs/ --target ES6 src/"
-  },
-  "greenkeeper": {
-    "commitMessages": {
-      "initialDependencies": "Update dependencies",
-      "initialBranches": "Whitelist greenkeeper branches",
-      "dependencyUpdate": "deps: Update ${dependency} to version ${version}",
-      "devDependencyUpdate": "devDeps: Update ${dependency} to version ${version}",
-      "dependencyPin": "deps: Pin ${dependency} to ${oldVersion}",
-      "devDependencyPin": "devDeps: Pin ${dependency} to ${oldVersion}"
-    }
-  }
+	},
+	"greenkeeper": {
+		"commitMessages": {
+			"initialDependencies": "Update dependencies",
+			"initialBranches": "Whitelist greenkeeper branches",
+			"dependencyUpdate": "deps: Update ${dependency} to version ${version}",
+			"devDependencyUpdate": "devDeps: Update ${dependency} to version ${version}",
+			"dependencyPin": "deps: Pin ${dependency} to ${oldVersion}",
+			"devDependencyPin": "devDeps: Pin ${dependency} to ${oldVersion}"
+		}
+	}
 }
