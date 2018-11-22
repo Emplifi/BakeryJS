@@ -1,6 +1,4 @@
-import {boxFactory} from '../../../lib/bakeryjs/Box';
-import {MessageData} from '../../../lib/bakeryjs/Message';
-import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
+import {boxFactory, ServiceProvider, MessageData} from '../../../';
 
 const Tick = boxFactory(
 	{

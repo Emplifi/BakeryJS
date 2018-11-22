@@ -1,6 +1,4 @@
-import {MessageData} from '../../../lib/bakeryjs/Message';
-import {ServiceProvider} from '../../../lib/bakeryjs/ServiceProvider';
-import {boxFactory} from '../../../lib/bakeryjs/Box';
+import {boxFactory, ServiceProvider, MessageData} from '../../../';
 
 const Print = boxFactory(
 	{
