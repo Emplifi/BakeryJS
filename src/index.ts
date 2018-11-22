@@ -1,7 +1,23 @@
 import {Program} from './lib/bakeryjs/Program';
-import {boxFactory} from './lib/bakeryjs/Box';
+import {
+	boxFactory,
+	BoxExecutiveDefinition,
+	BoxExecutiveBatchDefinition,
+} from './lib/bakeryjs/Box';
+import {BoxMeta, BatchingBoxMeta} from './lib/bakeryjs/BoxI';
+import {ServiceProvider} from './lib/bakeryjs/ServiceProvider';
+import {MessageData} from './lib/bakeryjs/Message';
 
-export {Program, boxFactory};
+export {
+	Program,
+	boxFactory,
+	BoxMeta,
+	BatchingBoxMeta,
+	BoxExecutiveDefinition,
+	BoxExecutiveBatchDefinition,
+	ServiceProvider,
+	MessageData,
+};
 
 if (require.main === module) {
 	const drainCbk = (msg: any): void => {

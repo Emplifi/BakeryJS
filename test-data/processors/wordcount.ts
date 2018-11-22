@@ -1,6 +1,4 @@
-import {boxFactory} from './../../src';
-import {ServiceProvider} from '../../src/lib/bakeryjs/ServiceProvider';
-import {MessageData} from '../../src/lib/bakeryjs/Message';
+import {boxFactory, ServiceProvider, MessageData} from './../../src';
 
 module.exports = boxFactory(
 	{

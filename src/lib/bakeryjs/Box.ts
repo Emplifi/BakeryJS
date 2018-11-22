@@ -710,7 +710,6 @@ abstract class BatchingBox extends EventEmitter
  * Each box has to be in its own file, the filename being the box's identificator (name).
  * The file is a JS (TS) module that `exports default` the return value of `boxFactory`.
  *
- * @param name String that would be used in error messages.  The box is identified by its *filename*.
  * @param metadata Information about intended operation of the code. This is an information
  *    the framework decides upon about the invocation of your box code.
  * @param processValueDef The code of your box.
@@ -746,7 +745,6 @@ function boxSingleFactory(
  * Each box has to be in its own file, the filename being the box's identificator (name).
  * The file is a JS (TS) module that `exports default` the return value of `boxBatchingFactory`.
  *
- * @param name String that would be used in error messages.  The box is identified by its *filename*.
  * @param metadata Information about intended operation of the code. This is an information
  *    the framework decides upon about the invocation of your box code.  As the box should
  *    operate in batching mode, don't forgett to specify *batch* data.
@@ -780,7 +778,6 @@ function boxBatchingFactory(
  * Each box has to be in its own file, the filename being the box's identificator (name).
  * The file is a JS (TS) module that `exports default` the return value of `boxFactory`.
  *
- * @param name String that would be used in error messages.  The box is identified by its *filename*.
  * @param metadata Information about intended operation of the code. This is an information
  *    the framework decides upon about the invocation of your box code.
  * @param processValueDef The code of your box.
