@@ -393,9 +393,7 @@ export class TracingModel {
 		}
 
 		// if we are not in the root job, check also the parent dimension node
-		process.nextTick(() =>
-			this.checkDimensionFinishState(parentMsgId, dimension)
-		);
+		this.checkDimensionFinishState(parentMsgId, dimension);
 		return;
 	}
 
@@ -429,12 +427,10 @@ export class TracingModel {
 		const superParentMsgId = this.dimensionStore
 			.get(parentMsgId)
 			.get(dimension).superParentMsgId;
-		process.nextTick(() =>
-			this.checkMsgFinishState(
-				parentMsgId,
-				superParentMsgId,
-				parentDimension
-			)
+		this.checkMsgFinishState(
+			parentMsgId,
+			superParentMsgId,
+			parentDimension
 		);
 		return;
 	}
