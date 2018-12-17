@@ -1,11 +1,12 @@
 import * as fs from 'fs';
+import {join} from 'path';
+import {VError} from 'verror';
 import {BatchingBoxInterface, BoxInterface} from './BoxI';
 import ComponentFactoryI from './ComponentFactoryI';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
 import {parseComponentName} from './componentNameParser';
 import {ServiceProvider} from './ServiceProvider';
-import {VError} from 'verror';
 
 const debug = require('debug')('bakeryjs:componentProvider');
 
@@ -80,32 +81,24 @@ export class ComponentFactory implements ComponentFactoryI {
 		componentsPath: string,
 		parentDir: string = ''
 	): void {
-		const componentsPathSanit = componentsPath.endsWith('/')
-			? componentsPath
-			: `${componentsPath}/`;
-		const files = fs.readdirSync(componentsPathSanit);
-		files.forEach(
-			(file: string): void => {
-				if (
-					fs.statSync(`${componentsPathSanit}${file}`).isDirectory()
-				) {
-					if (file !== '.' && file !== '..') {
-						this.findComponents(
-							`${componentsPathSanit}${file}/`,
-							`${parentDir}${file}/`
-						);
-					}
-				} else {
-					const name = parseComponentName(`${parentDir}${file}`);
-					if (name == null) {
-						return;
-					}
-					this.availableComponents[
-						name
-					] = `${componentsPathSanit}${file}`;
+		const files = fs.readdirSync(componentsPath);
+		for (const file of files) {
+			const stat = fs.statSync(join(componentsPath, file));
+			if (stat.isDirectory()) {
+				if (file !== '.' && file !== '..') {
+					this.findComponents(
+						join(componentsPath, file),
+						join(parentDir, file)
+					);
 				}
+			} else {
+				const name = parseComponentName(join(parentDir, file));
+				if (!name) {
+					return;
+				}
+				this.availableComponents[name] = join(componentsPath, file);
 			}
-		);
+		}
 	}
 }
 
