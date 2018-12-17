@@ -9,21 +9,26 @@ const serviceProvider = new ServiceProvider({
 	},
 });
 
-const componentsDir = resolve(__dirname, '..', '..', '..', 'components') + '/';
-const componentsDirWSlash = resolve(__dirname, '..', '..', '..', 'components');
-const testDataDir =
-	resolve(__dirname, '..', '..', '..', '..', 'test-data') + '/';
+const componentsDir = resolve(__dirname, '../../../components');
+const componentsDirSlash = componentsDir + '/';
+const testDataDir = resolve(__dirname, '../../../../test-data') + '/';
 
 describe('Component Factory', () => {
 	it('create builtin box', async () => {
-		const factory = new ComponentFactory(componentsDir, serviceProvider);
+		const factory = new ComponentFactory(
+			componentsDirSlash,
+			serviceProvider
+		);
 
 		const tickBox = await factory.create('tick');
 		expect(tickBox).not.toBeUndefined();
 	});
 
 	it('create nonexistent box throws', () => {
-		const factory = new ComponentFactory(componentsDir, serviceProvider);
+		const factory = new ComponentFactory(
+			componentsDirSlash,
+			serviceProvider
+		);
 
 		factory.create('fick').catch((reason) => {
 			expect.assertions(2);
@@ -35,7 +40,7 @@ describe('Component Factory', () => {
 	describe('Component Factory -- path without ending slash', () => {
 		it('create builtin box', async () => {
 			const factory = new ComponentFactory(
-				componentsDirWSlash,
+				componentsDir,
 				serviceProvider
 			);
 
@@ -45,7 +50,7 @@ describe('Component Factory', () => {
 
 		it('create nonexistent box throws', () => {
 			const factory = new ComponentFactory(
-				componentsDirWSlash,
+				componentsDir,
 				serviceProvider
 			);
 
@@ -61,7 +66,7 @@ describe('Component Factory', () => {
 		it('create a builtin box', async () => {
 			const multiFactory = new MultiComponentFactory();
 			multiFactory.push(
-				new ComponentFactory(componentsDir, serviceProvider)
+				new ComponentFactory(componentsDirSlash, serviceProvider)
 			);
 			multiFactory.push(
 				new ComponentFactory(testDataDir, serviceProvider)
@@ -74,7 +79,7 @@ describe('Component Factory', () => {
 		it('create a user-defined', async () => {
 			const multiFactory = new MultiComponentFactory();
 			multiFactory.push(
-				new ComponentFactory(componentsDir, serviceProvider)
+				new ComponentFactory(componentsDirSlash, serviceProvider)
 			);
 			multiFactory.push(
 				new ComponentFactory(testDataDir, serviceProvider)
@@ -86,7 +91,7 @@ describe('Component Factory', () => {
 
 		it('create nonexistent box throws', () => {
 			const factory = new ComponentFactory(
-				componentsDir,
+				componentsDirSlash,
 				serviceProvider
 			);
 
