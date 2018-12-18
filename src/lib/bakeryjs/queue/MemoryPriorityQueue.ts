@@ -3,7 +3,7 @@ import {Message} from '../Message';
 import {qTrace, sampleStats} from '../stats';
 import BetterQueue = require('better-queue');
 
-const DEFAULT_PRIORITY = 5;
+const DEFAULT_PRIORITY = undefined;
 
 type TaskWrap<T> = {
 	m: T;
