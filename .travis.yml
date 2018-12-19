@@ -1,9 +1,15 @@
 language: node_js
 node_js:
-  - node
-  - lts/*
-  - lts/carbon
-
+- node
+- lts/*
+- lts/carbon
 cache:
   directories:
   - "$HOME/.npm"
+deploy:
+  provider: npm
+  api_key:
+    secure: pR7jU/nI65M0l8Ye8bswbImEQBrDsdbSlEOuxjEWJBtQxbP/jzPle3NjHMKz992Wnl6hfFfsCSbRUh3dJlHBt2x+uBCBA6EpjW6aW8KO9dOIW/s7wgOGZAJbJ4HfWSu9b9xWAzZIe76LxisbHYK+2VXdc46rlDBa1jmg3uuCmkdDvG6eF0tJlU4ZaEaK+CJE8U49ldHQj59ZB1dGov7gigzd7SILESeh6tDjG5kPemc4Y02F42Dmt8BywikjOKDQzpB6ZrUSeQGltAHoe0Z5GdnB4zEZC91ritTMOvjW20tr/e2fHrRzeqFdyW/g+PsWyTvozXdrGSdBlpwBtwYGjquLKio331Zfvv5NCe99WuhIg/+yBMcyyHZr8MRrvduiz2BtDCeN1WyjenDjf96bb4ublauXhexbK8BZkTufTtzqeo3eLi5PR9l4kGA4wgMrAcYvwsL2MDo3j4UTbwZo3B+xLz0WLvGo2c7/0XeNkcWMh/M/Dkf2oumHUBuh9rmaCfzGCJn3Judoob14D0bG9tVgArUFeuLcA0ssiF6vI/kJX7qAqxkGef1PVfCX+KBLZwfUjiNsW5ubV1CbOgs2uDjc0alcJ5PD2wUbPUIz7y0FcgiF0yelmwFIYpGe4xtNuHahx+E5hCaKbYcPa9bptz19QISejPw+1H2NeBrBtrc=
+  on:
+    tags: true
+    repo: Socialbakers/BakeryJS
