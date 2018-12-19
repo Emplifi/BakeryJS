@@ -94,7 +94,7 @@ export class ComponentFactory implements ComponentFactoryI {
 			} else {
 				const name = parseComponentName(join(parentDir, file));
 				if (!name) {
-					return;
+					continue;
 				}
 				this.availableComponents[name] = join(componentsPath, file);
 			}

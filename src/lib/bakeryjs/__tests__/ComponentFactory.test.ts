@@ -14,6 +14,15 @@ const componentsDirSlash = componentsDir + '/';
 const testDataDir = resolve(__dirname, '../../../../test-data') + '/';
 
 describe('Component Factory', () => {
+	it('finds all components', async () => {
+		const factory = new ComponentFactory(componentsDir, serviceProvider);
+		const tickBox = await factory.create('tick');
+		expect(tickBox).toBeDefined();
+
+		const tockBox = await factory.create('tock');
+		expect(tockBox).toBeDefined();
+	});
+
 	it('create builtin box', async () => {
 		const factory = new ComponentFactory(
 			componentsDirSlash,
