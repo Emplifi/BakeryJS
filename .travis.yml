@@ -6,16 +6,20 @@ node_js:
 cache:
   directories:
   - "$HOME/.npm"
-
 jobs:
   include:
-    - stage: release
-      node_js: lts/*
-      if: tag IS present AND repo = 'Socialbakers/BakeryJS'
-      script: skip
-      deploy:
-        provider: npm
-        api_key:
-          secure: pR7jU/nI65M0l8Ye8bswbImEQBrDsdbSlEOuxjEWJBtQxbP/jzPle3NjHMKz992Wnl6hfFfsCSbRUh3dJlHBt2x+uBCBA6EpjW6aW8KO9dOIW/s7wgOGZAJbJ4HfWSu9b9xWAzZIe76LxisbHYK+2VXdc46rlDBa1jmg3uuCmkdDvG6eF0tJlU4ZaEaK+CJE8U49ldHQj59ZB1dGov7gigzd7SILESeh6tDjG5kPemc4Y02F42Dmt8BywikjOKDQzpB6ZrUSeQGltAHoe0Z5GdnB4zEZC91ritTMOvjW20tr/e2fHrRzeqFdyW/g+PsWyTvozXdrGSdBlpwBtwYGjquLKio331Zfvv5NCe99WuhIg/+yBMcyyHZr8MRrvduiz2BtDCeN1WyjenDjf96bb4ublauXhexbK8BZkTufTtzqeo3eLi5PR9l4kGA4wgMrAcYvwsL2MDo3j4UTbwZo3B+xLz0WLvGo2c7/0XeNkcWMh/M/Dkf2oumHUBuh9rmaCfzGCJn3Judoob14D0bG9tVgArUFeuLcA0ssiF6vI/kJX7qAqxkGef1PVfCX+KBLZwfUjiNsW5ubV1CbOgs2uDjc0alcJ5PD2wUbPUIz7y0FcgiF0yelmwFIYpGe4xtNuHahx+E5hCaKbYcPa9bptz19QISejPw+1H2NeBrBtrc=
-        on:
-          tags: true
+  - stage: release
+    node_js: lts/*
+    if: tag IS present AND repo = 'Socialbakers/BakeryJS'
+    script: skip
+    deploy:
+      provider: npm
+      email:
+        secure: wRYJyMwAEPw3Nb1x0t1XcMEp8a/zyva/Ew07vlyUH3cb6eIC7mqXyu/YiHlgtx82G58ChDkSJYVlUOhv+U71+OX9Q1sX5KVqUsEH5QbdZALNZcZ6qOqXUKt6AHXtyHhuigNEoTYWRkZ0k9f6vJZF9jas972dqS78i0uTEXJNEs73g06wRQYUwkdtOVUFx/hRB8a3tNz8Nai9Rg7vDvRuSYAxQZKujyqaAJ852lVfGWRHZrJobGFYB3P2e6WfFwWddcyxPYd6ewUHJvJzg2ng0qE228gAtasESyRczBnNFxQdD0JLVMVF7zy7Zj2tXnh1xN/W7u1z0yibam+xGcUaPJOBnLUF3xZzxv0NlLb2kMDvnWPDJSas6YQqiGSQS38qzVG58icgUw1+rt8zh+sdp5mJWksnvnqnnDpr6lXio8/sVIGtRIvuGhmtjcSmZGJHQgRj/4Gq6Vj5/vxQWCqjWy88XRB0J5hl7hffmgMKvtZVJ5d9HI4h5YA1Xz/fMaApVv7ngjxiqWstQH4hKT8YFkF5v6lRTiODOhQzR15HpB6M/8eRF99wLnqEfFEZJHyzR2bfCA775NkPSxZTUfxVgR/UR2i7tOB1XH+kE3+BJ322e93C9Aqi+MibiyWay0YfGl/lXEFbA7uGHismSvBJaEefEgW2Bp4PsIsJjcsEBUY=
+      api_key:
+        secure: lMnBtRMd2rukOiaZspvnjxRXQ+wfxvAd70WAM30OtdgjAzc4DmBkhJV8e531uz0Hf+UgqHS6H4QkpkTo0G/WipvLEh+zwy3LUELQE3yOJYmojrYsIWmqbqQxwfFMOSP2EtKzjrrcaEWBYah7LD2lhpBGtx286NH496r4z+J77FlSl+DFiqDdAtJ+8uMJc9sbGyckjC96TYI4MQi10LNtCxw8iV+F7RR5QF1tlI6ZUMpPy2vWVxsyHe1RVZhwX4MkvGowUgykZpJM6YPJOl1x5pvTiI5gRrGsSOtkrYrNOBuuqpBS/rRBmMKc59KL63qsbkWShfNQ7E+7Om8s3hMzT+QtMtXGGAn+vqNEmuPzaWWrSqg4wHax5nffIAxM4GDQDObfPM4L0zT8LFRlYnAZFPvjsEmWkOx6OwH2X/syyt0xuy15XIAsR/unv8d2VDiLn5tn4qTbsWuHGtcgcQkR+MgzGOQ/iQagsN05OEdP27tvrBAoVzo7uEuSrjSBq+VhmeD8tXX6rRpLUVxQpjAsTjb1vt3PMd0ABySbWjC2tu6Kjm8WHQZRT2h9Cl5dy++n+hbLr8SWemIDX6jhQG2o/XcbsoIPumrStKkR3x7F4h0UUOzedLgmRcREj7tALdBnyt8cvUmaSLQ5tNJZGDsrKxD3JgJLNzTe3I5b0Z736Y0=
+      on:
+        tags: true
+notifications:
+  slack:
+    secure: bsPosC5EHo21GN5GISUZgPsy1yMRNbzTPlFKwTGtDAouT5NShJzwEsr8LeHwM8HcXnw4NTmZH+IId7HL1sTMJiv11/HcDt9FpQjxILIjOq6J6XsmaGbHIiA1u744+3OvChWuFxWUky3m/L8rVk55fM7ZNmKh2lr+6iufbtGJeCw137S0U9WzlOY3Ckp4Nct4EELCiYJBYNL4e2M0zq+vvpM67RLgbu3No4v1ym2Tx4Jm4oCKIpAqCYCWAnmfygxAaP0rxQDfGS62pgIELmqnovyUDikiL8xqucALSYxds5OedUJt9JChafe/++aygdv/NpFP6/TlOy07Wuw7O/tqdw0oLPFcC1MAydeKjvpg0HT4rL1kKCaxOz3iz7lkPYpv0njf5GpoaAGgwVHPPhKWbrurIhnlWdldI24nf+v9RdXBa1Vw/TzHukVudrUa2HP/AW4628bsUSnj8PPC0iPP193FtbY2+e6SHJ1VfgnuQzCiE0T+SAIXlnUXHlR9+EX6nAsRsE9sUtWMckpCrp28aR7bBD6gGVWyMGsCcPSzOVbYTxWkY6Us2xAKcU3qB0p3GQvemyh9TS2qYWW21ecOSKbhxcy1Gw/kZzb0+cGM5VaXO3uX17Xb9iw8N15JSU5P2SxP2pAoUJZernP3kFlFvWDHX8A0LHzceWRmA3KYCg8=
