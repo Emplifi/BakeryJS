@@ -1,4 +1,4 @@
-import {Program} from '../src';
+import {Program} from 'bakeryjs';
 
 test('tracingModel: TypeError: Requested key msg is missing', async () => {
 	const program = new Program(
