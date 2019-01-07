@@ -41,6 +41,7 @@
 		"eslint-plugin-typescript": "^0.14.0",
 		"jest": "^23.6.0",
 		"jest-junit": "^5.2.0",
+		"json5": "^2.1.0",
 		"nodemon": "^1.18.9",
 		"prettier": "1.15.3",
 		"ts-jest": "^23.10.5",
@@ -52,7 +53,7 @@
 	"scripts": {
 		"start": "npm run build:live",
 		"build:live": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/index.ts all",
-		"build": "tsc --pretty",
+		"build": "tsc -b tsconfig.build.json",
 		"prepare": "npm run build",
 		"test": "jest",
 		"lint": "eslint --ext .ts,.js src/ tests/",

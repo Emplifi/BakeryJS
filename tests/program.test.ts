@@ -1,8 +1,7 @@
-import {Program} from '../src';
-import {MessageData} from '../src/lib/bakeryjs/Message';
-import {FlowDescription} from '../src/lib/bakeryjs/Flow';
-import {FlowExplicitDescription} from '../src/lib/bakeryjs/FlowBuilderI';
 import * as VError from 'verror';
+import {Program, MessageData} from 'bakeryjs';
+import {FlowExplicitDescription} from 'bakeryjs/FlowBuilderI';
+import {FlowDescription} from 'bakeryjs/Flow';
 
 const program = new Program(
 	{},

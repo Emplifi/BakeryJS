@@ -1,12 +1,10 @@
-import * as fs from 'fs';
-import {join} from 'path';
 import {VError} from 'verror';
 import {BatchingBoxInterface, BoxInterface} from './BoxI';
 import ComponentFactoryI from './ComponentFactoryI';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
-import {parseComponentName} from './componentNameParser';
 import {ServiceProvider} from './ServiceProvider';
+import {scanComponentsPath} from './scanComponentsPath';
 
 const debug = require('debug')('bakeryjs:componentProvider');
 
@@ -37,7 +35,7 @@ export class ComponentFactory implements ComponentFactoryI {
 		serviceProvider: ServiceProvider
 	) {
 		this.baseURI = `file://${componentsPath}`;
-		this.findComponents(componentsPath);
+		this.availableComponents = scanComponentsPath(componentsPath);
 		debug(this.availableComponents);
 		this.serviceProvider = serviceProvider;
 	}
@@ -48,7 +46,7 @@ export class ComponentFactory implements ComponentFactoryI {
 		parameters?: any
 	): Promise<BoxInterface | BatchingBoxInterface> {
 		if (!this.availableComponents[name]) {
-			return Promise.reject(boxNotFoundError(name, this.baseURI));
+			throw boxNotFoundError(name, this.baseURI);
 		}
 		try {
 			// TODO: (code detail) Is it necessary to always import the file?
@@ -60,44 +58,17 @@ export class ComponentFactory implements ComponentFactoryI {
 				parameters
 			) as BoxInterface | BatchingBoxInterface;
 		} catch (error) {
-			return Promise.reject(
-				new VError(
-					{
-						name: 'ComponentLoadError',
-						cause:
-							error instanceof Error ? error : new Error(error),
-						info: {
-							componentName: name,
-						},
+			throw new VError(
+				{
+					name: 'ComponentLoadError',
+					cause: error instanceof Error ? error : new Error(error),
+					info: {
+						componentName: name,
 					},
-					'Error loading component %s',
-					name
-				)
+				},
+				'Error loading component %s',
+				name
 			);
-		}
-	}
-
-	private findComponents(
-		componentsPath: string,
-		parentDir: string = ''
-	): void {
-		const files = fs.readdirSync(componentsPath);
-		for (const file of files) {
-			const stat = fs.statSync(join(componentsPath, file));
-			if (stat.isDirectory()) {
-				if (file !== '.' && file !== '..') {
-					this.findComponents(
-						join(componentsPath, file),
-						join(parentDir, file)
-					);
-				}
-			} else {
-				const name = parseComponentName(join(parentDir, file));
-				if (!name) {
-					continue;
-				}
-				this.availableComponents[name] = join(componentsPath, file);
-			}
 		}
 	}
 }
@@ -117,8 +88,10 @@ export class MultiComponentFactory implements ComponentFactoryI {
 		queue?: PriorityQueueI<Message>,
 		parameters?: any
 	): Promise<BoxInterface | BatchingBoxInterface> {
-		const futureBoxes = this.factories.map(async (f) => {
-			return await f.create(name, queue, parameters).catch((reason) => {
+		const futureBoxes = this.factories.map(async (factory) => {
+			try {
+				return await factory.create(name, queue, parameters);
+			} catch (reason) {
 				if (!(reason instanceof Error)) {
 					reason = new Error(reason);
 				}
@@ -131,14 +104,14 @@ export class MultiComponentFactory implements ComponentFactoryI {
 						name: 'FactoryException',
 						message: 'ComponentFactory.create(%s) failed.',
 						info: {
-							factoryBaseURI: f.baseURI,
+							factoryBaseURI: factory.baseURI,
 							requestedBoxName: name,
 						},
 						cause: reason,
 					},
 					name
 				);
-			});
+			}
 		});
 
 		const resolvedBoxes = await Promise.all(futureBoxes);
@@ -147,8 +120,6 @@ export class MultiComponentFactory implements ComponentFactoryI {
 			return result;
 		}
 
-		return Promise.reject(
-			boxNotFoundError(name, this.factories.map((f) => f.baseURI))
-		);
+		throw boxNotFoundError(name, this.factories.map((f) => f.baseURI));
 	}
 }
