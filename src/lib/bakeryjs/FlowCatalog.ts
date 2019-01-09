@@ -7,6 +7,8 @@ import {VisualBuilder} from './builders/VisualBuilder';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
 
+const debug = require('debug')('bakeryjs:flowCatalog');
+
 export class FlowCatalog {
 	private readonly flowSchemaReader: FlowSchemaReaderI;
 	private readonly flowFactory: FlowFactory;
@@ -29,7 +31,7 @@ export class FlowCatalog {
 	): Promise<Flow> {
 		const schema = await this.flowSchemaReader.getFlowSchema(flowName);
 
-		console.log(`getFlow: ${flowName}`);
+		debug('getFlow: %s', flowName);
 		return this.buildFlow(schema, drain);
 	}
 
@@ -37,8 +39,10 @@ export class FlowCatalog {
 		schema: FlowExplicitDescription,
 		drain?: PriorityQueueI<Message>
 	): Promise<Flow> {
-		console.log(await this.visualBuilder.build(schema));
-
+		if (debug.enabled || process.env.NODE_ENV !== 'production') {
+			const visualSchema = await this.visualBuilder.build(schema);
+			console.log(visualSchema);
+		}
 		return await this.flowFactory.create(schema, drain);
 	}
 }
