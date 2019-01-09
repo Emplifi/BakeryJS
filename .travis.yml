@@ -14,6 +14,7 @@ jobs:
     script: skip
     deploy:
       provider: npm
+      skip_cleanup: true
       email:
         secure: wRYJyMwAEPw3Nb1x0t1XcMEp8a/zyva/Ew07vlyUH3cb6eIC7mqXyu/YiHlgtx82G58ChDkSJYVlUOhv+U71+OX9Q1sX5KVqUsEH5QbdZALNZcZ6qOqXUKt6AHXtyHhuigNEoTYWRkZ0k9f6vJZF9jas972dqS78i0uTEXJNEs73g06wRQYUwkdtOVUFx/hRB8a3tNz8Nai9Rg7vDvRuSYAxQZKujyqaAJ852lVfGWRHZrJobGFYB3P2e6WfFwWddcyxPYd6ewUHJvJzg2ng0qE228gAtasESyRczBnNFxQdD0JLVMVF7zy7Zj2tXnh1xN/W7u1z0yibam+xGcUaPJOBnLUF3xZzxv0NlLb2kMDvnWPDJSas6YQqiGSQS38qzVG58icgUw1+rt8zh+sdp5mJWksnvnqnnDpr6lXio8/sVIGtRIvuGhmtjcSmZGJHQgRj/4Gq6Vj5/vxQWCqjWy88XRB0J5hl7hffmgMKvtZVJ5d9HI4h5YA1Xz/fMaApVv7ngjxiqWstQH4hKT8YFkF5v6lRTiODOhQzR15HpB6M/8eRF99wLnqEfFEZJHyzR2bfCA775NkPSxZTUfxVgR/UR2i7tOB1XH+kE3+BJ322e93C9Aqi+MibiyWay0YfGl/lXEFbA7uGHismSvBJaEefEgW2Bp4PsIsJjcsEBUY=
       api_key:
