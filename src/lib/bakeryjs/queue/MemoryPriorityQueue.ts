@@ -1,6 +1,7 @@
 import {PriorityQueueI} from './PriorityQueueI';
 import {Message} from '../Message';
-import {qTrace, sampleStats} from '../stats';
+import {qTrace} from '../stats';
+// import {qTrace, sampleStats} from '../stats';
 import BetterQueue = require('better-queue');
 
 const DEFAULT_PRIORITY = undefined;
@@ -23,7 +24,7 @@ export interface BatchQueueConfig extends QueueConfig {
 type Worker<T> = (task: T) => Promise<void>;
 type BatchWorker<T> = (task: T[]) => Promise<void>;
 
-@sampleStats
+// @sampleStats
 export class AQueue<T extends Message> implements PriorityQueueI<T> {
 	private src: string | undefined;
 	protected readonly queue: BetterQueue<any, any>;
