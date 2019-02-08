@@ -19,6 +19,7 @@ import ajv from 'ajv';
 import {SchemaObjectValidation} from './FlowBuilderI';
 import {MultiError} from 'verror';
 import VError = require('verror');
+const debug = require('debug')('bakeryjs:Program');
 
 type UserConfiguration = {
 	componentPaths?: string[];
@@ -134,7 +135,9 @@ export class Program {
 
 	public runFlow(flow: Flow, jobInitialValue?: MessageData): Promise<void> {
 		const job = new Job(jobInitialValue);
-		console.log('Program run ----->');
+		if (debug.enabled || process.env.NODE_ENV !== 'production') {
+			console.log('Program run ----->');
+		}
 		// TODO: separate this from stats EE -- it is shared accross various flows
 		eventEmitter.emit('run', flow, job);
 		return flow.process(job);
@@ -196,9 +199,13 @@ export class Program {
 		const drain = drainCallback
 			? createDrainPush(drainCallback)
 			: undefined;
-		console.log('dispatch on flow description:');
+		if (debug.enabled || process.env.NODE_ENV !== 'production') {
+			console.log('dispatch on flow description:');
+		}
 		if (hasFlow(flowDesc)) {
-			console.log('getting flow from catalog');
+			if (debug.enabled || process.env.NODE_ENV !== 'production') {
+				console.log('getting flow from catalog');
+			}
 			return this.catalog
 				.getFlow(flowDesc.flow, drain)
 				.then((f) => this.runFlow(f, jobInitialValue))
@@ -207,7 +214,9 @@ export class Program {
 					throw error;
 				});
 		} else if (hasProcess(flowDesc)) {
-			console.log('building flow from SchemaObject');
+			if (debug.enabled || process.env.NODE_ENV !== 'production') {
+				console.log('building flow from SchemaObject');
+			}
 			return this.catalog
 				.buildFlow(flowDesc, drain)
 				.then((f) => this.runFlow(f, jobInitialValue))
