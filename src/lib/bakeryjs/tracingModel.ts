@@ -371,12 +371,19 @@ export class TracingModel {
 			return;
 		}
 
-		// All is checked.
-		// Set the message as `done`
-		this.msgStore
-			.get(parentMsgId)
-			.get(dimension)
-			.get(msgId).done = true;
+		if (!process.env.USE_EXPERIMENTAL_TRACING) {			
+			// All is checked.
+			// Set the message as `done`
+			this.msgStore
+				.get(parentMsgId)
+				.get(dimension)
+				.get(msgId).done = true;
+		} else {
+			this.msgStore
+				.get(parentMsgId)
+				.get(dimension)
+				.delete(msgId);
+		}
 		// Delete all child dimensions (they are done, either)
 		this.dimensionStore.delete(msgId);
 
