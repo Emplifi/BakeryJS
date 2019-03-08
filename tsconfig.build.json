@@ -3,6 +3,7 @@
 	"include": ["src/**/*.ts"],
 	"exclude": ["node_modules", "**/node_modules/*", "**/__tests__/*"],
 	"compilerOptions": {
-		"pretty": true
+		"pretty": true,
+		"sourceMap": false
 	}
 }
