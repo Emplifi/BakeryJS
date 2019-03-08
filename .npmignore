@@ -12,4 +12,7 @@ jest.config.js
 .prettierrc
 .travis.yml
 .gitlab-ci.yml
-tsconfig.json
+tsconfig*.json
+greenkeeper.json
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
