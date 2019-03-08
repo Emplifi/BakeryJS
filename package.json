@@ -1,6 +1,6 @@
 {
 	"name": "bakeryjs",
-	"version": "0.0.1-beta.14",
+	"version": "0.0.1-beta.15",
 	"description": "FBP-inspired library",
 	"main": "build/index",
 	"types": "build/index",
