@@ -283,7 +283,7 @@ abstract class Box extends EventEmitter implements BoxInterface {
 			msg.setOutput(this.meta.provides, result);
 			this.queue.push(msg);
 			return;
-		} catch (error) {
+		} catch (error:any) {
             if (!error instanceof Error) {
                 error = new Error(error)
             }
@@ -586,7 +586,7 @@ abstract class BatchingBox extends EventEmitter
 				})
 			);
 			return;
-		} catch (error) {
+		} catch (error:any) {
             if (!error instanceof Error) {
                 error = new Error(error)
             }
