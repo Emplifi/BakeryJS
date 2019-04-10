@@ -71,7 +71,7 @@ describe('Component Factory', () => {
 		});
 	});
 
-	describe('double factory', async () => {
+	describe('double factory', () => {
 		it('create a builtin box', async () => {
 			const multiFactory = new MultiComponentFactory();
 			multiFactory.push(

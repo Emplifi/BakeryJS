@@ -1,4 +1,3 @@
-import * as VError from 'verror';
 import {Program, MessageData} from 'bakeryjs';
 import {FlowExplicitDescription} from 'bakeryjs/FlowBuilderI';
 import {FlowDescription} from 'bakeryjs/Flow';
@@ -214,9 +213,10 @@ test('Fail to build flow with invalid custom configuration', async () => {
 		],
 	};
 
-	program.run((job as any) as FlowDescription).catch((err) => {
-		expect(err).toBeInstanceOf(VError);
-		expect(err.name).toEqual('BoxParametersValidationError');
+	await program.run((job as any) as FlowDescription).catch((err) => {
+		expect(err.jse_cause.jse_cause.name).toEqual(
+			'BoxParametersValidationError'
+		);
 	});
 });
 
