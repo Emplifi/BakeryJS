@@ -22,7 +22,7 @@
 	},
 	"dependencies": {
 		"ajv": "^6.10.0",
-		"async": "^2.6.2",
+		"async": "^3.0.1",
 		"better-queue": "^3.8.10",
 		"debug": "^4.1.1",
 		"jsnetworkx": "^0.3.4",
