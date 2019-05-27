@@ -1,6 +1,6 @@
 {
 	"name": "bakeryjs",
-	"version": "0.0.1-beta.18",
+	"version": "0.0.1-beta.19",
 	"description": "FBP-inspired library",
 	"main": "build/index",
 	"types": "build/index",
@@ -11,10 +11,10 @@
 		"Martin Štekl <martin.stekl.external@socialbakers.com>",
 		"Jan Vlnas <jan.vlnas@socialbakers.com>"
 	],
-  "license": "MIT",
-  "files": [
-    "build/"
-  ],
+	"license": "MIT",
+	"files": [
+		"build/"
+	],
 	"engines": {
 		"node": ">=8.11",
 		"npm": ">=5.6"
