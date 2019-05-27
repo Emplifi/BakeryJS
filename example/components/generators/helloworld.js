@@ -6,8 +6,6 @@ const timeout = promisify(setTimeout);
 // boxFactory creates a component,
 // it must be the default export of the module
 module.exports = boxFactory(
-	// Name of component; this is referenced in the data flow description
-	'helloworld',
 	// Component's metadata
 	{
 		provides: ['msg'], // What kind of data this component provides?

@@ -2,7 +2,6 @@ const {boxFactory} = require('bakeryjs');
 
 // Processor component which calculates number of words in a message
 module.exports = boxFactory(
-	'wordcount',
 	{
 		provides: ['words'],
 		requires: ['msg'],
