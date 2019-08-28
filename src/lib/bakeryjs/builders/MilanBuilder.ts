@@ -229,11 +229,9 @@ export class MilanBuilder implements FlowBuilderI {
 				);
 
 				if (drain) {
-					appliedFcns.then(
-						(msg: Message): void => {
-							drain.push(msg);
-						}
-					);
+					appliedFcns.then((msg: Message): void => {
+						drain.push(msg);
+					});
 				}
 			},
 			{

@@ -3,7 +3,7 @@ import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Message} from './Message';
 import {Flow} from './Flow';
 
-// eslint-disable-next-line typescript/no-use-before-define
+// eslint-disable-next-line @typescript-eslint/no-use-before-define
 export type SchemaComponent = string | SchemaObject;
 export type ConcurrentSchemaComponent = SchemaComponent[];
 export type SerialSchemaComponent = ConcurrentSchemaComponent[];

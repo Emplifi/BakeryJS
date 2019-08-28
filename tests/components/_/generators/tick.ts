@@ -13,18 +13,16 @@ const Tick = boxFactory(
 		emitCallback: (chunk: MessageData[], priority?: number) => void
 	): Promise<any> {
 		let i = 0;
-		return new Promise(
-			(resolve: (result?: any) => void): void => {
-				const id = setInterval((): void => {
-					if (i >= 3) {
-						clearInterval(id);
-						resolve();
-					}
-					i += 1;
-					emitCallback([{raw: i}], 1);
-				}, 1000);
-			}
-		);
+		return new Promise((resolve: (result?: any) => void): void => {
+			const id = setInterval((): void => {
+				if (i >= 3) {
+					clearInterval(id);
+					resolve();
+				}
+				i += 1;
+				emitCallback([{raw: i}], 1);
+			}, 1000);
+		});
 	}
 );
 

@@ -653,7 +653,7 @@ abstract class BatchingBox extends EventEmitter
 	 */
 	public async process(batch: Message[]): Promise<any> {
 		const isAggregator: boolean = this.meta.aggregates;
-		const isMapper: boolean = !isAggregator;
+		const isMapper = !isAggregator;
 
 		if (isAggregator) {
 			return await this.processAggregator(batch);
