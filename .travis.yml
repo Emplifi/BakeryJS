@@ -6,7 +6,7 @@ node_js:
 cache:
   directories:
   - "$HOME/.npm"
-install: case $TRAVIS_BRANCH in greenkeeper*) npm i;; *) npm ci;; esac;
+install: npm ci
 jobs:
   include:
   - stage: release
