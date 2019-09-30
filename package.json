@@ -32,7 +32,7 @@
 		"verror": "^1.10.0"
 	},
 	"devDependencies": {
-		"@types/async": "^2.4.1",
+		"@types/async": "^3.0.2",
 		"@types/better-queue": "^3.8.1",
 		"@types/jest": "^24.0.15",
 		"@types/node": "^12.6.8",
