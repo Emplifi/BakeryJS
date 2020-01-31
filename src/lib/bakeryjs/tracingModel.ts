@@ -408,6 +408,12 @@ export class TracingModel {
 		parentMsgId: string,
 		dimension: string[]
 	) {
+		// The dimension may even have not started yet! The first message of the dimension
+		// can be still in its 1st box.
+		if (!this.msgStore.get(parentMsgId).has(dimension)) {
+			return;
+		}
+
 		const dimensionDone =
 			this.dimensionStore.get(parentMsgId).get(dimension).complete &&
 			Array.from(
