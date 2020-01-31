@@ -4,7 +4,7 @@ module.exports = boxFactory(
 	{
 		provides: ['msg'],
 		requires: [],
-		emits: ['msg'],
+		emits: ['msg_bad'],
 		aggregates: false,
 	},
 	async function(
