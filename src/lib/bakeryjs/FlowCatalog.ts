@@ -39,7 +39,7 @@ export class FlowCatalog {
 		schema: FlowExplicitDescription,
 		drain?: PriorityQueueI<Message>
 	): Promise<Flow> {
-		if (debug.enabled || process.env.NODE_ENV !== 'production') {
+		if (debug.enabled) {
 			const visualSchema = await this.visualBuilder.build(schema);
 			console.log(visualSchema);
 		}
