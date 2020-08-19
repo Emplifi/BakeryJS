@@ -135,7 +135,7 @@ export class Program {
 
 	public runFlow(flow: Flow, jobInitialValue?: MessageData): Promise<void> {
 		const job = new Job(jobInitialValue);
-		if (debug.enabled || process.env.NODE_ENV !== 'production') {
+		if (debug.enabled) {
 			console.log('Program run ----->');
 		}
 		// TODO: separate this from stats EE -- it is shared accross various flows
@@ -199,11 +199,11 @@ export class Program {
 		const drain = drainCallback
 			? createDrainPush(drainCallback)
 			: undefined;
-		if (debug.enabled || process.env.NODE_ENV !== 'production') {
+		if (debug.enabled) {
 			console.log('dispatch on flow description:');
 		}
 		if (hasFlow(flowDesc)) {
-			if (debug.enabled || process.env.NODE_ENV !== 'production') {
+			if (debug.enabled) {
 				console.log('getting flow from catalog');
 			}
 			return this.catalog
@@ -214,7 +214,7 @@ export class Program {
 					throw error;
 				});
 		} else if (hasProcess(flowDesc)) {
-			if (debug.enabled || process.env.NODE_ENV !== 'production') {
+			if (debug.enabled) {
 				console.log('building flow from SchemaObject');
 			}
 			return this.catalog
