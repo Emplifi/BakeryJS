@@ -13,50 +13,11 @@ interface IdMessage {
 	readonly id: string;
 	readonly parent: IdMessage | undefined;
 	create(values: MessageData): IdMessage;
-	createSentinel(messageCount: number, retValue?: any): IdSentinel;
 	getInput(requires: string[]): MessageData;
 	setOutput(provides: string[], output: MessageData): void;
-
-	/**
-	 * ## Flag of the sentinel message.
-	 *
-	 * Denotes that this message carries generated data (and that other may follow).
-	 */
-	readonly finished: false;
 }
 
-/**
- * ### Sentinel message
- *
- * Imagine generation of *Messages* which are to be aggregated down the flow.  The aggregator has access to
- * the *id* of the Message the bunch belongs to but can't realize whether it has process all Messages to
- * the particular parent Message *id*.
- *
- * The *Sentinel Message* contains the information. Though it has a unique *id* (as every other *Message*)
- * the information is the number of its siblings (having the same parent id) generated.  We cannot rely
- * on the order of Messages (due to parallel processing & prioritization) so the SentinelMessage
- * cannot just mean "all the data have arrived before me".
- *
- * The field *data* has different semantics.  You can't access to fields of the parent *Message* through it.
- * It holds a *Return Value* of the generator -- `undefined`, Error instance, Warning instance, etc.
- */
-interface IdSentinel {
-	readonly id: string;
-	readonly parent: IdMessage;
-	readonly data: any;
-	readonly dataMessageCount: number;
-	/**
-	 * ## Flag of the sentinel message.
-	 *
-	 * Denotes finished generation with optional result value.  The *id* of the finished dimension is available
-	 * in the field *id*.  Any relevant parent data are available in through *parent*.
-	 *
-	 * The result value (which can be `undefined`, instance of `TypeError`, etc.) is stored in the field `data`.
-	 */
-	readonly finished: true;
-}
-
-export type Message = IdMessage | IdSentinel;
+export type Message = IdMessage;
 
 /**
  * # Behaviour
@@ -90,20 +51,6 @@ abstract class CIdentifiable {
 	}
 }
 
-export class SentinelMessage extends CIdentifiable implements IdSentinel {
-	public readonly parent: IdMessage;
-	public readonly data: any;
-	public readonly finished: true = true;
-	public readonly dataMessageCount: number;
-
-	public constructor(messageCount: number, parent: IdMessage, retValue: any) {
-		super(parent);
-		this.parent = parent; // WTF!!! without this, there is an error "My property parent is not set!"
-		this.data = retValue;
-		this.dataMessageCount = messageCount;
-	}
-}
-
 /**
  * One piece of data flowing inside the Flow through Boxes.
  *
@@ -127,13 +74,6 @@ export class DataMessage extends CIdentifiable implements IdMessage {
 			? Object.create(this.data, Object.getOwnPropertyDescriptors(values))
 			: Object.create(this.data);
 		return new DataMessage(newData, this);
-	}
-
-	public createSentinel(
-		dataMessageCount: number,
-		retValue?: any
-	): IdSentinel {
-		return new SentinelMessage(dataMessageCount, this, retValue);
 	}
 
 	// TODO: (code detail) the flow executor should create a Data Access Object that will guard the fields and
@@ -176,12 +116,4 @@ export class DataMessage extends CIdentifiable implements IdMessage {
 		}
 		return Object.assign({}, ...protoChain);
 	}
-}
-
-export function isData(m: Message): m is IdMessage {
-	return !m.finished;
-}
-
-export function isSentinel(m: Message): m is SentinelMessage {
-	return m.finished;
 }

@@ -5,7 +5,7 @@ import {
 	BoxMeta,
 	OnCleanCallback,
 } from './BoxI';
-import {DataMessage, isData, isSentinel, Message, MessageData} from './Message';
+import {DataMessage, Message, MessageData} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 import {ServiceProvider} from './ServiceProvider';
@@ -214,7 +214,7 @@ abstract class Box extends EventEmitter implements BoxInterface {
 	 *
 	 * @param queue - the output connection of the Box.  Everyone should push to that queue. Mapper, Generator, Aggregator.
 	 * @param parameters - any run-time configuration passed from the Job
-	 * @emits 'msg_finished'
+	 * @emits 'msg_finished', 'generation_finished'
 	 */
 	protected constructor(
 		name: string,
@@ -332,8 +332,18 @@ abstract class Box extends EventEmitter implements BoxInterface {
 			);
 
 			guardedQ.revoke();
-			this.queue.push(value.createSentinel(siblingsCount, retValue));
-			return;
+			this.emit('generation_finished', [
+				{
+					boxName: this.name,
+					messageId: value.id,
+					parentMsgId: value.parent && value.parent.id,
+					generated: siblingsCount,
+				},
+			]);
+			// TODO: what to do with the retValue?
+			// I might have stopped in the middle of generation due to external problems
+			// (e.g. social network refuses to keep responding )
+			return retValue;
 		} catch (error) {
 			if (
 				error instanceof TypeError &&
@@ -401,14 +411,10 @@ abstract class Box extends EventEmitter implements BoxInterface {
 	 *
 	 *  ## The operation
 	 *
-	 *  - the box is a *mapper*.  The batch is filtered and splitted into @SentinelMessage[]
-	 *     and @DataMessage[]. The sentinels are pushed into output queue directly,
-	 *     the DataMessage batch is passed into the mapper, the response
+	 *  - the box is a *mapper*.  The DataMessage batch is passed into the mapper, the response
 	 *     is awaited and pushed into the output queue.
 	 *
-	 *  - the box is a *generator*.  The batch is filtered and splitted into @SentinelMessage[]
-	 *    and @DataMessage[].  The sentinels are pushed into output queue directly.
-	 *    The DataMessages are then *sequentially* passed into the generator.  The generator
+	 *  - the box is a *generator*.  The DataMessages are *sequentially* passed into the generator.  The generator
 	 *    is awaited, so that the processing of the batch is sequential.
 	 *
 	 *  - the box is an *aggregator*. The whole batch is sent into the aggregator.
@@ -425,11 +431,6 @@ abstract class Box extends EventEmitter implements BoxInterface {
 
 		if (isAggregator) {
 			return await this.processAggregator(msg);
-		}
-
-		if (isSentinel(msg)) {
-			this.queue.push(msg);
-			return;
 		}
 
 		try {
@@ -634,14 +635,10 @@ abstract class BatchingBox extends EventEmitter
 	 *
 	 *  ## The operation
 	 *
-	 *  - the box is a *mapper*.  The batch is filtered and splitted into @SentinelMessage[]
-	 *     and @DataMessage[]. The sentinels are pushed into output queue directly,
-	 *     the DataMessage batch is passed into the mapper, the response
+	 *  - the box is a *mapper*.  The DataMessage batch is passed into the mapper, the response
 	 *     is awaited and pushed into the output queue.
 	 *
-	 *  - the box is a *generator*.  The batch is filtered and splitted into @SentinelMessage[]
-	 *    and @DataMessage[].  The sentinels are pushed into output queue directly.
-	 *    The DataMessages are then *sequentially* passed into the generator.  The generator
+	 *  - the box is a *generator*.  The DataMessages are then *sequentially* passed into the generator.  The generator
 	 *    is awaited, so that the processing of the batch is sequential.
 	 *
 	 *  - the box is an *aggregator*. The whole batch is sent into the aggregator.
@@ -651,7 +648,7 @@ abstract class BatchingBox extends EventEmitter
 	 *
 	 * @internalapi
 	 */
-	public async process(batch: Message[]): Promise<any> {
+	public async process(batch: DataMessage[]): Promise<any> {
 		const isAggregator: boolean = this.meta.aggregates;
 		const isMapper = !isAggregator;
 
@@ -659,14 +656,7 @@ abstract class BatchingBox extends EventEmitter
 			return await this.processAggregator(batch);
 		}
 
-		const sentinels = batch.filter((msg) => isSentinel(msg));
-		if (sentinels.length > 0) {
-			this.queue.push(sentinels);
-		}
-
-		const data: DataMessage[] = batch.filter((msg) =>
-			isData(msg)
-		) as DataMessage[];
+		const data = batch;
 		if (data.length > 0) {
 			try {
 				if (isMapper) {
