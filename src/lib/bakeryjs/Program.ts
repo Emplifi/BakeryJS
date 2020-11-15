@@ -11,7 +11,7 @@ import {ComponentFactory, MultiComponentFactory} from './ComponentFactory';
 import {DefaultVisualBuilder} from './builders/DefaultVisualBuilder';
 import {FlowCatalog} from './FlowCatalog';
 import FlowSchemaReader from './FlowSchemaReader';
-import {DataMessage, isData, Message, MessageData} from './Message';
+import {DataMessage, Message, MessageData} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {DAGBuilder} from './builders/DAGBuilder/builder';
 import {eventEmitter} from './stats';
@@ -30,13 +30,11 @@ function createDrainPush(
 	drainCallback: DrainCallback
 ): PriorityQueueI<Message> {
 	return {
-		push(msgs: Message | Message[], priority?: number) {
+		push(msgs: DataMessage | DataMessage[], priority?: number) {
 			if (Array.isArray(msgs)) {
-				msgs.filter((msg) => isData(msg)).forEach((msg) =>
-					drainCallback((msg as DataMessage).export())
-				);
-			} else if (isData(msgs)) {
-				drainCallback((msgs as DataMessage).export());
+				msgs.forEach((msg) => drainCallback(msg.export()));
+			} else {
+				drainCallback(msgs.export());
 			}
 		},
 		length: 0,

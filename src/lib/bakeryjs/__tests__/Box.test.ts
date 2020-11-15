@@ -1,5 +1,5 @@
 import {boxFactory} from '../Box';
-import {DataMessage, Message, MessageData, SentinelMessage} from '../Message';
+import {DataMessage, Message, MessageData} from '../Message';
 import {BoxMeta, BoxInterface, BatchingBoxInterface} from '../BoxI';
 import {PriorityQueueI} from '../queue/PriorityQueueI';
 import {ServiceProvider} from '../ServiceProvider';
@@ -59,25 +59,6 @@ describe('Box', () => {
 						bar: 'hoo!',
 						baz: undefined,
 					});
-				}),
-
-			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
-				it('Sentinel value is passed.', async () => {
-					const box: BoxInterface = setups.box as BoxInterface;
-					const pushMock = setups.push;
-					const parMsg = new DataMessage({jobId: '111'});
-					const msg = parMsg.createSentinel(
-						0,
-						new Error('Sample of possible values.')
-					);
-
-					await box.process(msg);
-					expect(pushMock).toHaveBeenCalledWith(msg, undefined);
-					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(msg.finished).toEqual(true);
-					expect(msg.data).toEqual(
-						new Error('Sample of possible values.')
-					);
 				}),
 
 			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
@@ -157,7 +138,7 @@ describe('Box', () => {
 
 					await box.process(msg);
 
-					expect(pushMock).toHaveBeenCalledTimes(3);
+					expect(pushMock).toHaveBeenCalledTimes(2);
 					expect(
 						pushMock.mock.calls[0][0][0].getInput([
 							'foo',
@@ -191,23 +172,6 @@ describe('Box', () => {
 						bar: 'hoo2',
 						baz: undefined,
 					});
-					expect(pushMock.mock.calls[2][0].finished).toEqual(true);
-					expect(pushMock.mock.calls[2][0].data).toBeUndefined();
-				}),
-
-			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
-				it('passes sentinel Message', async () => {
-					const box = setups.box as BoxInterface;
-					const pushMock = setups.push;
-					const parentMsg = new DataMessage({
-						jobId: 'ggg',
-						foo: 'nee',
-					});
-					const msg = new SentinelMessage(0, parentMsg, 5);
-
-					await box.process(msg);
-					expect(pushMock).toHaveBeenCalledTimes(1);
-					expect(pushMock).toHaveBeenCalledWith(msg, undefined);
 				}),
 
 			(setups: {box: BoxInterface | BatchingBoxInterface; push: any}) =>
@@ -218,7 +182,7 @@ describe('Box', () => {
 						foo: 'nee',
 					});
 
-					expect.assertions(12);
+					expect.assertions(9);
 					box.on('msg_finished', (msgs: any[]) => {
 						msgs.forEach((m) => {
 							expect(m).toHaveProperty(

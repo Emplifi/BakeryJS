@@ -12,11 +12,7 @@
  * When a box is *a generator*, several messages leave the box (children of the
  * original message), but not the original one.  The children generated from the
  * incoming Message form so called *Dimension* (this is the dimension declared
- * in the generator's metadata `emits`).  Moreover, after all children have been
- * generated, the *Sentinel Message* is generated, containing information about
- * the number of children.  The Sentinel Message serves the possible aggregator
- * boxes downstream the graph, such that it knows whether it has aggregated all
- * the messages of the dimension.
+ * in the generator's metadata `emits`).
  *
  * Every consistent flow has the property that each box processes only messages
  * of one particular dimension, neither more nor less.  Thus, we can assign a
@@ -61,11 +57,6 @@
  *   +v+    +v+  +v+       |msg7@Dim11|      |msg8@Dim11| |msgA@Dim11|      |msgB@Dim11|
  *   |D|    |E|  |F|       +----------+      +----------+ +----------+      +----------+
  *   +-+    +-+  +-+
- *                         Sentinel Messages:
- *                           msg3@Dim1
- *                           msg6@Dim2
- *                           msg9@Dim11
- *                           msgC@Dim11
  *
  * ### The Flow
  *
@@ -106,13 +97,9 @@
  *
  * #### The events
  *
- * The flow subscribes to events `msg_finish` of the boxes providing information about message id, parent message id
- * and whether it is sentinel.  The regular message means "a message has successfully passed the box", the sentinel
- * message means "all the children of parent message have been generated".
+ * The flow subscribes to events `msg_finish` and `generation_finished` of the boxes providing information about message id and  parent message id.
  *
- * Remember, we can rely on the order of events only in the generating box (especially that SentinelMessage is generated
- * as **the last one**).  Down the flow, the messages will shuffle due to asynchronous and parallel processing in boxes.
- * Moreover, the Sentinel Messages skip the Mapper Boxes, so they usually arrive into the aggregator **before the others**.
+ * Remember, we can rely on the order of events only in the generating box.  Down the flow, the messages will shuffle due to asynchronous and parallel processing in boxes.
  * Thus, after every new information a check of `done` state must be done.
  */
 
@@ -244,7 +231,7 @@ export class TracingModel {
 	 * @param parentMsgId - id of the parent of the message
 	 * @param boxName - box the message has just passed through
 	 */
-	public addMsg(msgId: string, parentMsgId: string, boxName: string) {
+	public addMsg(msgId: string, parentMsgId: string, boxName: string): void {
 		const boxAttribs = this.boxGraph.node.get(boxName) as AttributeDict;
 		const dimension = boxAttribs.dimension;
 
@@ -264,6 +251,7 @@ export class TracingModel {
 		} else this.insertNewMsg(dimension, boxName, parentMsgId, msgId);
 
 		// Check the completion after each new information
+		// TODO: Defer checking after all the messages of the batch have been added
 		this.checkMsgFinishState(msgId, parentMsgId, dimension);
 	}
 
@@ -282,7 +270,7 @@ export class TracingModel {
 	 * @param parentMsgId - id of the parent message
 	 * @param boxName - box the message has come from
 	 */
-	public setDimensionComplete(parentMsgId: string, boxName: string) {
+	public setDimensionComplete(parentMsgId: string, boxName: string): void {
 		const dimension = (this.boxGraph.node.get(boxName) as AttributeDict)
 			.dimension;
 		if (
@@ -304,7 +292,7 @@ export class TracingModel {
 		boxName: string,
 		parentMsgId: string,
 		msgId: string
-	) {
+	): void {
 		{
 			const boxesToPass = (this.dimGraph.node.get(
 				dimension
@@ -346,7 +334,7 @@ export class TracingModel {
 		msgId: string,
 		parentMsgId: string,
 		dimension: string[]
-	) {
+	): void {
 		const boxesDone = Array.from(
 			this.msgStore
 				.get(parentMsgId)
@@ -407,7 +395,7 @@ export class TracingModel {
 	private checkDimensionFinishState(
 		parentMsgId: string,
 		dimension: string[]
-	) {
+	): void {
 		// The dimension may even have not started yet! The first message of the dimension
 		// can be still in its 1st box.
 		if (!this.msgStore.get(parentMsgId).has(dimension)) {

@@ -102,36 +102,4 @@ describe('Message', () => {
 			expect(parentMessage.getInput(['baz'])).toEqual({baz: undefined});
 		});
 	});
-
-	describe('Sentinel Message', () => {
-		const parentMessage = new DataMessage({foo: 1, bar: 2});
-
-		it('Sentinel with undefined return value', () => {
-			const sentinel = parentMessage.createSentinel(0);
-
-			expect(sentinel.data).toEqual(undefined);
-			expect(sentinel.parent).toEqual(parentMessage);
-		});
-
-		it('Sentinel contains number of messages generated', () => {
-			const sentinel = parentMessage.createSentinel(10);
-
-			expect(sentinel.dataMessageCount).toEqual(10);
-		});
-
-		it("Sentinel contains parent's id", () => {
-			const sentinel = parentMessage.createSentinel(0);
-			expect(sentinel.id).toEqual(
-				expect.stringContaining(parentMessage.id)
-			);
-		});
-
-		it('Sentinel with return value', () => {
-			const theError = new TypeError('Whoa!');
-			const sentinel = parentMessage.createSentinel(0, theError);
-
-			expect(sentinel.data).toEqual(theError);
-			expect(sentinel.parent).toEqual(parentMessage);
-		});
-	});
 });

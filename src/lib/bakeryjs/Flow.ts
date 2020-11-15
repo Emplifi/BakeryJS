@@ -93,20 +93,25 @@ export class Flow extends EventEmitter {
 			}
 			const boxAttribs: AttributeDict = boxWithAttribs[1];
 			boxAttribs.instance.on('msg_finished', (msgInfos: MsgEvent[]) =>
-				msgInfos.forEach((msgInfo) => {
-					if (msgInfo.isSentinel) {
+				// TODO: Defer checking after all the messages of the batch have been added
+				msgInfos.forEach((msgInfo) =>
+					this.tracingModel.addMsg(
+						msgInfo.messageId,
+						msgInfo.parentMsgId || '-',
+						msgInfo.boxName
+					)
+				)
+			);
+			// if the instance is the generator, subscribe for `generation_finished`
+			boxAttribs.instance.on(
+				'generation_finished',
+				(msgInfos: MsgEvent[]) =>
+					msgInfos.forEach((msgInfo) =>
 						this.tracingModel.setDimensionComplete(
-							msgInfo.parentMsgId || '-',
+							msgInfo.messageId || '-',
 							msgInfo.boxName
-						);
-					} else {
-						this.tracingModel.addMsg(
-							msgInfo.messageId,
-							msgInfo.parentMsgId || '-',
-							msgInfo.boxName
-						);
-					}
-				})
+						)
+					)
 			);
 		}
 	}

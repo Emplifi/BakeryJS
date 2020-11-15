@@ -1,4 +1,4 @@
-import {DataMessage, isSentinel, Message} from './Message';
+import {DataMessage, Message} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {EventEmitter} from 'events';
 
@@ -10,7 +10,7 @@ export type MsgEvent = {
 	boxName: string;
 	messageId: string;
 	parentMsgId: string | undefined;
-	isSentinel: boolean;
+	generated?: number;
 };
 
 type ModuleOutput = {
@@ -53,7 +53,6 @@ export function boxEvents(flowEmitter: EventEmitter): ModuleOutput {
 					boxName: {value: boxName},
 					messageId: {value: m.id},
 					parentMsgId: {value: m.parent && m.parent.id},
-					isSentinel: {value: isSentinel(m)},
 				})
 			);
 			flowEmitter.emit('msg_finished', messagesTrace);
