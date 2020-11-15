@@ -9,24 +9,27 @@ let messageId = 0;
  *
  * The Identifiable with data and their accessors and the flag that the generation is not finished.
  */
-interface IdMessage {
+export interface Message {
 	readonly id: string;
-	readonly parent: IdMessage | undefined;
-	create(values: MessageData): IdMessage;
+	readonly parent: Message | undefined;
+	create(values?: MessageData): Message;
 	getInput(requires: string[]): MessageData;
 	setOutput(provides: string[], output: MessageData): void;
 }
 
-export type Message = IdMessage;
-
 /**
+ * One piece of data flowing inside the Flow through Boxes.
+ *
  * # Behaviour
  * 1. Object that is identified by an *id*. The *id* is unique at lest within the flow being currently executed.
  * 2. Such an object can have its parent, the object it has been generated from.
  * 3. A new descendant is created by calling the method *create*.
  *
  * # Intended use:
- * A Message is Identifiable.
+ * - A Message is Identifiable.
+ * - Message holds the computed information in fields.  The information in a field is *immutable* once written.
+ * - As Message flows through Boxes, each Box adds one or more field with arbitrary information.
+ * - The trace of the Message passage is reported by the flow executor into an API passed into Program
  *
  * ## Joints of Edges
  * Several clones of the Message pass through the flow "in parallel".  We need to merge
@@ -35,41 +38,26 @@ export type Message = IdMessage;
  *
  * ## Generating Messages in a *Generator*
  * A generated Message must have an (abstract) link to its *parent* for the purpose of aggregation.  The *parent* *id* plays
- * a role of the GROUP BY expression.
+ * a role of the GROUP BY expression. The trace of the Message passage is reported by the flow executor into an API passed into Program
+ *
+ * @internalapi
  */
-abstract class CIdentifiable {
+export class DataMessage implements Message {
 	private readonly _id: string;
-	public readonly parent: IdMessage | undefined;
+	protected data: MessageData;
+	public readonly parent: Message | undefined;
+
+	public constructor(initData?: MessageData, parent?: Message) {
+		this._id = `${messageId++}`;
+		this.parent = parent;
+		this.data = initData ? initData : {};
+	}
 
 	public get id(): string {
 		return (this.parent ? `${this.parent.id}` : '') + '/' + this._id;
 	}
 
-	protected constructor(parent: IdMessage | undefined) {
-		this._id = `${messageId++}`;
-		this.parent = parent;
-	}
-}
-
-/**
- * One piece of data flowing inside the Flow through Boxes.
- *
- * - Message holds the computed information in fields.  The information in a field is *immutable* once written.
- * - As Message flows through Boxes, each Box adds one or more field with arbitrary information.
- * - The trace of the Message passage is reported by the flow executor into an API passed into Program
- *
- * @internalapi
- */
-export class DataMessage extends CIdentifiable implements IdMessage {
-	protected data: MessageData;
-	public readonly finished: false = false;
-
-	public constructor(initData?: MessageData, parent?: IdMessage) {
-		super(parent);
-		this.data = initData ? initData : Object.create(null);
-	}
-
-	public create(values?: MessageData): IdMessage {
+	public create(values?: MessageData): Message {
 		const newData = values
 			? Object.create(this.data, Object.getOwnPropertyDescriptors(values))
 			: Object.create(this.data);
