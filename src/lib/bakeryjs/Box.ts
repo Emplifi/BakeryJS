@@ -5,7 +5,7 @@ import {
 	BoxMeta,
 	OnCleanCallback,
 } from './BoxI';
-import {DataMessage, Message, MessageData} from './Message';
+import {Message, MessageData} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import VError from 'verror';
 import {ServiceProvider} from './ServiceProvider';
@@ -191,11 +191,11 @@ export type BatchingBoxFactorySignature = new (
  * @internalapi
  */
 abstract class Box extends EventEmitter implements BoxInterface {
+	private readonly queue: PriorityQueueI<Message>;
+	protected readonly serviceParamsProvider: ServiceProvider;
 	public readonly name: string;
 	public readonly meta: BoxMeta;
 	public readonly onClean: OnCleanCallback[] = [];
-	private readonly queue: PriorityQueueI<Message>;
-	protected readonly serviceParamsProvider: ServiceProvider;
 
 	/**
 	 * The Box is a basic unit of execution. It comprises of two levels:
@@ -273,7 +273,7 @@ abstract class Box extends EventEmitter implements BoxInterface {
 		);
 	}
 
-	private async processMapper(msg: DataMessage): Promise<any> {
+	private async processMapper(msg: Message): Promise<any> {
 		try {
 			const result = await this.processValue(
 				msg.getInput(this.meta.requires),
@@ -309,7 +309,7 @@ abstract class Box extends EventEmitter implements BoxInterface {
 		}
 	}
 
-	private async processGenerator(value: DataMessage): Promise<any> {
+	private async processGenerator(value: Message): Promise<any> {
 		try {
 			let siblingsCount = 0;
 			// Prevent the queue from being pushed after generator has resolved
@@ -435,9 +435,9 @@ abstract class Box extends EventEmitter implements BoxInterface {
 
 		try {
 			if (isMapper) {
-				return await this.processMapper(msg as DataMessage);
+				return await this.processMapper(msg);
 			} else if (isGenerator) {
-				await this.processGenerator(msg as DataMessage);
+				await this.processGenerator(msg);
 				return true;
 			} else {
 				throw new AssertionError({
@@ -549,7 +549,7 @@ abstract class BatchingBox extends EventEmitter
 		}
 	}
 
-	private async processMapper(batch: DataMessage[]): Promise<any> {
+	private async processMapper(batch: Message[]): Promise<any> {
 		try {
 			const result = await this.processValue(
 				// Entering the user-defined code.  Let's handle a case when the box
@@ -648,7 +648,7 @@ abstract class BatchingBox extends EventEmitter
 	 *
 	 * @internalapi
 	 */
-	public async process(batch: DataMessage[]): Promise<any> {
+	public async process(batch: Message[]): Promise<any> {
 		const isAggregator: boolean = this.meta.aggregates;
 		const isMapper = !isAggregator;
 

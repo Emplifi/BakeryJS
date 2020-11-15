@@ -1,4 +1,4 @@
-import {DataMessage, Message} from './Message';
+import {Message} from './Message';
 import {PriorityQueueI} from './queue/PriorityQueueI';
 import {EventEmitter} from 'events';
 
@@ -37,10 +37,10 @@ export function boxEvents(flowEmitter: EventEmitter): ModuleOutput {
 		boxName: string
 	): PriorityQueueI<Message> {
 		function tracedPush(
-			msgs: DataMessage[] | DataMessage,
+			msgs: Message[] | Message,
 			priority?: number
 		): void {
-			let messages: DataMessage[];
+			let messages: Message[];
 			if (!Array.isArray(msgs)) {
 				messages = [msgs];
 			} else {
