@@ -50,7 +50,7 @@
 		"prettier": "2.2.1",
 		"ts-jest": "^25.0.0",
 		"ts-node": "^8.3.0",
-		"typedoc": "^0.19.1",
+		"typedoc": "^0.20.16",
 		"typescript": "^3.5.3",
 		"typescript-eslint-parser": "^22.0.0"
 	},
