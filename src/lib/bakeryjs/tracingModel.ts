@@ -359,7 +359,7 @@ export class TracingModel {
 			return;
 		}
 
-		if (!process.env.USE_EXPERIMENTAL_TRACING) {
+		if (process.env.BAKERYJS_DISABLE_EXPERIMENTAL_TRACING) {
 			// All is checked.
 			// Set the message as `done`
 			this.msgStore
