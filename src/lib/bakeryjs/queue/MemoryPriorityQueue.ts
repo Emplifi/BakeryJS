@@ -43,7 +43,9 @@ export class AQueue<T extends Message> implements PriorityQueueI<T> {
 	public push(message: T | T[], priority = DEFAULT_PRIORITY): void {
 		//TODO Fragile detection. What if T is subclass/instance of Array?
 		if (Array.isArray(message)) {
-			message.forEach((m) => this.queue.push({m: m, p: priority}));
+			for (let i = 0; i < message.length; i++) {
+				this.queue.push({m:  message[i], p: priority});
+			}
 		} else {
 			this.queue.push({m: message, p: priority});
 		}
@@ -68,7 +70,8 @@ export class AQueue<T extends Message> implements PriorityQueueI<T> {
 	}
 }
 
-export class MemoryPrioritySingleQueue<T extends Message> extends AQueue<T>
+export class MemoryPrioritySingleQueue<T extends Message>
+	extends AQueue<T>
 	implements PriorityQueueI<T> {
 	public constructor(worker: Worker<T>, config: QueueConfig, target: string) {
 		super(
@@ -86,7 +89,8 @@ export class MemoryPrioritySingleQueue<T extends Message> extends AQueue<T>
 	}
 }
 
-export class MemoryPriorityBatchQueue<T extends Message> extends AQueue<T>
+export class MemoryPriorityBatchQueue<T extends Message>
+	extends AQueue<T>
 	implements PriorityQueueI<T> {
 	public constructor(
 		worker: BatchWorker<T>,

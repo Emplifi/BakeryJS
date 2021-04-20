@@ -32,7 +32,9 @@ function createDrainPush(
 	return {
 		push(msgs: DataMessage | DataMessage[], priority?: number) {
 			if (Array.isArray(msgs)) {
-				msgs.forEach((msg) => drainCallback(msg.export()));
+				for (let i = 0; i < msgs.length; i++) {
+					drainCallback(msgs[i].export());
+				}
 			} else {
 				drainCallback(msgs.export());
 			}

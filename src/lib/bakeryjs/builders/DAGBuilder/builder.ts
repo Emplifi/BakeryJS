@@ -282,13 +282,14 @@ export class DAGBuilder implements FlowBuilderI {
 						: new QZip(joinedQ, inputs.length).inputs;
 
 				// Store the queues in metadata storage by boxes I am dependent of
-				inputs.forEach((inEdge: Edge, index: number) => {
+				for(let index = 0; index < inputs.length; index++) {
 					// Edge == [from (i.e. me), parent]
+					const inEdge: Edge = inputs[index]
 					const providingBox: string = inEdge[1] as string;
 					const inputQ = inputQs[index];
 					inputQ.source = providingBox;
 					graph.addEdge(boxName, providingBox, {queue: inputQ});
-				});
+				}
 				return returnValue;
 			},
 			Promise.resolve(noopQueue)
