@@ -105,6 +105,7 @@
 
 import {AttributeDict, DiGraph, Edge} from 'jsnetworkx';
 import {ROOT_NODE} from './builders/DAGBuilder/builder';
+import {everyMap} from './eval/every';
 
 /**
  * Helper class.  Throughout this code, the maps of maps are used extensively
@@ -237,10 +238,7 @@ export class TracingModel {
 
 		if (
 			//The message is already tracked (e.g. from upstream box of the same dimension)
-			this.msgStore
-				.get(parentMsgId)
-				.get(dimension)
-				.has(msgId)
+			this.msgStore.get(parentMsgId).get(dimension).has(msgId)
 		) {
 			// mark the box as passed
 			this.msgStore
@@ -317,14 +315,17 @@ export class TracingModel {
 					msgId,
 					new DefinedMap<string[], DefinedMap<string, MsgTrace>>()
 				);
-				subDimensions.forEach((subDim: string[]) => {
+
+				for (let i = 0; i < subDimensions.length; i++) {
+					const subDim = subDimensions[i];
 					mySubdims.set(subDim, {
 						complete: false,
 						done: false,
 						superParentMsgId: parentMsgId,
 					} as DimensionTrace);
 					this.msgStore.get(msgId).set(subDim, new DefinedMap());
-				});
+				}
+
 				this.dimensionStore.set(msgId, mySubdims);
 			}
 		}
@@ -335,13 +336,7 @@ export class TracingModel {
 		parentMsgId: string,
 		dimension: string[]
 	): void {
-		const boxesDone = Array.from(
-			this.msgStore
-				.get(parentMsgId)
-				.get(dimension)
-				.get(msgId)
-				.boxes.values()
-		).every((v) => v);
+		const boxesDone = this.getBoxesDone(msgId, parentMsgId, dimension);
 
 		if (!boxesDone) {
 			return;
@@ -349,11 +344,8 @@ export class TracingModel {
 
 		// check `done` state of the sub dimensions
 		// if the message has no subdimension, consider this check fulfilled
-		const subDimensionsDone = this.dimensionStore.has(msgId)
-			? Array.from(this.dimensionStore.get(msgId).values()).every(
-					(dt: DimensionTrace) => dt.complete && dt.done
-			  )
-			: true;
+
+		const subDimensionsDone = this.getSubDimensionsDone(msgId);
 
 		if (!subDimensionsDone) {
 			return;
@@ -367,10 +359,7 @@ export class TracingModel {
 				.get(dimension)
 				.get(msgId).done = true;
 		} else {
-			this.msgStore
-				.get(parentMsgId)
-				.get(dimension)
-				.delete(msgId);
+			this.msgStore.get(parentMsgId).get(dimension).delete(msgId);
 		}
 		// Delete all child dimensions (they are done, either)
 		this.dimensionStore.delete(msgId);
@@ -378,10 +367,7 @@ export class TracingModel {
 		// if we are checking the root job (ugly way of checking dimension is [])
 		if (dimension.length === 0) {
 			// delete the root job (it has no "parent" to handle it)
-			this.msgStore
-				.get(parentMsgId)
-				.get(dimension)
-				.delete(msgId);
+			this.msgStore.get(parentMsgId).get(dimension).delete(msgId);
 			// call the done callback
 			this.jobDone(msgId);
 			return;
@@ -402,14 +388,7 @@ export class TracingModel {
 			return;
 		}
 
-		const dimensionDone =
-			this.dimensionStore.get(parentMsgId).get(dimension).complete &&
-			Array.from(
-				this.msgStore
-					.get(parentMsgId)
-					.get(dimension)
-					.values()
-			).every((mT: MsgTrace) => mT.done);
+		const dimensionDone = this.getDimensionDone(parentMsgId, dimension);
 
 		if (!dimensionDone) {
 			return;
@@ -434,5 +413,36 @@ export class TracingModel {
 			parentDimension
 		);
 		return;
+	}
+
+	private getSubDimensionsDone(msgId: string) {
+		if (!this.dimensionStore.has(msgId)) return true;
+
+		return everyMap(
+			this.dimensionStore.get(msgId),
+			(dt: DimensionTrace) => dt.complete && dt.done
+		);
+	}
+
+	private getDimensionDone(parentMsgId: string, dimension: string[]) {
+		if (!this.dimensionStore.get(parentMsgId).get(dimension).complete) {
+			return false;
+		}
+
+		return everyMap(
+			this.msgStore.get(parentMsgId).get(dimension),
+			(mT: MsgTrace) => mT.done
+		);
+	}
+
+	private getBoxesDone(
+		msgId: string,
+		parentMsgId: string,
+		dimension: string[]
+	) {
+		return everyMap(
+			this.msgStore.get(parentMsgId).get(dimension).get(msgId).boxes,
+			Boolean
+		);
 	}
 }

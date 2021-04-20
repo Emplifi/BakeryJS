@@ -3,6 +3,7 @@ import {Options, VError} from 'verror';
 import {Message} from '../../Message';
 import assert from 'assert';
 import {qTrace} from '../../stats';
+import every from 'bakeryjs/eval/every';
 
 /**
  * Assume one has several queues already set up.  We wan't a queue-like endpoint
@@ -151,7 +152,7 @@ export class QZip {
 				state.priority !== undefined ? state.priority : -Infinity
 			);
 		}
-		if (state.flags.every((val) => val)) {
+		if (every(state.flags, Boolean)) {
 			this.output.push(msg, state.priority);
 			delete this.msgJoinedState[msg.id];
 		}

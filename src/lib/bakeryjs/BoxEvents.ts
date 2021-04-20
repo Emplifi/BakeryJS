@@ -48,13 +48,13 @@ export function boxEvents(flowEmitter: EventEmitter): ModuleOutput {
 			}
 
 			priorityQ.push.apply(priorityQ, [msgs, priority]);
-			const messagesTrace: MsgEvent[] = messages.map((m) =>
-				Object.create(null, {
-					boxName: {value: boxName},
-					messageId: {value: m.id},
-					parentMsgId: {value: m.parent && m.parent.id},
-				})
-			);
+			const messagesTrace: MsgEvent[] = messages.map((m) => {
+				return {
+					boxName: boxName,
+					messageId: m.id,
+					parentMsgId: m.parent && m.parent.id,
+				};
+			});
 			flowEmitter.emit('msg_finished', messagesTrace);
 		}
 
