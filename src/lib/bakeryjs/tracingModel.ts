@@ -105,7 +105,7 @@
 
 import {AttributeDict, DiGraph, Edge} from 'jsnetworkx';
 import {ROOT_NODE} from './builders/DAGBuilder/builder';
-import every from './eval/every';
+import {everyMap} from './eval/every';
 
 /**
  * Helper class.  Throughout this code, the maps of maps are used extensively
@@ -418,9 +418,8 @@ export class TracingModel {
 	private getSubDimensionsDone(msgId: string) {
 		if (!this.dimensionStore.has(msgId)) return true;
 
-		const dimValues = this.dimensionStore.get(msgId).values();
-		return every(
-			[...dimValues],
+		return everyMap(
+			this.dimensionStore.get(msgId),
 			(dt: DimensionTrace) => dt.complete && dt.done
 		);
 	}
@@ -430,12 +429,10 @@ export class TracingModel {
 			return false;
 		}
 
-		const dimValues = this.msgStore
-			.get(parentMsgId)
-			.get(dimension)
-			.values();
-
-		return every([...dimValues], (mT: MsgTrace) => mT.done);
+		return everyMap(
+			this.msgStore.get(parentMsgId).get(dimension),
+			(mT: MsgTrace) => mT.done
+		);
 	}
 
 	private getBoxesDone(
@@ -443,12 +440,9 @@ export class TracingModel {
 		parentMsgId: string,
 		dimension: string[]
 	) {
-		const dimValues = this.msgStore
-			.get(parentMsgId)
-			.get(dimension)
-			.get(msgId)
-			.boxes.values();
-
-		return every([...dimValues], Boolean);
+		return everyMap(
+			this.msgStore.get(parentMsgId).get(dimension).get(msgId).boxes,
+			Boolean
+		);
 	}
 }
