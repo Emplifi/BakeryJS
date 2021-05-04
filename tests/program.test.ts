@@ -19,25 +19,14 @@ test('Store `Hello World!` with all default configuration', async () => {
 		process: [[{helloworld: [['print']]}]],
 	};
 
-	const transitions: any[] = [];
-	program.on('sent', (timestamp, src, tgt) =>
-		transitions.push({from: src, to: tgt})
-	);
-
 	const drain: MessageData[] = [];
 	await program.run(job, (msg: MessageData) => drain.push(msg));
 
 	expect(drain).toHaveLength(1);
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
-	expect(transitions).toContainEqual({from: '_root_', to: 'helloworld'});
 });
 
 test('Store `Hello World! with dependencies` with all default configuration', async () => {
-	const transitions: any[] = [];
-	program.on('sent', (timestamp, src, tgt, batchSize) =>
-		transitions.push({from: src, to: tgt, size: batchSize})
-	);
-
 	const job = {
 		process: [['helloworld'], ['wordcount', 'punctcount'], ['checksum']],
 	};
@@ -49,40 +38,9 @@ test('Store `Hello World! with dependencies` with all default configuration', as
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
 	expect(drain[0]).toHaveProperty('words', 3);
 	expect(drain[0]).toHaveProperty('punct', 3);
-
-	expect(transitions).toContainEqual({
-		from: '_root_',
-		to: 'helloworld',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'helloworld',
-		to: 'punctcount',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'helloworld',
-		to: 'wordcount',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'punctcount',
-		to: 'checksum',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'wordcount',
-		to: 'checksum',
-		size: 1,
-	});
 });
 
 test('Store batching `Hello World! with dependencies` with all default configuration', async () => {
-	const transitions: any[] = [];
-	program.on('sent', (timestamp, src, tgt, batchSize) =>
-		transitions.push({from: src, to: tgt, size: batchSize})
-	);
-
 	const job: FlowExplicitDescription = {
 		process: [
 			['hellobatchworld'],
@@ -98,40 +56,9 @@ test('Store batching `Hello World! with dependencies` with all default configura
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
 	expect(drain[0]).toHaveProperty('words', 3);
 	expect(drain[0]).toHaveProperty('punct', 3);
-
-	expect(transitions).toContainEqual({
-		from: '_root_',
-		to: 'hellobatchworld',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'hellobatchworld',
-		to: 'punctcount',
-		size: 2,
-	});
-	expect(transitions).toContainEqual({
-		from: 'hellobatchworld',
-		to: 'wordbatchcount',
-		size: 2,
-	});
-	expect(transitions).toContainEqual({
-		from: 'punctcount',
-		to: 'checksum',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'wordbatchcount',
-		to: 'checksum',
-		size: 3,
-	});
 });
 
 test('Store batching `Hello World! with dependencies` with custom configuration', async () => {
-	const transitions: any[] = [];
-	program.on('sent', (timestamp, src, tgt, batchSize) =>
-		transitions.push({from: src, to: tgt, size: batchSize})
-	);
-
 	const job = {
 		parameters: {
 			checksum: 5,
@@ -150,43 +77,12 @@ test('Store batching `Hello World! with dependencies` with custom configuration'
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!');
 	expect(drain[0]).toHaveProperty('words', 3);
 	expect(drain[0]).toHaveProperty('punct', 3);
-
-	expect(transitions).toContainEqual({
-		from: '_root_',
-		to: 'hellobatchworld',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'hellobatchworld',
-		to: 'punctcount',
-		size: 2,
-	});
-	expect(transitions).toContainEqual({
-		from: 'hellobatchworld',
-		to: 'wordbatchcount',
-		size: 2,
-	});
-	expect(transitions).toContainEqual({
-		from: 'punctcount',
-		to: 'checksum',
-		size: 1,
-	});
-	expect(transitions).toContainEqual({
-		from: 'wordbatchcount',
-		to: 'checksum',
-		size: 3,
-	});
 });
 
 test('Store `Hello World!` with initial value', async () => {
 	const job = {
 		process: [['checksum']],
 	};
-
-	const transitions: any[] = [];
-	program.on('sent', (timestamp, src, tgt) =>
-		transitions.push({from: src, to: tgt})
-	);
 
 	const drain: MessageData[] = [];
 	await program.run(job, (msg: MessageData) => drain.push(msg), {
@@ -198,7 +94,6 @@ test('Store `Hello World!` with initial value', async () => {
 	expect(drain[0]).toHaveProperty('checksum', 1 + 4 * Math.sqrt(2));
 	expect(drain[0]).toHaveProperty('words', 4);
 	expect(drain[0]).toHaveProperty('punct', 1);
-	expect(transitions).toContainEqual({from: '_root_', to: 'checksum'});
 });
 
 test('Fail to build flow with invalid custom configuration', async () => {

@@ -3,6 +3,7 @@ import {Message} from '../Message';
 import {qTrace} from '../stats';
 // import {qTrace, sampleStats} from '../stats';
 import BetterQueue = require('better-queue');
+import FastQ = require('fastq');
 
 const DEFAULT_PRIORITY = undefined;
 
@@ -44,7 +45,7 @@ export class AQueue<T extends Message> implements PriorityQueueI<T> {
 		//TODO Fragile detection. What if T is subclass/instance of Array?
 		if (Array.isArray(message)) {
 			for (let i = 0; i < message.length; i++) {
-				this.queue.push({m:  message[i], p: priority});
+				this.queue.push({m: message[i], p: priority});
 			}
 		} else {
 			this.queue.push({m: message, p: priority});
@@ -70,8 +71,51 @@ export class AQueue<T extends Message> implements PriorityQueueI<T> {
 	}
 }
 
+class FastAQueue<T extends Message> implements PriorityQueueI<T> {
+	private src: string | undefined;
+	protected readonly queue: FastQ.queue;
+	public readonly target: string;
+
+	public constructor(
+		target: string,
+		worker: (j: any, cb: (e: any, v: any) => void) => void,
+		config: Partial<BetterQueue.QueueOptions<any, any>>
+	) {
+		this.target = target;
+		this.queue = FastQ(worker, config.concurrent || 1);
+	}
+
+	@qTrace(true)
+	public push(message: T | T[], priority = DEFAULT_PRIORITY): void {
+		if (Array.isArray(message)) {
+			for (let i = 0; i < message.length; i++) {
+				this.queue.push({m: message[i], p: priority});
+			}
+		} else {
+			this.queue.push({m: message, p: priority});
+		}
+	}
+
+	public get length(): number {
+		console.log('getting length', this.queue.length())
+		return this.queue.length();
+	}
+
+	public set source(value: string | undefined) {
+		if (!this.src) {
+			this.src = value;
+		} else {
+			throw new TypeError('The attribute source is already set!');
+		}
+	}
+
+	public get source(): string | undefined {
+		return this.src;
+	}
+}
+
 export class MemoryPrioritySingleQueue<T extends Message>
-	extends AQueue<T>
+	extends FastAQueue<T>
 	implements PriorityQueueI<T> {
 	public constructor(worker: Worker<T>, config: QueueConfig, target: string) {
 		super(

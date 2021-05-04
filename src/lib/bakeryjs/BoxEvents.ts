@@ -55,6 +55,7 @@ export function boxEvents(flowEmitter: EventEmitter): ModuleOutput {
 					parentMsgId: m.parent && m.parent.id,
 				};
 			});
+			console.log('emitting!!!!!!!!!!!')
 			flowEmitter.emit('msg_finished', messagesTrace);
 		}
 
