@@ -76,11 +76,13 @@ export class Program {
 	private readonly multiComponentFactory: MultiComponentFactory;
 	private readonly catalog: FlowCatalog;
 	private readonly ajv: ajv.Ajv;
+	private readonly id = Math.random().toString(36).substring(7);
 
 	public constructor(
 		serviceContainer: ServiceContainer,
 		userConf: UserConfiguration
 	) {
+		console.time(`${this.id} - Program preparation`);
 		// set default services
 		this.serviceProvider = new ServiceProvider({
 			logger: {
@@ -133,14 +135,20 @@ export class Program {
 		eventEmitter.on(eventName, callback);
 	}
 
-	public runFlow(flow: Flow, jobInitialValue?: MessageData): Promise<void> {
+	public async runFlow(
+		flow: Flow,
+		jobInitialValue?: MessageData
+	): Promise<void> {
 		const job = new Job(jobInitialValue);
 		if (debug.enabled) {
 			console.log('Program run ----->');
 		}
 		// TODO: separate this from stats EE -- it is shared accross various flows
 		eventEmitter.emit('run', flow, job);
-		return flow.process(job);
+		console.timeEnd(`${this.id} - Program preparation`);
+		console.time(`${this.id} - Program processing`);
+		await flow.process(job);
+		console.timeEnd(`${this.id} - Program processing`);
 
 		// setTimeout(() => flow.process(new Job()),2000);
 	}
@@ -158,11 +166,11 @@ export class Program {
 	 * @returns promise of job being done
 	 * @publicapi
 	 */
-	public run(
+	public async run(
 		flowDesc: FlowDescription,
 		drainCallback?: DrainCallback,
 		jobInitialValue?: MessageData
-	): Promise<any> {
+	): Promise<void> {
 		if (
 			!this.ajv.validate(
 				{
@@ -206,24 +214,14 @@ export class Program {
 			if (debug.enabled) {
 				console.log('getting flow from catalog');
 			}
-			return this.catalog
-				.getFlow(flowDesc.flow, drain)
-				.then((f) => this.runFlow(f, jobInitialValue))
-				.catch((error) => {
-					this.serviceProvider.get('logger').error(error);
-					throw error;
-				});
+			const flow = await this.catalog.getFlow(flowDesc.flow, drain);
+			await this.runFlow(flow, jobInitialValue);
 		} else if (hasProcess(flowDesc)) {
 			if (debug.enabled) {
 				console.log('building flow from SchemaObject');
 			}
-			return this.catalog
-				.buildFlow(flowDesc, drain)
-				.then((f) => this.runFlow(f, jobInitialValue))
-				.catch((error) => {
-					this.serviceProvider.get('logger').error(error);
-					throw error;
-				});
+			const flow = await this.catalog.buildFlow(flowDesc, drain);
+			await this.runFlow(flow, jobInitialValue);
 		} else {
 			throw new TypeError(
 				`Unrecognized flow description. ${JSON.stringify(flowDesc)}`
