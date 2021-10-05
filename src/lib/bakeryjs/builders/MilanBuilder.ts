@@ -12,7 +12,7 @@ import {Message} from '../Message';
 import {MemoryPrioritySingleQueue} from '../queue/MemoryPriorityQueue';
 import {AssertionError} from 'assert';
 import {Flow} from '../Flow';
-import {DiGraph, Edge} from 'jsnetworkx';
+import {DiGraph, Edge} from 'sb-jsnetworkx';
 
 export const ROOT_NODE = '_root_';
 

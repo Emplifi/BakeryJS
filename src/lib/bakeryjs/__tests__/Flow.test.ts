@@ -2,7 +2,7 @@ import {Flow} from '../Flow';
 import {Job} from '../Job';
 import {MemoryPrioritySingleQueue} from '../queue/MemoryPriorityQueue';
 import {Message} from '../Message';
-import {DiGraph} from 'jsnetworkx';
+import {DiGraph} from 'sb-jsnetworkx';
 
 describe('Flow', () => {
 	it('enqueues job as a message', () => {

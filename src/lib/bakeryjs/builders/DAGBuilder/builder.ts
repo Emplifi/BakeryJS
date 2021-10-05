@@ -12,7 +12,7 @@ import {
 	EdgeWithAttribs,
 	NodeWithAttribs,
 	topologicalSort,
-} from 'jsnetworkx';
+} from 'sb-jsnetworkx';
 import ComponentFactoryI from '../../ComponentFactoryI';
 import {PriorityQueueI} from '../../queue/PriorityQueueI';
 import {Message} from '../../Message';

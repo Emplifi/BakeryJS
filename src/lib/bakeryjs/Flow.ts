@@ -2,7 +2,7 @@ import {PriorityQueueI} from './queue/PriorityQueueI';
 import {Job} from './Job';
 import {DataMessage, Message} from './Message';
 import {FlowExplicitDescription} from './FlowBuilderI';
-import {AttributeDict, DiGraph, Node, topologicalSort} from 'jsnetworkx';
+import {AttributeDict, DiGraph, Node, topologicalSort} from 'sb-jsnetworkx';
 import {EventEmitter} from 'events';
 import {ROOT_NODE} from './builders/DAGBuilder/builder';
 import {BatchingBoxMeta, BoxMeta} from './BoxI';
