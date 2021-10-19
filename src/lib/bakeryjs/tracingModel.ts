@@ -103,9 +103,9 @@
  * Thus, after every new information a check of `done` state must be done.
  */
 
-import {AttributeDict, DiGraph, Edge} from 'jsnetworkx';
-import {ROOT_NODE} from './builders/DAGBuilder/builder';
-import {everyMap} from './eval/every';
+import { AttributeDict, DiGraph, Edge } from 'sb-jsnetworkx';
+import { ROOT_NODE } from './builders/DAGBuilder/builder';
+import { everyMap } from './eval/every';
 
 /**
  * Helper class.  Throughout this code, the maps of maps are used extensively
@@ -217,7 +217,7 @@ export class TracingModel {
 				new DefinedMap([
 					[
 						rootDimension,
-						{complete: false, done: false, superParentMsgId: ''},
+						{ complete: false, done: false, superParentMsgId: '' },
 					],
 				]),
 			],
@@ -303,7 +303,7 @@ export class TracingModel {
 			this.msgStore
 				.get(parentMsgId)
 				.get(dimension)
-				.set(msgId, {boxes: boxFulfilled, done: false} as MsgTrace);
+				.set(msgId, { boxes: boxFulfilled, done: false } as MsgTrace);
 
 			const subDimensions = this.dimGraph
 				.inEdges(dimension)

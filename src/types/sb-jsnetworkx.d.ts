@@ -1,4 +1,4 @@
-declare module 'jsnetworkx' {
+declare module 'sb-jsnetworkx' {
 	export interface AttributeDict {
 		[index: string]: any;
 	}
