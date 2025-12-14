@@ -4,6 +4,33 @@ import { parseComponentName } from './componentNameParser'
 
 type ComponentsMap = { [componentName: string]: string }
 
+function isValidDirectory(file: string): boolean {
+	return file !== '.' && file !== '..'
+}
+
+function processDirectory(
+	filePath: string,
+	parentDir: string,
+	file: string,
+	availableComponents: ComponentsMap
+): void {
+	if (isValidDirectory(file)) {
+		scanComponentsPath(filePath, join(parentDir, file), availableComponents)
+	}
+}
+
+function processFile(
+	filePath: string,
+	parentDir: string,
+	file: string,
+	availableComponents: ComponentsMap
+): void {
+	const name = parseComponentName(join(parentDir, file))
+	if (name) {
+		availableComponents[name] = filePath
+	}
+}
+
 // TODO: Make async
 function scanComponentsPath(
 	componentsPath: string,
@@ -15,15 +42,9 @@ function scanComponentsPath(
 		const filePath = join(componentsPath, file)
 		const stat = fs.statSync(filePath)
 		if (stat.isDirectory()) {
-			if (file !== '.' && file !== '..') {
-				scanComponentsPath(filePath, join(parentDir, file), availableComponents)
-			}
+			processDirectory(filePath, parentDir, file, availableComponents)
 		} else {
-			const name = parseComponentName(join(parentDir, file))
-			if (!name) {
-				continue
-			}
-			availableComponents[name] = filePath
+			processFile(filePath, parentDir, file, availableComponents)
 		}
 	}
 	return availableComponents

@@ -1,6 +1,7 @@
 import { Flow, FlowIdDescValidation, hasFlow, hasProcess } from './Flow'
 import type { FlowDescription } from './Flow'
 import { Job } from './Job'
+import type { Logger } from './ServiceProvider'
 import { ServiceContainer, ServiceProvider } from './ServiceProvider'
 import { ComponentFactory, MultiComponentFactory } from './ComponentFactory'
 import { DefaultVisualBuilder } from './builders/DefaultVisualBuilder'
@@ -16,6 +17,12 @@ import { SchemaObjectValidation } from './FlowBuilderI'
 import VError, { MultiError } from 'verror'
 import Debug from 'debug'
 const debug = Debug('bakeryjs:Program')
+
+function debugLog(message: string): void {
+	if (debug.enabled) {
+		console.log(message)
+	}
+}
 
 type UserConfiguration = {
 	componentPaths?: string[]
@@ -76,15 +83,16 @@ export class Program {
 
 	public constructor(serviceContainer: ServiceContainer, userConf: UserConfiguration) {
 		// set default services
-		this.serviceProvider = new ServiceProvider({
-			logger: {
-				log(message: any): void {
-					console.log(message)
-				},
-				error(message: any): void {
-					console.error(message)
-				}
+		const defaultLogger: Logger = {
+			log(message: unknown): void {
+				console.log(message)
+			},
+			error(message: unknown): void {
+				console.error(message)
 			}
+		}
+		this.serviceProvider = new ServiceProvider({
+			logger: defaultLogger
 		})
 
 		// set the provided services, optionally overwriting the default
@@ -127,11 +135,54 @@ export class Program {
 		if (debug.enabled) {
 			console.log('Program run ----->')
 		}
-		// TODO: separate this from stats EE -- it is shared accross various flows
 		eventEmitter.emit('run', flow, job)
 		return flow.process(job)
+	}
 
-		// setTimeout(() => flow.process(new Job()),2000);
+	/**
+	 * Validates the flow description against expected schemas.
+	 * @throws VError if validation fails
+	 */
+	private validateFlowDescription(flowDesc: FlowDescription): void {
+		const isValid = this.ajv.validate(
+			{ oneOf: [{ $ref: 'bakeryjs/flow' }, { $ref: 'bakeryjs/flowbuilder' }] },
+			flowDesc
+		)
+		if (isValid) {
+			return
+		}
+		const errs = this.ajv.errors
+		if (!errs) {
+			return
+		}
+		throw new VError(
+			{
+				name: 'JobValidationError',
+				cause: new MultiError(
+					errs.filter(e => e.instancePath !== '').map(e => new VError(e.message))
+				),
+				info: {
+					schema: [this.ajv.getSchema('bakeryjs/flowbuilder'), this.ajv.getSchema('bakeryjs/flow')]
+				}
+			},
+			'Job definition should match exactly one of the two schemes.',
+			true
+		)
+	}
+
+	/**
+	 * Executes a flow promise with error logging.
+	 */
+	private executeFlowWithLogging(
+		flowPromise: Promise<Flow>,
+		jobInitialValue?: MessageData
+	): Promise<void> {
+		return flowPromise
+			.then(f => this.runFlow(f, jobInitialValue))
+			.catch(error => {
+				this.serviceProvider.get<Logger>('logger').error(error)
+				throw error
+			})
 	}
 
 	/**
@@ -151,63 +202,21 @@ export class Program {
 		flowDesc: FlowDescription,
 		drainCallback?: DrainCallback,
 		jobInitialValue?: MessageData
-	): Promise<any> {
-		if (
-			!this.ajv.validate(
-				{
-					oneOf: [{ $ref: 'bakeryjs/flow' }, { $ref: 'bakeryjs/flowbuilder' }]
-				},
-				flowDesc
-			)
-		) {
-			const errs = this.ajv.errors
-			if (errs) {
-				throw new VError(
-					{
-						name: 'JobValidationError',
-						cause: new MultiError(
-							errs.filter(e => e.instancePath !== '').map(e => new VError(e.message))
-						),
-						info: {
-							schema: [
-								this.ajv.getSchema('bakeryjs/flowbuilder'),
-								this.ajv.getSchema('bakeryjs/flow')
-							]
-						}
-					},
-					'Job definition should match exactly one of the two schemes.',
-					true
-				)
-			}
-		}
+	): Promise<void> {
+		this.validateFlowDescription(flowDesc)
 		const drain = drainCallback ? createDrainPush(drainCallback) : undefined
-		if (debug.enabled) {
-			console.log('dispatch on flow description:')
-		}
+		debugLog('dispatch on flow description:')
 		if (hasFlow(flowDesc)) {
-			if (debug.enabled) {
-				console.log('getting flow from catalog')
-			}
-			return this.catalog
-				.getFlow(flowDesc.flow, drain)
-				.then(f => this.runFlow(f, jobInitialValue))
-				.catch(error => {
-					this.serviceProvider.get('logger').error(error)
-					throw error
-				})
-		} else if (hasProcess(flowDesc)) {
-			if (debug.enabled) {
-				console.log('building flow from SchemaObject')
-			}
-			return this.catalog
-				.buildFlow(flowDesc, drain)
-				.then(f => this.runFlow(f, jobInitialValue))
-				.catch(error => {
-					this.serviceProvider.get('logger').error(error)
-					throw error
-				})
-		} else {
-			throw new TypeError(`Unrecognized flow description. ${JSON.stringify(flowDesc)}`)
+			debugLog('getting flow from catalog')
+			return this.executeFlowWithLogging(
+				this.catalog.getFlow(flowDesc.flow, drain),
+				jobInitialValue
+			)
 		}
+		if (hasProcess(flowDesc)) {
+			debugLog('building flow from SchemaObject')
+			return this.executeFlowWithLogging(this.catalog.buildFlow(flowDesc, drain), jobInitialValue)
+		}
+		throw new TypeError(`Unrecognized flow description. ${JSON.stringify(flowDesc)}`)
 	}
 }

@@ -1,4 +1,4 @@
-import { boxFactory, ServiceProvider, MessageData } from 'bakeryjs'
+import { boxFactory, ServiceProvider, MessageData, Logger } from 'bakeryjs'
 
 const Print = boxFactory(
 	{
@@ -10,9 +10,9 @@ const Print = boxFactory(
 	function processValue(
 		services: ServiceProvider,
 		input: MessageData,
-		neverEmit: (chunk: MessageData[], priority?: number) => void
+		_neverEmit: (chunk: MessageData[], priority?: number) => void
 	): MessageData {
-		services.get('logger').log({ printBox: JSON.stringify(input) })
+		services.get<Logger>('logger').log({ printBox: JSON.stringify(input) })
 		return {}
 	}
 )

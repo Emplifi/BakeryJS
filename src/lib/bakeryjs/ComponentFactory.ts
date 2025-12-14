@@ -73,7 +73,7 @@ export class MultiComponentFactory implements ComponentFactoryI {
 		this.factories = []
 	}
 
-	public push(factory: ComponentFactory) {
+	public push(factory: ComponentFactory): void {
 		this.factories.unshift(factory)
 	}
 

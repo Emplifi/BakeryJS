@@ -1,0 +1,6 @@
+export { ProcessingMode, getProcessingMode } from './ProcessingMode'
+export type { ProcessingStrategy, BoxProcessingContext } from './ProcessingStrategy'
+export { MapperStrategy } from './MapperStrategy'
+export { GeneratorStrategy } from './GeneratorStrategy'
+export { AggregatorStrategy } from './AggregatorStrategy'
+export { processingStrategyRegistry, getProcessingStrategy } from './processingStrategyRegistry'

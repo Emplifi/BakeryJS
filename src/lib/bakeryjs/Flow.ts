@@ -3,14 +3,13 @@ import { Job } from './Job'
 import { DataMessage } from './Message'
 import type { Message } from './Message'
 import type { FlowExplicitDescription } from './FlowBuilderI'
-import { DiGraph, topologicalSort } from 'sb-jsnetworkx'
-import type { AttributeDict, Node } from 'sb-jsnetworkx'
+import { DiGraph } from 'sb-jsnetworkx'
+import type { AttributeDict } from 'sb-jsnetworkx'
 import { EventEmitter } from 'events'
 import { ROOT_NODE } from './builders/DAGBuilder/builder'
-import type { BatchingBoxMeta, BoxMeta } from './BoxI'
-import { deepStrictEqual } from 'assert'
 import { TracingModel } from './tracingModel'
 import type { MsgEvent } from './BoxEvents'
+import { DimensionAnalyzer } from './DimensionAnalyzer'
 
 /**
  * We have Boxes set up properly, now we have to interconnect them to the workflow.
@@ -70,7 +69,7 @@ export class Flow extends EventEmitter {
 		super()
 		this.queue = queue
 		this.graph = graph
-		this.dimensionGraph = this.analyzeDimensions(this.graph)
+		this.dimensionGraph = new DimensionAnalyzer().analyze(this.graph)
 		this.jobPromises = new Map()
 
 		this.tracingModel = new TracingModel(this.graph, this.dimensionGraph, (msgId: string) => {
@@ -119,79 +118,6 @@ export class Flow extends EventEmitter {
 	}
 
 	public async destroy(): Promise<any> {}
-
-	/**
-	 * Analyzes/modifies flow graph and extracts the dimensions structure. It adds
-	 * the nodes attribute 'dimension'.
-	 *
-	 * The structure describes the (partial) order the completion of the particular
-	 * dimensions has to occur. The structure is *a tree*, where the root is an empty
-	 * dimension (the top level). Other dimensions are the nodes with and edge oriented
-	 * from the child to the parent one.  Each dimension holds a list of boxes belonging to it
-	 * in dimension's attribute.
-	 *
-	 * During analysis of the dimensions, it can uncover a dimension mismatch.  By a mismatch
-	 * we mean such a flow graph that the dimensions cannot be ordered into a tree and
-	 * DAG would be required.  Such a flow is invalid and a proper exception is thrown.
-	 *
-	 * @param graph - nodes: string (boxName), attributes: instance: BoxInstance
-	 *                edges oriented from depending boxes to the providing box
-	 * @returns - graph: nodes: string[] (dimensions), attributes: boxes: string[], box names
-	 */
-	private analyzeDimensions(graph: DiGraph): DiGraph {
-		const dimGraph: DiGraph = new DiGraph()
-		dimGraph.addNode([], { boxes: [ROOT_NODE] })
-
-		// root node has top dimension
-		graph.addNode(ROOT_NODE, { dimension: [] })
-		// let's go through nodes from root into leaves in topological order
-		// Remind the opposite direction of the edges, so let's reverse it to
-		// proceed from top to down.
-		const boxTopoOrder = topologicalSort(graph).reverse()
-		// Don't analyze root node
-		boxTopoOrder.slice(1).forEach(boxName => {
-			const outEdges = graph.outEdges(boxName)
-			const firstEdge = outEdges[0]
-			if (!firstEdge) {
-				throw new Error(`No parent edge found for box ${boxName}`)
-			}
-			const parentNode: Node = firstEdge[1]
-			const parentDimension: Node[] = (graph.node.get(parentNode) as AttributeDict).dimension
-			const myMeta: BoxMeta | BatchingBoxMeta = (graph.node.get(boxName) as AttributeDict).instance
-				.meta
-			let myDimension: Node[]
-			if ((myMeta as BoxMeta).emits && (myMeta as BoxMeta).emits.length > 0) {
-				// I am a generator
-				myDimension = parentDimension.concat((myMeta as BoxMeta).emits)
-			} else if (!myMeta.aggregates) {
-				// I am a mapper
-				myDimension = parentDimension
-			} else {
-				// I am an aggregator
-				myDimension = parentDimension.slice(0, -1)
-			}
-
-			if (!dimGraph.hasNode(myDimension)) {
-				dimGraph.addNode(myDimension, { boxes: [] })
-				dimGraph.addEdge(myDimension, parentDimension)
-			}
-
-			if ((graph.node.get(boxName) as AttributeDict).dimension) {
-				// test of graph validity
-				deepStrictEqual(
-					(graph.node.get(boxName) as AttributeDict).dimension,
-					myDimension,
-					`Dimensions mismatch. The flow data dimensions are inconsistent in box ${boxName}`
-				)
-			} else {
-				graph.addNode(boxName, { dimension: myDimension })
-				// the node `childDimension` has been inserted above
-				;(dimGraph.node.get(myDimension) as AttributeDict).boxes.push(boxName)
-			}
-		})
-
-		return dimGraph
-	}
 }
 
 type FlowIdDesc = {

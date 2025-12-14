@@ -3,7 +3,14 @@ import { DataMessage } from '../Message'
 import type { Message, MessageData } from '../Message'
 import type { BoxMeta, BoxInterface, BatchingBoxInterface, BatchingBoxMeta } from '../BoxI'
 import type { PriorityQueueI } from '../queue/PriorityQueueI'
+import type { Logger } from '../ServiceProvider'
 import { ServiceProvider } from '../ServiceProvider'
+
+// Mock logger type for testing
+interface MockLogger extends Logger {
+	log: jest.Mock
+	error: jest.Mock
+}
 
 // Helper to create a mock ServiceProvider with a logger
 function createMockServiceProvider(): ServiceProvider {
@@ -13,6 +20,11 @@ function createMockServiceProvider(): ServiceProvider {
 			error: jest.fn()
 		}
 	})
+}
+
+// Helper to get mock logger from service provider
+function getMockLogger(sp: ServiceProvider): MockLogger {
+	return sp.get<MockLogger>('logger')
 }
 
 // Helper to create a mock queue
@@ -202,7 +214,7 @@ describe('Box', () => {
 				} as BoxMeta,
 				async function (sp: ServiceProvider, _value: MessageData): Promise<MessageData> {
 					receivedParams.push(sp.parameters)
-					return { result: sp.parameters.name }
+					return { result: (sp.parameters as { name: string }).name }
 				}
 			)
 
@@ -414,7 +426,7 @@ describe('Box', () => {
 			// The box catches the error and logs it, returning null
 			const result = await box.process(messages)
 			expect(result).toBeNull()
-			expect(serviceProvider.get('logger').error).toHaveBeenCalled()
+			expect(getMockLogger(serviceProvider).error).toHaveBeenCalled()
 		})
 
 		it('emits msg_finished events for batch', async () => {
@@ -466,7 +478,7 @@ describe('Box', () => {
 
 			// Box catches error, logs it, and returns null
 			expect(result).toBeNull()
-			expect(serviceProvider.get('logger').error).toHaveBeenCalledWith(
+			expect(getMockLogger(serviceProvider).error).toHaveBeenCalledWith(
 				expect.objectContaining({
 					name: 'BoxInvocationException'
 				})
@@ -498,7 +510,7 @@ describe('Box', () => {
 			const result = await box.process(msg)
 
 			expect(result).toBeNull()
-			expect(serviceProvider.get('logger').error).toHaveBeenCalledWith(
+			expect(getMockLogger(serviceProvider).error).toHaveBeenCalledWith(
 				expect.objectContaining({
 					name: 'BoxInvocationException'
 				})
@@ -525,7 +537,7 @@ describe('Box', () => {
 			const msg = new DataMessage({})
 			await box.process(msg)
 
-			expect(serviceProvider.get('logger').error).toHaveBeenCalledWith(
+			expect(getMockLogger(serviceProvider).error).toHaveBeenCalledWith(
 				expect.objectContaining({
 					name: 'BoxInvocationException'
 				})
@@ -891,7 +903,7 @@ describe('Box', () => {
 			const result = await box.process(messages)
 
 			expect(result).toBeNull()
-			expect(serviceProvider.get('logger').error).toHaveBeenCalledWith(
+			expect(getMockLogger(serviceProvider).error).toHaveBeenCalledWith(
 				expect.objectContaining({
 					name: 'BoxInvocationException'
 				})
@@ -922,7 +934,7 @@ describe('Box', () => {
 			const messages = [new DataMessage({})]
 			await box.process(messages)
 
-			expect(serviceProvider.get('logger').error).toHaveBeenCalledWith(
+			expect(getMockLogger(serviceProvider).error).toHaveBeenCalledWith(
 				expect.objectContaining({
 					name: 'BoxInvocationException'
 				})
@@ -955,7 +967,7 @@ describe('Box', () => {
 			const msg = new DataMessage({})
 			await box.process(msg)
 
-			expect(serviceProvider.get('logger').error).toHaveBeenCalledWith(
+			expect(getMockLogger(serviceProvider).error).toHaveBeenCalledWith(
 				expect.objectContaining({
 					name: 'BoxInvocationException'
 				})

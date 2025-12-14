@@ -28,7 +28,7 @@ export class Tee<T> implements PriorityQueueI<T> {
 	}
 
 	@qTrace(false)
-	public push(pld: T, priority?: number) {
+	public push(pld: T, priority?: number): void {
 		try {
 			this.queues.forEach((q: PriorityQueueI<T>) => q.push(pld, priority))
 		} catch (err) {
@@ -56,16 +56,16 @@ class FakeQueue implements PriorityQueueI<Message> {
 	}
 
 	@qTrace(false)
-	public push(msgs: Message | Message[], priority?: number) {
+	public push(msgs: Message | Message[], priority?: number): void {
 		if (msgs instanceof Array) {
 			//TODO: fragile detection. What if Message is instanceof Array?
 			msgs.forEach(msg => this.qzip._push(this.index, msg, priority))
 		} else {
-			return this.qzip._push(this.index, msgs, priority)
+			this.qzip._push(this.index, msgs, priority)
 		}
 	}
 
-	public get length() {
+	public get length(): number {
 		return this.qzip.length
 	}
 }
@@ -102,11 +102,11 @@ export class QZip {
 	/** The queue-like input interfaces */
 	public readonly inputs: PriorityQueueI<Message>[]
 	/** Number of inputs being joined. */
-	public get size() {
+	public get size(): number {
 		return this.inputs.length
 	}
 
-	public get length() {
+	public get length(): number {
 		return Object.entries(this.msgJoinedState).length
 	}
 

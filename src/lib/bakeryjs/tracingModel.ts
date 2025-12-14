@@ -209,6 +209,76 @@ export class TracingModel {
 		])
 	}
 
+	// ================== Helper methods for nested map access ==================
+
+	/**
+	 * Gets the message trace for a specific message in a dimension.
+	 */
+	private getMessageTrace(parentMsgId: string, dimension: string[], msgId: string): MsgTrace {
+		return this.msgStore.get(parentMsgId).get(dimension).get(msgId)
+	}
+
+	/**
+	 * Gets the dimension messages map for a parent message and dimension.
+	 */
+	private getDimensionMessages(
+		parentMsgId: string,
+		dimension: string[]
+	): DefinedMap<string, MsgTrace> {
+		return this.msgStore.get(parentMsgId).get(dimension)
+	}
+
+	/**
+	 * Checks if a message exists in the given dimension.
+	 */
+	private hasMessage(parentMsgId: string, dimension: string[], msgId: string): boolean {
+		return this.msgStore.get(parentMsgId).get(dimension).has(msgId)
+	}
+
+	/**
+	 * Checks if a dimension exists for a parent message.
+	 */
+	private hasDimension(parentMsgId: string, dimension: string[]): boolean {
+		return this.msgStore.get(parentMsgId).has(dimension)
+	}
+
+	/**
+	 * Gets the dimension trace for a parent message and dimension.
+	 */
+	private getDimensionTrace(parentMsgId: string, dimension: string[]): DimensionTrace {
+		return this.dimensionStore.get(parentMsgId).get(dimension)
+	}
+
+	/**
+	 * Checks if dimension tracking exists for a parent message.
+	 */
+	private hasDimensionTracking(parentMsgId: string): boolean {
+		return this.dimensionStore.has(parentMsgId)
+	}
+
+	/**
+	 * Checks if a specific dimension is tracked for a parent message.
+	 */
+	private isDimensionTracked(parentMsgId: string, dimension: string[]): boolean {
+		return (
+			this.dimensionStore.has(parentMsgId) && this.dimensionStore.get(parentMsgId).has(dimension)
+		)
+	}
+
+	/**
+	 * Gets the box dimension from the box graph.
+	 */
+	private getBoxDimension(boxName: string): string[] {
+		return (this.boxGraph.node.get(boxName) as AttributeDict).dimension
+	}
+
+	/**
+	 * Gets the boxes that belong to a dimension.
+	 */
+	private getDimensionBoxes(dimension: string[]): string[] {
+		return (this.dimGraph.node.get(dimension) as AttributeDict).boxes
+	}
+
 	/**
 	 * Process information that
 	 *   message msgId with parent message parentMsgId has passed box boxname.
@@ -218,20 +288,29 @@ export class TracingModel {
 	 * @param boxName - box the message has just passed through
 	 */
 	public addMsg(msgId: string, parentMsgId: string, boxName: string): void {
-		const boxAttribs = this.boxGraph.node.get(boxName) as AttributeDict
-		const dimension = boxAttribs.dimension
+		const dimension = this.getBoxDimension(boxName)
 
-		if (
-			//The message is already tracked (e.g. from upstream box of the same dimension)
-			this.msgStore.get(parentMsgId).get(dimension).has(msgId)
-		) {
-			// mark the box as passed
-			this.msgStore.get(parentMsgId).get(dimension).get(msgId).boxes.set(boxName, true)
-		} else this.insertNewMsg(dimension, boxName, parentMsgId, msgId)
+		if (this.hasMessage(parentMsgId, dimension, msgId)) {
+			this.markBoxAsPassed(parentMsgId, dimension, msgId, boxName)
+		} else {
+			this.insertNewMsg(dimension, boxName, parentMsgId, msgId)
+		}
 
 		// Check the completion after each new information
 		// TODO: Defer checking after all the messages of the batch have been added
 		this.checkMsgFinishState(msgId, parentMsgId, dimension)
+	}
+
+	/**
+	 * Marks a box as passed for an existing message trace.
+	 */
+	private markBoxAsPassed(
+		parentMsgId: string,
+		dimension: string[],
+		msgId: string,
+		boxName: string
+	): void {
+		this.getMessageTrace(parentMsgId, dimension, msgId).boxes.set(boxName, true)
 	}
 
 	/**
@@ -250,19 +329,16 @@ export class TracingModel {
 	 * @param boxName - box the message has come from
 	 */
 	public setDimensionComplete(parentMsgId: string, boxName: string): void {
-		const dimension = (this.boxGraph.node.get(boxName) as AttributeDict).dimension
-		if (
-			// The dimension can be already deleted, if the child messages have completed
-			// the flow through the dimension before (remind, al is asynchronous).
-			// The dimension could have been marked as complete by the Sentinel Message
-			// from the generator box before.  Then, the parent job could have been
-			// marked as complete and this dimension node have been deleted.
-			this.dimensionStore.has(parentMsgId) &&
-			this.dimensionStore.get(parentMsgId).has(dimension)
-		) {
-			this.dimensionStore.get(parentMsgId).get(dimension).complete = true
-			this.checkDimensionFinishState(parentMsgId, dimension)
+		const dimension = this.getBoxDimension(boxName)
+
+		// The dimension can be already deleted, if the child messages have completed
+		// the flow through the dimension before (remind, all is asynchronous).
+		if (!this.isDimensionTracked(parentMsgId, dimension)) {
+			return
 		}
+
+		this.getDimensionTrace(parentMsgId, dimension).complete = true
+		this.checkDimensionFinishState(parentMsgId, dimension)
 	}
 
 	private insertNewMsg(
@@ -271,128 +347,200 @@ export class TracingModel {
 		parentMsgId: string,
 		msgId: string
 	): void {
-		{
-			const boxesToPass = (this.dimGraph.node.get(dimension) as AttributeDict).boxes
-			const boxFulfilled = new DefinedMap<string, boolean>()
-			for (const b of boxesToPass) {
-				// the box the message has come from is already fulfilled
-				boxFulfilled.set(b, b === boxName)
-			}
-			this.msgStore
-				.get(parentMsgId)
-				.get(dimension)
-				.set(msgId, { boxes: boxFulfilled, done: false } as MsgTrace)
+		const boxFulfilled = this.createBoxFulfilledMap(dimension, boxName)
+		this.getDimensionMessages(parentMsgId, dimension).set(msgId, {
+			boxes: boxFulfilled,
+			done: false
+		} as MsgTrace)
 
-			const subDimensions = this.dimGraph.inEdges(dimension).map((e: Edge) => e[0] as string[])
-			if (subDimensions.length > 0) {
-				const mySubdims = new DefinedMap<string[], DimensionTrace>()
-				// populate the message store with the new subDim space
-				this.msgStore.set(msgId, new DefinedMap<string[], DefinedMap<string, MsgTrace>>())
+		this.initializeSubDimensions(dimension, parentMsgId, msgId)
+	}
 
-				for (let i = 0; i < subDimensions.length; i++) {
-					const subDim = subDimensions[i]
-					if (!subDim) {
-						continue
-					}
-					mySubdims.set(subDim, {
-						complete: false,
-						done: false,
-						superParentMsgId: parentMsgId
-					} as DimensionTrace)
-					this.msgStore.get(msgId).set(subDim, new DefinedMap())
-				}
-
-				this.dimensionStore.set(msgId, mySubdims)
-			}
+	/**
+	 * Creates a map of boxes with their fulfilled status for a new message.
+	 */
+	private createBoxFulfilledMap(
+		dimension: string[],
+		currentBox: string
+	): DefinedMap<string, boolean> {
+		const boxesToPass = this.getDimensionBoxes(dimension)
+		const boxFulfilled = new DefinedMap<string, boolean>()
+		for (const b of boxesToPass) {
+			boxFulfilled.set(b, b === currentBox)
 		}
+		return boxFulfilled
+	}
+
+	/**
+	 * Initializes sub-dimension tracking for a new message if sub-dimensions exist.
+	 */
+	private initializeSubDimensions(dimension: string[], parentMsgId: string, msgId: string): void {
+		const subDimensions = this.getSubDimensions(dimension)
+		if (subDimensions.length === 0) {
+			return
+		}
+
+		const mySubdims = new DefinedMap<string[], DimensionTrace>()
+		this.msgStore.set(msgId, new DefinedMap<string[], DefinedMap<string, MsgTrace>>())
+
+		for (const subDim of subDimensions) {
+			this.initializeSingleSubDimension(subDim, parentMsgId, msgId, mySubdims)
+		}
+
+		this.dimensionStore.set(msgId, mySubdims)
+	}
+
+	/**
+	 * Initializes a single sub-dimension for tracking.
+	 */
+	private initializeSingleSubDimension(
+		subDim: string[],
+		parentMsgId: string,
+		msgId: string,
+		subDimMap: DefinedMap<string[], DimensionTrace>
+	): void {
+		subDimMap.set(subDim, {
+			complete: false,
+			done: false,
+			superParentMsgId: parentMsgId
+		} as DimensionTrace)
+		this.msgStore.get(msgId).set(subDim, new DefinedMap())
+	}
+
+	/**
+	 * Gets the sub-dimensions of a given dimension.
+	 */
+	private getSubDimensions(dimension: string[]): string[][] {
+		return this.dimGraph
+			.inEdges(dimension)
+			.map((e: Edge) => e[0] as string[])
+			.filter((subDim): subDim is string[] => subDim !== undefined)
 	}
 
 	private checkMsgFinishState(msgId: string, parentMsgId: string, dimension: string[]): void {
+		if (!this.isMessageComplete(msgId, parentMsgId, dimension)) {
+			return
+		}
+
+		this.markMessageComplete(msgId, parentMsgId, dimension)
+		this.propagateCompletion(msgId, parentMsgId, dimension)
+	}
+
+	/**
+	 * Checks if a message has completed all its boxes and sub-dimensions.
+	 */
+	private isMessageComplete(msgId: string, parentMsgId: string, dimension: string[]): boolean {
 		const boxesDone = this.getBoxesDone(msgId, parentMsgId, dimension)
-
 		if (!boxesDone) {
-			return
+			return false
 		}
 
-		// check `done` state of the sub dimensions
-		// if the message has no subdimension, consider this check fulfilled
+		return this.getSubDimensionsDone(msgId)
+	}
 
-		const subDimensionsDone = this.getSubDimensionsDone(msgId)
-
-		if (!subDimensionsDone) {
-			return
-		}
-
+	/**
+	 * Marks a message as complete and cleans up its tracking data.
+	 */
+	private markMessageComplete(msgId: string, parentMsgId: string, dimension: string[]): void {
 		if (process.env.BAKERYJS_DISABLE_EXPERIMENTAL_TRACING) {
-			// All is checked.
-			// Set the message as `done`
-			this.msgStore.get(parentMsgId).get(dimension).get(msgId).done = true
+			this.getMessageTrace(parentMsgId, dimension, msgId).done = true
 		} else {
-			this.msgStore.get(parentMsgId).get(dimension).delete(msgId)
+			this.getDimensionMessages(parentMsgId, dimension).delete(msgId)
 		}
-		// Delete all child dimensions (they are done, either)
 		this.dimensionStore.delete(msgId)
+	}
 
-		// if we are checking the root job (ugly way of checking dimension is [])
-		if (dimension.length === 0) {
-			// delete the root job (it has no "parent" to handle it)
-			this.msgStore.get(parentMsgId).get(dimension).delete(msgId)
-			// call the done callback
-			this.jobDone(msgId)
+	/**
+	 * Propagates completion to parent dimension or finishes the job.
+	 */
+	private propagateCompletion(msgId: string, parentMsgId: string, dimension: string[]): void {
+		if (this.isRootDimension(dimension)) {
+			this.finishRootJob(msgId, parentMsgId, dimension)
 			return
 		}
 
-		// if we are not in the root job, check also the parent dimension node
 		this.checkDimensionFinishState(parentMsgId, dimension)
-		return
+	}
+
+	/**
+	 * Checks if a dimension is the root dimension.
+	 */
+	private isRootDimension(dimension: string[]): boolean {
+		return dimension.length === 0
+	}
+
+	/**
+	 * Finishes a root job and invokes the completion callback.
+	 */
+	private finishRootJob(msgId: string, parentMsgId: string, dimension: string[]): void {
+		this.getDimensionMessages(parentMsgId, dimension).delete(msgId)
+		this.jobDone(msgId)
 	}
 
 	private checkDimensionFinishState(parentMsgId: string, dimension: string[]): void {
-		// The dimension may even have not started yet! The first message of the dimension
-		// can be still in its 1st box.
-		if (!this.msgStore.get(parentMsgId).has(dimension)) {
+		// The dimension may even have not started yet
+		if (!this.hasDimension(parentMsgId, dimension)) {
 			return
 		}
 
-		const dimensionDone = this.getDimensionDone(parentMsgId, dimension)
-
-		if (!dimensionDone) {
+		if (!this.getDimensionDone(parentMsgId, dimension)) {
 			return
 		}
 
-		this.dimensionStore.get(parentMsgId).get(dimension).done = true
-		// delete child messages (they are `done`, either)
+		this.markDimensionComplete(parentMsgId, dimension)
+		this.propagateDimensionCompletion(parentMsgId, dimension)
+	}
+
+	/**
+	 * Marks a dimension as complete and cleans up child messages.
+	 */
+	private markDimensionComplete(parentMsgId: string, dimension: string[]): void {
+		this.getDimensionTrace(parentMsgId, dimension).done = true
 		this.msgStore.get(parentMsgId).delete(dimension)
+	}
 
-		// I wan't to check my parent message for completeness. However,
-		// I don't have its key in the store (superParent, parentDim, parentMsgId).
-		// Instead, check the completeness of my parent dimension.
+	/**
+	 * Propagates dimension completion to the parent message.
+	 */
+	private propagateDimensionCompletion(parentMsgId: string, dimension: string[]): void {
+		const parentDimension = this.getParentDimension(dimension)
+		if (!parentDimension) {
+			return
+		}
+
+		const superParentMsgId = this.getDimensionTrace(parentMsgId, dimension).superParentMsgId
+		this.checkMsgFinishState(parentMsgId, superParentMsgId, parentDimension)
+	}
+
+	/**
+	 * Gets the parent dimension from the dimension graph.
+	 */
+	private getParentDimension(dimension: string[]): string[] | null {
 		const outEdges = this.dimGraph.outEdges(dimension)
 		const firstEdge = outEdges[0]
 		if (!firstEdge) {
-			return
+			return null
 		}
-		const parentDimension = firstEdge[1] as string[]
-		const superParentMsgId = this.dimensionStore.get(parentMsgId).get(dimension).superParentMsgId
-		this.checkMsgFinishState(parentMsgId, superParentMsgId, parentDimension)
-		return
+		return firstEdge[1] as string[]
 	}
 
-	private getSubDimensionsDone(msgId: string) {
-		if (!this.dimensionStore.has(msgId)) return true
+	private getSubDimensionsDone(msgId: string): boolean {
+		if (!this.hasDimensionTracking(msgId)) {
+			return true
+		}
 
 		return everyMap(this.dimensionStore.get(msgId), (dt: DimensionTrace) => dt.complete && dt.done)
 	}
 
-	private getDimensionDone(parentMsgId: string, dimension: string[]) {
-		if (!this.dimensionStore.get(parentMsgId).get(dimension).complete) {
+	private getDimensionDone(parentMsgId: string, dimension: string[]): boolean {
+		if (!this.getDimensionTrace(parentMsgId, dimension).complete) {
 			return false
 		}
 
-		return everyMap(this.msgStore.get(parentMsgId).get(dimension), (mT: MsgTrace) => mT.done)
+		return everyMap(this.getDimensionMessages(parentMsgId, dimension), (mT: MsgTrace) => mT.done)
 	}
 
-	private getBoxesDone(msgId: string, parentMsgId: string, dimension: string[]) {
-		return everyMap(this.msgStore.get(parentMsgId).get(dimension).get(msgId).boxes, Boolean)
+	private getBoxesDone(msgId: string, parentMsgId: string, dimension: string[]): boolean {
+		return everyMap(this.getMessageTrace(parentMsgId, dimension, msgId).boxes, Boolean)
 	}
 }

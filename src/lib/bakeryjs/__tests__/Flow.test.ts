@@ -614,7 +614,7 @@ describe('FlowCatalog debug mode', () => {
 		mockDebugFn.enabled = true
 
 		jest.doMock('debug', () => {
-			const mockDebug = () => mockDebugFn
+			const mockDebug = (): jest.Mock & { enabled: boolean } => mockDebugFn
 			return { default: mockDebug, __esModule: true }
 		})
 

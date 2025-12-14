@@ -14,6 +14,13 @@ export function clearCustomServiceCalls(): void {
 }
 
 /**
+ * Interface for the custom service used in tests.
+ */
+interface CustomService {
+	process(value: MessageData): unknown
+}
+
+/**
  * A processor that uses a custom service named 'customService'.
  * Useful for testing arbitrary custom service injection.
  *
@@ -28,7 +35,7 @@ const CustomServiceProcessor = boxFactory(
 		aggregates: false
 	},
 	function processValue(serviceProvider: ServiceProvider, value: MessageData): MessageData {
-		const customService = serviceProvider.get('customService')
+		const customService = serviceProvider.get<CustomService>('customService')
 		const result = customService.process(value)
 		customServiceCalls.push({ method: 'process', args: [value] })
 		return { customServiceResult: result }

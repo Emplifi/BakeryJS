@@ -133,50 +133,68 @@ export class BinaryHeap<T> {
 	}
 
 	/**
+	 * Check if a child should replace the current largest.
+	 * @internal
+	 */
+	private isChildLarger(childIndex: number, currentLargestIndex: number): boolean {
+		const child = this.heap[childIndex]
+		const currentLargest = this.heap[currentLargestIndex]
+		return (
+			childIndex < this.heap.length &&
+			child !== undefined &&
+			currentLargest !== undefined &&
+			this.compare(child, currentLargest) > 0
+		)
+	}
+
+	/**
+	 * Find the index of the largest element among parent and its children.
+	 * @internal
+	 */
+	private findLargestIndex(index: number): number {
+		const leftChildIndex = 2 * index + 1
+		const rightChildIndex = 2 * index + 2
+		let largestIndex = index
+
+		if (this.isChildLarger(leftChildIndex, largestIndex)) {
+			largestIndex = leftChildIndex
+		}
+		if (this.isChildLarger(rightChildIndex, largestIndex)) {
+			largestIndex = rightChildIndex
+		}
+		return largestIndex
+	}
+
+	/**
+	 * Swap elements at two indices.
+	 * @internal
+	 */
+	private swap(indexA: number, indexB: number): void {
+		const a = this.heap[indexA]
+		const b = this.heap[indexB]
+		if (a !== undefined && b !== undefined) {
+			this.heap[indexA] = b
+			this.heap[indexB] = a
+		}
+	}
+
+	/**
 	 * Bubble down an entry at the given index to maintain heap property.
 	 * @internal
 	 */
 	private bubbleDown(index: number): void {
-		const length = this.heap.length
-
 		while (true) {
-			const leftChildIndex = 2 * index + 1
-			const rightChildIndex = 2 * index + 2
-			let largestIndex = index
-
 			const current = this.heap[index]
-			const leftChild = this.heap[leftChildIndex]
-			const rightChild = this.heap[rightChildIndex]
-			const largest = this.heap[largestIndex]
-
-			if (!current || !largest) {
+			if (current === undefined) {
 				break
 			}
 
-			if (leftChildIndex < length && leftChild && this.compare(leftChild, largest) > 0) {
-				largestIndex = leftChildIndex
-			}
-
-			const newLargest = this.heap[largestIndex]
-			if (
-				rightChildIndex < length &&
-				rightChild &&
-				newLargest &&
-				this.compare(rightChild, newLargest) > 0
-			) {
-				largestIndex = rightChildIndex
-			}
-
+			const largestIndex = this.findLargestIndex(index)
 			if (largestIndex === index) {
 				break
 			}
 
-			// Swap
-			const swapTarget = this.heap[largestIndex]
-			if (swapTarget) {
-				this.heap[index] = swapTarget
-				this.heap[largestIndex] = current
-			}
+			this.swap(index, largestIndex)
 			index = largestIndex
 		}
 	}

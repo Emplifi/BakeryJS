@@ -13,10 +13,11 @@ module.exports = boxFactory(
 		},
 	},
 	function(serviceProvider: ServiceProvider, value: MessageData) {
+		const param = (serviceProvider.parameters as number | undefined) ?? 2;
 		return {
 			checksum:
-				Math.sqrt(serviceProvider.parameters || 2) * value.words +
-				value.punct,
+				Math.sqrt(param) * (value.words as number) +
+				(value.punct as number),
 		};
 	}
 );

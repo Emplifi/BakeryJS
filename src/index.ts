@@ -3,6 +3,7 @@ import { boxFactory } from './lib/bakeryjs/Box'
 import type { BoxExecutiveDefinition, BoxExecutiveBatchDefinition } from './lib/bakeryjs/Box'
 import type { BoxMeta, BatchingBoxMeta } from './lib/bakeryjs/BoxI'
 import { ServiceProvider } from './lib/bakeryjs/ServiceProvider'
+import type { Logger, Service, ServiceContainer } from './lib/bakeryjs/ServiceProvider'
 import type { MessageData } from './lib/bakeryjs/Message'
 
 export {
@@ -13,6 +14,9 @@ export {
 	BoxExecutiveDefinition,
 	BoxExecutiveBatchDefinition,
 	ServiceProvider,
+	Logger,
+	Service,
+	ServiceContainer,
 	MessageData
 }
 

@@ -1,4 +1,4 @@
-import { boxFactory, ServiceProvider, MessageData } from 'bakeryjs'
+import { boxFactory, ServiceProvider, MessageData, Logger } from 'bakeryjs'
 
 /**
  * A processor that uses the logger service.
@@ -14,9 +14,9 @@ const LoggerProcessor = boxFactory(
 		emits: [],
 		aggregates: false
 	},
-	function processValue(serviceProvider: ServiceProvider, value: MessageData): MessageData {
-		const logger = serviceProvider.get('logger')
-		logger.log({ loggerProcessor: value })
+	function processValue(serviceProvider: ServiceProvider, _value: MessageData): MessageData {
+		const logger = serviceProvider.get<Logger>('logger')
+		logger.log({ loggerProcessor: _value })
 		return { logged: true }
 	}
 )

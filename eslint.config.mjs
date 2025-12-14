@@ -63,6 +63,14 @@ export default tseslint.config(
     }
   },
 
+  // Complexity rule for src/ files only (enforces max cyclomatic complexity of 6)
+  {
+    files: ['src/**/*.ts'],
+    rules: {
+      complexity: ['error', { max: 6 }]
+    }
+  },
+
   // Jest config for test files
   {
     files: ['**/*.test.ts', 'tests/**/*.ts'],
@@ -87,4 +95,3 @@ export default tseslint.config(
   // Options are read from .prettierrc for consistency with editor extensions
   eslintPluginPrettierRecommended
 )
-
