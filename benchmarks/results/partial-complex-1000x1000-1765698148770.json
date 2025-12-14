@@ -1,0 +1,19 @@
+{
+  "status": "incomplete",
+  "reason": "timeout",
+  "flowType": "complex",
+  "config": {
+    "itemCount": 1000,
+    "nestedItemCount": 1000
+  },
+  "elapsedMs": 120001,
+  "sentEventCount": 686478,
+  "messagesProcessed": 75714,
+  "expectedMessages": 1000000,
+  "avgTimePerMessageMs": 1.5849248487730143,
+  "messagesPerSecond": 630.944742127149,
+  "memoryMB": 1727.5621032714844,
+  "peakMemoryMB": 2378.3475189208984,
+  "timestamp": "2025-12-14T07:42:28.769Z",
+  "environment": {}
+}

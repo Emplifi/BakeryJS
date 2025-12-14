@@ -61,6 +61,10 @@
 		"prepare": "npm run build",
 		"test": "jest",
 		"lint": "eslint --ext .ts,.js src/ tests/",
-		"doc": "typedoc --out ./docs/ --target ES6 src/"
+		"doc": "typedoc --out ./docs/ --target ES6 src/",
+		"benchmark": "ts-node --transpile-only benchmarks/run.ts",
+		"benchmark:simple": "ts-node --transpile-only benchmarks/run.ts --flow=simple",
+		"benchmark:complex": "ts-node --transpile-only benchmarks/run.ts --flow=complex",
+		"benchmark:verbose": "ts-node --transpile-only benchmarks/run.ts --verbose"
 	}
 }
