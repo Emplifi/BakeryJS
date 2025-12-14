@@ -184,12 +184,12 @@ Creates Flow instances from schema descriptions.
 
 **Components:**
 - `PriorityQueueI` - Interface for priority queues
-- `MemoryPrioritySingleQueue` - Single message processing
-- `MemoryPriorityBatchQueue` - Batch message processing
+- `FastPriorityQueue` - High-performance single message processing with O(log n) operations
+- `FastPriorityBatchQueue` - High-performance batch message processing
 - `Tee` - Splits one queue into multiple outputs
 - `QZip` - Joins multiple queues into one (waits for all branches)
 
-Uses `better-queue` library under the hood.
+Uses a custom binary heap implementation for optimal performance.
 
 ### 7. Component Loading
 
@@ -291,10 +291,9 @@ The codebase uses **Jest** for testing with the following patterns:
 | Package | Purpose |
 |---------|---------|
 | `ajv` | JSON Schema validation for flow definitions |
-| `async` | Async utilities |
-| `better-queue` | Priority queue implementation |
 | `sb-jsnetworkx` | Graph library for DAG operations |
 | `verror` | Enhanced error handling |
+| `debug` | Debug logging utilities |
 
 ---
 
@@ -699,7 +698,7 @@ Perform comprehensive analysis and testing implementation for Priority 2 modules
 - Use `jest.fn()` for mocking callbacks
 - Use `async/await` with proper `expect().resolves` or `expect().rejects`
 - Mock ServiceProvider with minimal implementation: `{ get: () => ({ log: jest.fn(), error: jest.fn() }) }`
-- For queue testing, use `better-queue` events: `'task_finish'`, `'drain'`
+- For queue testing, use FastPriorityQueue events: `'task_finish'`
 - DiGraph from `sb-jsnetworkx` uses reference equality for array keys
 
 ### Execution Notes
@@ -755,16 +754,16 @@ Perform comprehensive analysis and testing implementation for Priority 2 modules
    - `target` - Destination box name
    - `source` - Source box name (set once, throws on second set)
 
-2. **AQueue Base Class**:
-   - Wraps `better-queue` library
-   - Handles priority ordering
+2. **FastQueueBase Class**:
+   - Binary heap-based priority queue with O(log n) operations
+   - Handles priority ordering with FIFO within same priority
    - Supports both single and batch processing modes
 
-3. **MemoryPrioritySingleQueue**:
+3. **FastPriorityQueue**:
    - Processes one message at a time
    - Supports concurrency configuration
 
-4. **MemoryPriorityBatchQueue**:
+4. **FastPriorityBatchQueue**:
    - Collects messages into batches
    - Configurable batch size and timeout
    - Flushes on size limit or timeout

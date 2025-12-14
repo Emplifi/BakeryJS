@@ -1,6 +1,6 @@
 import { Flow, hasFlow, hasProcess } from '../Flow'
 import { Job } from '../Job'
-import { MemoryPrioritySingleQueue } from '../queue/MemoryPriorityQueue'
+import { FastPriorityQueue } from '../queue/FastPriorityQueue'
 import type { Message } from '../Message'
 import { DiGraph } from 'sb-jsnetworkx'
 import { EventEmitter } from 'events'
@@ -61,7 +61,7 @@ function createBoxGraph(boxNames: string[]): DiGraph {
 describe('Flow', () => {
 	describe('constructor', () => {
 		it('creates flow with queue and graph', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -74,7 +74,7 @@ describe('Flow', () => {
 		})
 
 		it('extends EventEmitter', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -87,7 +87,7 @@ describe('Flow', () => {
 		})
 
 		it('subscribes to box msg_finished events', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -110,7 +110,7 @@ describe('Flow', () => {
 
 	describe('process', () => {
 		it('enqueues job as a message', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -124,7 +124,7 @@ describe('Flow', () => {
 		})
 
 		it('pushes message with priority 1', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -140,7 +140,7 @@ describe('Flow', () => {
 		})
 
 		it('returns a promise', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -160,7 +160,7 @@ describe('Flow', () => {
 			const capturePromise = new Promise<void>(resolve => {
 				resolveCapture = resolve
 			})
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => {
 					capturedMessage = task
 					resolveCapture()
@@ -188,7 +188,7 @@ describe('Flow', () => {
 
 	describe('task_finish event', () => {
 		it('emits task_finish when job completes', async () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -215,7 +215,7 @@ describe('Flow', () => {
 
 	describe('destroy', () => {
 		it('is an async method that resolves', async () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -231,7 +231,7 @@ describe('Flow', () => {
 
 	describe('analyzeDimensions', () => {
 		it('handles generator boxes that emit new dimensions', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -256,7 +256,7 @@ describe('Flow', () => {
 		})
 
 		it('handles aggregator boxes that reduce dimensions', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'
@@ -284,7 +284,7 @@ describe('Flow', () => {
 		})
 
 		it('throws error when box has no parent edge', () => {
-			const queue = new MemoryPrioritySingleQueue(
+			const queue = new FastPriorityQueue(
 				(task: Message) => Promise.resolve(),
 				{ concurrency: 1 },
 				'__root__'

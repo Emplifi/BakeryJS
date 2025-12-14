@@ -12,10 +12,7 @@ import type { PriorityQueueI } from '../../queue/PriorityQueueI'
 import type { Message } from '../../Message'
 import type { BatchingBoxInterface, BatchingBoxMeta, BoxInterface, BoxMeta } from '../../BoxI'
 import { QZip, Tee } from './joinedQueue'
-import {
-	MemoryPriorityBatchQueue,
-	MemoryPrioritySingleQueue
-} from '../../queue/MemoryPriorityQueue'
+import { FastPriorityBatchQueue, FastPriorityQueue } from '../../queue/FastPriorityQueue'
 import { noopQueue } from '../../Box'
 import { ok as assert } from 'assert'
 import { eventEmitter } from '../../stats'
@@ -233,18 +230,18 @@ export class DAGBuilder implements FlowBuilderI {
 				const selfSingle: BoxInterface = instance as BoxInterface
 				const selfBatch: BatchingBoxInterface = instance as BatchingBoxInterface
 				const joinedQ = selfBatch.meta.batch
-					? new MemoryPriorityBatchQueue(
+					? new FastPriorityBatchQueue(
 							(msgs: Message[]) => selfBatch.process(msgs),
 							{
 								concurrency: selfBatch.meta.concurrency ?? 1,
 								batch: {
 									size: selfBatch.meta.batch.maxSize,
-									waitms: (selfBatch.meta.batch.timeoutSeconds ?? DEFAULT_BATCH_TIMEOUT_SEC) * 1000
+									waitMs: (selfBatch.meta.batch.timeoutSeconds ?? DEFAULT_BATCH_TIMEOUT_SEC) * 1000
 								}
 							},
 							boxName
 						)
-					: new MemoryPrioritySingleQueue(
+					: new FastPriorityQueue(
 							(msg: Message) => selfSingle.process(msg),
 							{
 								concurrency: selfSingle.meta.concurrency ?? 1

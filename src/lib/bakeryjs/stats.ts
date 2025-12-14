@@ -1,9 +1,5 @@
 import assert from 'assert'
 import { EventEmitter } from 'events'
-import { AQueue } from './queue/MemoryPriorityQueue'
-import Timer = NodeJS.Timer
-
-const STATS_SAMPLING_MS = 900
 
 // TODO: Ugly pattern -- EventEmitter should emits events about changes of internal state.
 // If every push for each Message and each queue emits a message, will it overwhelm the nodejs system?
@@ -46,29 +42,4 @@ function qTrace(statsd: boolean = false): MethodDecorator {
 	}
 }
 
-function sampleStats<T extends { new (...args: any[]): AQueue<any> }>(constr: T): T {
-	return class extends constr {
-		private samplingTimer: Timer
-
-		public constructor(...args: any[]) {
-			super(...args)
-			this.samplingTimer = setInterval(
-				() =>
-					eventEmitter.emit('queue_stats', {
-						boxName: (this as any).target,
-						size: this.length
-					}),
-				STATS_SAMPLING_MS
-			)
-			this.samplingTimer.unref()
-			this.queue.on('task_finish', (_: any, _2: any, stats: any) =>
-				eventEmitter.emit('box_timing', {
-					boxName: this.target,
-					duration: stats.elapsed
-				})
-			)
-		}
-	}
-}
-
-export { eventEmitter, qTrace, sampleStats }
+export { eventEmitter, qTrace }

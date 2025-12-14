@@ -152,13 +152,12 @@ TypeScript upgraded from 3.9.10 to 5.9.3.
 npm install --save-dev \
   @types/node@^20 \
   @types/jest@^29 \
-  @types/better-queue@^3.8.6 \
   @types/verror@^1.10.11 \
   --legacy-peer-deps
 npm uninstall @types/async --legacy-peer-deps
 ```
 
-**Note**: Removed `@types/async` - the `async` library itself includes types in v3.
+**Note**: Removed `@types/async` - the `async` library itself includes types in v3. The `@types/better-queue` package was later removed when `better-queue` was replaced with `FastPriorityQueue`.
 
 ### 2.3 Code Changes for TypeScript 5.x ✅
 
@@ -444,10 +443,10 @@ eslintPluginPrettierRecommended
 ### 7.1 Update Safe Dependencies (Non-Breaking) ✅
 
 ```bash
-npm install better-queue@^3.8.12 debug@^4.4.3 verror@^1.10.1 --legacy-peer-deps
+npm install debug@^4.4.3 verror@^1.10.1 --legacy-peer-deps
 ```
 
-**Completed**: Updated to better-queue@3.8.12, debug@4.4.3, verror@1.10.1
+**Completed**: Updated to debug@4.4.3, verror@1.10.1. The `better-queue` dependency was later replaced with a custom `FastPriorityQueue` implementation for better performance.
 
 ### 7.2 Update AJV (Breaking Changes) ✅
 
@@ -556,10 +555,9 @@ npm install --save-dev json5@^2.2.3 --legacy-peer-deps
   - Program.ts, FlowCatalog.ts, Message.ts, ComponentFactory.ts
 - Replaced `import VError = require('verror')` with `import VError from 'verror'` in:
   - Program.ts, ComponentFactory.test.ts
-- Replaced `import BetterQueue = require('better-queue')` with `import BetterQueue from 'better-queue'` in:
-  - MemoryPriorityQueue.ts
 - Installed @types/debug for proper TypeScript support
 - Kept dynamic require() in FlowSchemaReader.ts with eslint-disable comment (intentional runtime path resolution)
+- Note: MemoryPriorityQueue.ts was later replaced with FastPriorityQueue.ts which doesn't use better-queue
 
 ### 9.2 Update Type Imports ✅
 
