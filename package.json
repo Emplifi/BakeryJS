@@ -61,7 +61,7 @@
 		"prepare": "npm run build",
 		"test": "jest",
 		"test:watch": "jest --watch",
-		"test:coverage": "jest --coverage",
+		"coverage": "jest --coverage",
 		"lint": "eslint src/ tests/ benchmarks/",
 		"lint:fix": "eslint src/ tests/ benchmarks/ --fix",
 		"format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"benchmarks/**/*.ts\"",
