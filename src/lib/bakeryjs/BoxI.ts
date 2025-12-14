@@ -1,5 +1,5 @@
-import { Message } from './Message'
-import { EventEmitter } from 'events'
+import type { Message } from './Message'
+import type { EventEmitter } from 'events'
 
 export type BoxMeta = {
 	provides: string[]

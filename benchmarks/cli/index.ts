@@ -49,15 +49,15 @@ export function parseArgs(): ParsedArgs {
 				flowType = value
 			}
 		} else if (arg.startsWith('--items=')) {
-			items = parseInt(arg.split('=')[1], 10)
+			items = parseInt(arg.split('=')[1] as string, 10)
 		} else if (arg.startsWith('--nested=')) {
-			nestedItems = parseInt(arg.split('=')[1], 10)
+			nestedItems = parseInt(arg.split('=')[1] as string, 10)
 		} else if (arg === '--verbose') {
 			verbose = true
 		} else if (arg.startsWith('--runs=')) {
-			runs = parseInt(arg.split('=')[1], 10)
+			runs = parseInt(arg.split('=')[1] as string, 10)
 		} else if (arg.startsWith('--timeout=')) {
-			timeout = parseInt(arg.split('=')[1], 10) * 1000 // Convert to ms
+			timeout = parseInt(arg.split('=')[1] as string, 10) * 1000 // Convert to ms
 		}
 	}
 

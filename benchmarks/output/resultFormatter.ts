@@ -51,9 +51,7 @@ export function printSummaryComparison(results: BenchmarkResult[]): void {
 		console.log(
 			`| ${r.name.padEnd(9)} | ${String(r.metrics.messagesProcessed).padStart(
 				8
-			)} | ${r.metrics.totalTimeMs
-				.toFixed(1)
-				.padStart(9)} | ${r.metrics.avgTimePerMessageMs
+			)} | ${r.metrics.totalTimeMs.toFixed(1).padStart(9)} | ${r.metrics.avgTimePerMessageMs
 				.toFixed(4)
 				.padStart(12)} | ${r.metrics.memoryUsedMB.toFixed(2).padStart(11)} |`
 		)

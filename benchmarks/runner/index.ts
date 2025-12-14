@@ -121,7 +121,7 @@ export async function runBenchmark(options: RunBenchmarkOptions): Promise<Benchm
 						timedOut = true
 						reject(new Error('Benchmark timeout'))
 					}, timeout)
-			  })
+				})
 			: null
 
 	// Helper functions defined before use

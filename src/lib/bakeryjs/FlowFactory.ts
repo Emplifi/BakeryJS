@@ -1,8 +1,9 @@
-import ComponentFactoryI from './ComponentFactoryI'
-import FlowBuilderI, { FlowExplicitDescription } from './FlowBuilderI'
-import { Flow } from './Flow'
-import { PriorityQueueI } from './queue/PriorityQueueI'
-import { Message } from './Message'
+import type ComponentFactoryI from './ComponentFactoryI'
+import type FlowBuilderI from './FlowBuilderI'
+import type { FlowExplicitDescription } from './FlowBuilderI'
+import type { Flow } from './Flow'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import type { Message } from './Message'
 
 export default class FlowFactory {
 	private readonly componentFactory: ComponentFactoryI

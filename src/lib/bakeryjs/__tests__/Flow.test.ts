@@ -1,11 +1,11 @@
 import { Flow, hasFlow, hasProcess } from '../Flow'
 import { Job } from '../Job'
 import { MemoryPrioritySingleQueue } from '../queue/MemoryPriorityQueue'
-import { Message } from '../Message'
+import type { Message } from '../Message'
 import { DiGraph } from 'sb-jsnetworkx'
 import { EventEmitter } from 'events'
 import { ROOT_NODE } from '../builders/DAGBuilder/builder'
-import { BoxInterface, BoxMeta } from '../BoxI'
+import type { BoxInterface, BoxMeta } from '../BoxI'
 
 /**
  * Helper to create a mock box instance with proper event emitter behavior
@@ -18,14 +18,14 @@ function createMockBox(name: string, dimension: string[] = []): BoxInterface {
 		emits: [],
 		aggregates: false
 	}
-	return ({
+	return {
 		name,
 		meta,
 		process: jest.fn().mockResolvedValue(undefined),
 		on: emitter.on.bind(emitter),
 		emit: emitter.emit.bind(emitter),
 		onClean: []
-	} as unknown) as BoxInterface
+	} as unknown as BoxInterface
 }
 
 /**
@@ -316,7 +316,7 @@ describe('FlowFactory', () => {
 		})
 
 		it('returns flow from builder', async () => {
-			const mockFlow = ({ process: jest.fn() } as unknown) as Flow
+			const mockFlow = { process: jest.fn() } as unknown as Flow
 			const mockComponentFactory = {
 				create: jest.fn(),
 				baseURI: 'file:///mock/'

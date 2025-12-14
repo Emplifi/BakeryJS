@@ -1,13 +1,15 @@
-import { Flow } from './Flow'
-import FlowSchemaReaderI from './FlowSchemaReaderI'
+import type { Flow } from './Flow'
+import type FlowSchemaReaderI from './FlowSchemaReaderI'
 import FlowFactory from './FlowFactory'
-import ComponentFactoryI from './ComponentFactoryI'
-import FlowBuilderI, { FlowExplicitDescription } from './FlowBuilderI'
-import { VisualBuilder } from './builders/VisualBuilder'
-import { PriorityQueueI } from './queue/PriorityQueueI'
-import { Message } from './Message'
+import type ComponentFactoryI from './ComponentFactoryI'
+import type FlowBuilderI from './FlowBuilderI'
+import type { FlowExplicitDescription } from './FlowBuilderI'
+import type { VisualBuilder } from './builders/VisualBuilder'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import type { Message } from './Message'
+import Debug from 'debug'
 
-const debug = require('debug')('bakeryjs:flowCatalog')
+const debug = Debug('bakeryjs:flowCatalog')
 
 export class FlowCatalog {
 	private readonly flowSchemaReader: FlowSchemaReaderI

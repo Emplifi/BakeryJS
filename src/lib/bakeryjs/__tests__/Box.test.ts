@@ -1,7 +1,8 @@
 import { boxFactory } from '../Box'
-import { DataMessage, Message, MessageData } from '../Message'
-import { BoxMeta, BoxInterface, BatchingBoxInterface, BatchingBoxMeta } from '../BoxI'
-import { PriorityQueueI } from '../queue/PriorityQueueI'
+import { DataMessage } from '../Message'
+import type { Message, MessageData } from '../Message'
+import type { BoxMeta, BoxInterface, BatchingBoxInterface, BatchingBoxMeta } from '../BoxI'
+import type { PriorityQueueI } from '../queue/PriorityQueueI'
 import { ServiceProvider } from '../ServiceProvider'
 
 // Helper to create a mock ServiceProvider with a logger
@@ -513,7 +514,7 @@ describe('Box', () => {
 					aggregates: false
 				} as BoxMeta,
 				async function (_sp: ServiceProvider, _value: MessageData): Promise<MessageData> {
-					throw 'string error' // eslint-disable-line no-throw-literal
+					throw 'string error'
 				}
 			)
 

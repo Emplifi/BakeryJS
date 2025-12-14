@@ -1,9 +1,9 @@
 import { ServiceProvider } from '../ServiceProvider'
 import { ComponentFactory, MultiComponentFactory } from '../ComponentFactory'
 import { resolve } from 'path'
-import VError = require('verror')
-import { PriorityQueueI } from '../queue/PriorityQueueI'
-import { Message } from '../Message'
+import VError from 'verror'
+import type { PriorityQueueI } from '../queue/PriorityQueueI'
+import type { Message } from '../Message'
 
 const serviceProvider = new ServiceProvider({
 	logger: {
@@ -110,9 +110,10 @@ describe('Component Factory', () => {
 				await multiFactory.create('nonexistent')
 				fail('Should have thrown')
 			} catch (error) {
-				expect(error.message).toContain('nonexistent')
+				const err = error as Error
+				expect(err.message).toContain('nonexistent')
 				// Should include multiple paths in error
-				const info = VError.info(error)
+				const info = VError.info(err)
 				// factoryBaseUri is an array of strings
 				expect(info.factoryBaseUri).toBeInstanceOf(Array)
 				expect(info.factoryBaseUri).toHaveLength(2)
@@ -215,8 +216,9 @@ describe('Component Factory', () => {
 				await factory.create('nonexistent-box')
 				fail('Should have thrown')
 			} catch (error) {
-				expect(error.name).toBe('BoxNotFound')
-				const info = VError.info(error)
+				const err = error as VError
+				expect(err.name).toBe('BoxNotFound')
+				const info = VError.info(err)
 				expect(info.requestedBoxName).toBe('nonexistent-box')
 				expect(info.factoryBaseUri).toContain('file://')
 			}

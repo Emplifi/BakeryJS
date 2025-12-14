@@ -103,7 +103,8 @@
  * Thus, after every new information a check of `done` state must be done.
  */
 
-import { AttributeDict, DiGraph, Edge } from 'sb-jsnetworkx'
+import type { AttributeDict, Edge } from 'sb-jsnetworkx'
+import { DiGraph } from 'sb-jsnetworkx'
 import { ROOT_NODE } from './builders/DAGBuilder/builder'
 import { everyMap } from './eval/every'
 
@@ -290,6 +291,9 @@ export class TracingModel {
 
 				for (let i = 0; i < subDimensions.length; i++) {
 					const subDim = subDimensions[i]
+					if (!subDim) {
+						continue
+					}
 					mySubdims.set(subDim, {
 						complete: false,
 						done: false,
@@ -363,7 +367,12 @@ export class TracingModel {
 		// I wan't to check my parent message for completeness. However,
 		// I don't have its key in the store (superParent, parentDim, parentMsgId).
 		// Instead, check the completeness of my parent dimension.
-		const parentDimension = this.dimGraph.outEdges(dimension)[0][1] as string[]
+		const outEdges = this.dimGraph.outEdges(dimension)
+		const firstEdge = outEdges[0]
+		if (!firstEdge) {
+			return
+		}
+		const parentDimension = firstEdge[1] as string[]
 		const superParentMsgId = this.dimensionStore.get(parentMsgId).get(dimension).superParentMsgId
 		this.checkMsgFinishState(parentMsgId, superParentMsgId, parentDimension)
 		return

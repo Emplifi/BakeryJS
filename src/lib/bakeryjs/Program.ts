@@ -1,19 +1,21 @@
-import { Flow, FlowDescription, FlowIdDescValidation, hasFlow, hasProcess } from './Flow'
+import { Flow, FlowIdDescValidation, hasFlow, hasProcess } from './Flow'
+import type { FlowDescription } from './Flow'
 import { Job } from './Job'
 import { ServiceContainer, ServiceProvider } from './ServiceProvider'
 import { ComponentFactory, MultiComponentFactory } from './ComponentFactory'
 import { DefaultVisualBuilder } from './builders/DefaultVisualBuilder'
 import { FlowCatalog } from './FlowCatalog'
 import FlowSchemaReader from './FlowSchemaReader'
-import { DataMessage, Message, MessageData } from './Message'
-import { PriorityQueueI } from './queue/PriorityQueueI'
+import { DataMessage } from './Message'
+import type { Message, MessageData } from './Message'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
 import { DAGBuilder } from './builders/DAGBuilder/builder'
 import { eventEmitter } from './stats'
-import ajv from 'ajv'
+import Ajv from 'ajv'
 import { SchemaObjectValidation } from './FlowBuilderI'
-import { MultiError } from 'verror'
-import VError = require('verror')
-const debug = require('debug')('bakeryjs:Program')
+import VError, { MultiError } from 'verror'
+import Debug from 'debug'
+const debug = Debug('bakeryjs:Program')
 
 type UserConfiguration = {
 	componentPaths?: string[]
@@ -25,7 +27,10 @@ function createDrainPush(drainCallback: DrainCallback): PriorityQueueI<Message> 
 		push(msgs: DataMessage | DataMessage[], priority?: number) {
 			if (Array.isArray(msgs)) {
 				for (let i = 0; i < msgs.length; i++) {
-					drainCallback(msgs[i].export())
+					const msg = msgs[i]
+					if (msg) {
+						drainCallback(msg.export())
+					}
 				}
 			} else {
 				drainCallback(msgs.export())
@@ -67,7 +72,7 @@ export class Program {
 	private readonly serviceProvider: ServiceProvider
 	private readonly multiComponentFactory: MultiComponentFactory
 	private readonly catalog: FlowCatalog
-	private readonly ajv: ajv.Ajv
+	private readonly ajv: Ajv
 
 	public constructor(serviceContainer: ServiceContainer, userConf: UserConfiguration) {
 		// set default services
@@ -108,7 +113,7 @@ export class Program {
 			new DefaultVisualBuilder()
 		)
 
-		this.ajv = new ajv({
+		this.ajv = new Ajv({
 			schemas: [FlowIdDescValidation, SchemaObjectValidation]
 		})
 	}
@@ -161,7 +166,7 @@ export class Program {
 					{
 						name: 'JobValidationError',
 						cause: new MultiError(
-							errs.filter(e => e.dataPath !== '').map(e => new VError(e.message))
+							errs.filter(e => e.instancePath !== '').map(e => new VError(e.message))
 						),
 						info: {
 							schema: [

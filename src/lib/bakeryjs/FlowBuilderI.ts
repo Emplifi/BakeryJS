@@ -1,9 +1,8 @@
-import ComponentFactoryI from './ComponentFactoryI'
-import { PriorityQueueI } from './queue/PriorityQueueI'
-import { Message } from './Message'
-import { Flow } from './Flow'
+import type ComponentFactoryI from './ComponentFactoryI'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import type { Message } from './Message'
+import type { Flow } from './Flow'
 
-// eslint-disable-next-line @typescript-eslint/no-use-before-define
 export type SchemaComponent = string | SchemaObject
 export type ConcurrentSchemaComponent = SchemaComponent[]
 export type SerialSchemaComponent = ConcurrentSchemaComponent[]

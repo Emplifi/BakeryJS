@@ -1,7 +1,8 @@
-import { PriorityQueueI } from '../../../queue/PriorityQueueI'
+import type { PriorityQueueI } from '../../../queue/PriorityQueueI'
 import { QZip, Tee } from '../joinedQueue'
 import { AssertionError } from 'assert'
-import { DataMessage, Message } from '../../../Message'
+import { DataMessage } from '../../../Message'
+import type { Message } from '../../../Message'
 
 describe('new Tee', () => {
 	function getQueueMock(): PriorityQueueI<any> {
@@ -99,8 +100,8 @@ describe('new Tee', () => {
 		const input: PriorityQueueI<string> = new Tee<string>(...qs)
 		input.push('single')
 
-		expect(qs[0].push).toHaveBeenCalledTimes(1)
-		expect(qs[0].push).toHaveBeenCalledWith('single', undefined)
+		expect((qs[0] as PriorityQueueI<any>).push).toHaveBeenCalledTimes(1)
+		expect((qs[0] as PriorityQueueI<any>).push).toHaveBeenCalledWith('single', undefined)
 	})
 })
 
@@ -112,13 +113,13 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		const msg = new DataMessage({ foo: 'foo' })
 		msg.setOutput(['bar'], { bar: 'bar' })
-		qs[0].push(msg)
+		;(qs[0] as PriorityQueueI<Message>).push(msg)
 		msg.setOutput(['baz'], { baz: 'baz' })
-		qs[1].push(msg)
+		;(qs[1] as PriorityQueueI<Message>).push(msg)
 
 		expect.assertions(2)
 		expect(outQ.push).toHaveBeenCalledTimes(1)
@@ -132,11 +133,11 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		const msg = new DataMessage({ foo: 'foo' })
 		msg.setOutput(['bar'], { bar: 'bar' })
-		qs[0].push(msg)
+		;(qs[0] as PriorityQueueI<Message>).push(msg)
 		msg.setOutput(['baz'], { baz: 'baz' })
 
 		expect(outQ.push).not.toHaveBeenCalled()
@@ -149,26 +150,22 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		const msg1 = new DataMessage({ foo: 'foo1' })
 		const msg2 = new DataMessage({ foo: 'foo2' })
 		const msg3 = new DataMessage({ foo: 'foo3' })
 		expect.assertions(6)
-
-		qs[0].push(msg1)
-		qs[0].push(msg2)
-		qs[0].push(msg3)
-
-		qs[1].push(msg2)
+		;(qs[0] as PriorityQueueI<Message>).push(msg1)
+		;(qs[0] as PriorityQueueI<Message>).push(msg2)
+		;(qs[0] as PriorityQueueI<Message>).push(msg3)
+		;(qs[1] as PriorityQueueI<Message>).push(msg2)
 		expect(outQ.push).toHaveBeenCalledTimes(1)
 		expect(outQ.push).toHaveBeenCalledWith(msg2, undefined)
-
-		qs[1].push(msg3)
+		;(qs[1] as PriorityQueueI<Message>).push(msg3)
 		expect(outQ.push).toHaveBeenCalledTimes(2)
 		expect(outQ.push).toHaveBeenCalledWith(msg3, undefined)
-
-		qs[1].push(msg1)
+		;(qs[1] as PriorityQueueI<Message>).push(msg1)
 		expect(outQ.push).toHaveBeenCalledTimes(3)
 		expect(outQ.push).toHaveBeenCalledWith(msg1, undefined)
 	})
@@ -180,13 +177,13 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		const msg = new DataMessage({ foo: 'foo' })
 		msg.setOutput(['bar'], { bar: 'bar' })
-		qs[0].push(msg, 2)
+		;(qs[0] as PriorityQueueI<Message>).push(msg, 2)
 		msg.setOutput(['baz'], { baz: 'baz' })
-		qs[1].push(msg, 1)
+		;(qs[1] as PriorityQueueI<Message>).push(msg, 1)
 
 		expect.assertions(2)
 		expect(outQ.push).toHaveBeenCalledTimes(1)
@@ -200,18 +197,16 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 3)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		expect(qs).toHaveLength(3)
 
 		const msg = new DataMessage({ foo: 'foo' })
-		qs[0].push(msg)
+		;(qs[0] as PriorityQueueI<Message>).push(msg)
 		expect(outQ.push).not.toHaveBeenCalled()
-
-		qs[1].push(msg)
+		;(qs[1] as PriorityQueueI<Message>).push(msg)
 		expect(outQ.push).not.toHaveBeenCalled()
-
-		qs[2].push(msg)
+		;(qs[2] as PriorityQueueI<Message>).push(msg)
 		expect(outQ.push).toHaveBeenCalledTimes(1)
 		expect(outQ.push).toHaveBeenCalledWith(msg, undefined)
 	})
@@ -223,12 +218,12 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 3)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		const msg = new DataMessage({ foo: 'foo' })
-		qs[0].push(msg, 5)
-		qs[1].push(msg, 10)
-		qs[2].push(msg, 3)
+		;(qs[0] as PriorityQueueI<Message>).push(msg, 5)
+		;(qs[1] as PriorityQueueI<Message>).push(msg, 10)
+		;(qs[2] as PriorityQueueI<Message>).push(msg, 3)
 
 		expect(outQ.push).toHaveBeenCalledWith(msg, 10)
 	})
@@ -240,11 +235,11 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		const msg = new DataMessage({ foo: 'foo' })
-		qs[0].push(msg, undefined)
-		qs[1].push(msg, 5)
+		;(qs[0] as PriorityQueueI<Message>).push(msg, undefined)
+		;(qs[1] as PriorityQueueI<Message>).push(msg, 5)
 
 		// Max of undefined and 5 should be 5
 		expect(outQ.push).toHaveBeenCalledWith(msg, 5)
@@ -257,25 +252,24 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		expect(zip).toHaveLength(0)
 
 		const msg1 = new DataMessage({ foo: 'foo1' })
 		const msg2 = new DataMessage({ foo: 'foo2' })
 
-		qs[0].push(msg1)
+		;(qs[0] as PriorityQueueI<Message>).push(msg1)
 		expect(zip).toHaveLength(1)
-
-		qs[0].push(msg2)
+		;(qs[0] as PriorityQueueI<Message>).push(msg2)
 		expect(zip).toHaveLength(2)
 
 		// Complete msg1
-		qs[1].push(msg1)
+		;(qs[1] as PriorityQueueI<Message>).push(msg1)
 		expect(zip).toHaveLength(1)
 
 		// Complete msg2
-		qs[1].push(msg2)
+		;(qs[1] as PriorityQueueI<Message>).push(msg2)
 		expect(zip).toHaveLength(0)
 	})
 
@@ -308,17 +302,17 @@ describe('QZip', () => {
 			target: ''
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
 		const msg1 = new DataMessage({ foo: 'foo1' })
 		const msg2 = new DataMessage({ foo: 'foo2' })
 
 		// Push batch to first input
-		qs[0].push([msg1, msg2])
+		;(qs[0] as PriorityQueueI<Message>).push([msg1, msg2])
 		expect(outQ.push).not.toHaveBeenCalled()
 
 		// Push batch to second input
-		qs[1].push([msg1, msg2])
+		;(qs[1] as PriorityQueueI<Message>).push([msg1, msg2])
 		expect(outQ.push).toHaveBeenCalledTimes(2)
 	})
 
@@ -329,9 +323,9 @@ describe('QZip', () => {
 			target: 'myTarget'
 		}
 		const zip = new QZip(outQ, 2)
-		const qs: PriorityQueueI<Message>[] = zip.inputs
+		const qs = zip.inputs as PriorityQueueI<Message>[]
 
-		expect(qs[0].target).toBe('myTarget')
-		expect(qs[1].target).toBe('myTarget')
+		expect((qs[0] as PriorityQueueI<Message>).target).toBe('myTarget')
+		expect((qs[1] as PriorityQueueI<Message>).target).toBe('myTarget')
 	})
 })

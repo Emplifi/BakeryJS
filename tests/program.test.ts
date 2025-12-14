@@ -195,7 +195,7 @@ test('Fail to build flow with invalid custom configuration', async () => {
 		process: [['hellobatchworld'], ['wordbatchcount', 'punctcount'], ['checksum']]
 	}
 
-	await program.run((job as any) as FlowDescription).catch(err => {
+	await program.run(job as any as FlowDescription).catch(err => {
 		expect(err.jse_cause.jse_cause.name).toEqual('BoxParametersValidationError')
 	})
 })
@@ -205,7 +205,7 @@ test('Validation error for invalid job', () => {
 		process: 'bad value'
 	}
 
-	expect(() => program.run((job as any) as FlowDescription)).toThrowError()
+	expect(() => program.run(job as any as FlowDescription)).toThrowError()
 })
 
 describe('Program constructor', () => {
@@ -266,7 +266,7 @@ describe('Program.run validation', () => {
 			process: []
 		}
 
-		expect(() => program.run((job as any) as FlowDescription)).toThrowError()
+		expect(() => program.run(job as any as FlowDescription)).toThrowError()
 	})
 
 	test('throws error for missing process property', () => {
@@ -274,7 +274,7 @@ describe('Program.run validation', () => {
 			parameters: {}
 		}
 
-		expect(() => program.run((job as any) as FlowDescription)).toThrowError()
+		expect(() => program.run(job as any as FlowDescription)).toThrowError()
 	})
 
 	test('throws error for invalid nested structure', () => {
@@ -282,7 +282,7 @@ describe('Program.run validation', () => {
 			process: [['valid'], 'invalid']
 		}
 
-		expect(() => program.run((job as any) as FlowDescription)).toThrowError()
+		expect(() => program.run(job as any as FlowDescription)).toThrowError()
 	})
 })
 

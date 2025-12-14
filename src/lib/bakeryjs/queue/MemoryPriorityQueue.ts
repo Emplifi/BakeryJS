@@ -1,8 +1,8 @@
-import { PriorityQueueI } from './PriorityQueueI'
-import { Message } from '../Message'
+import type { PriorityQueueI } from './PriorityQueueI'
+import type { Message } from '../Message'
 import { qTrace } from '../stats'
 // import {qTrace, sampleStats} from '../stats';
-import BetterQueue = require('better-queue')
+import BetterQueue from 'better-queue'
 
 const DEFAULT_PRIORITY = undefined
 
@@ -72,7 +72,8 @@ export class AQueue<T extends Message> implements PriorityQueueI<T> {
 
 export class MemoryPrioritySingleQueue<T extends Message>
 	extends AQueue<T>
-	implements PriorityQueueI<T> {
+	implements PriorityQueueI<T>
+{
 	public constructor(worker: Worker<T>, config: QueueConfig, target: string) {
 		super(
 			target,
@@ -91,7 +92,8 @@ export class MemoryPrioritySingleQueue<T extends Message>
 
 export class MemoryPriorityBatchQueue<T extends Message>
 	extends AQueue<T>
-	implements PriorityQueueI<T> {
+	implements PriorityQueueI<T>
+{
 	public constructor(worker: BatchWorker<T>, config: BatchQueueConfig, target: string) {
 		super(
 			target,

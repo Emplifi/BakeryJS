@@ -1,4 +1,4 @@
-import { MessageData } from './Message'
+import type { MessageData } from './Message'
 
 let jobId = 0
 

@@ -1,6 +1,6 @@
-import { Message } from './Message'
-import { PriorityQueueI } from './queue/PriorityQueueI'
-import { EventEmitter } from 'events'
+import type { Message } from './Message'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import type { EventEmitter } from 'events'
 
 interface RevocableQueue extends PriorityQueueI<Message> {
 	revoke(): void

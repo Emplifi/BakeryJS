@@ -1,5 +1,5 @@
-import { VisualBuilder } from './VisualBuilder'
-import {
+import type { VisualBuilder } from './VisualBuilder'
+import type {
 	ConcurrentSchemaComponent,
 	FlowExplicitDescription,
 	SchemaObject,
@@ -18,7 +18,10 @@ export class DefaultVisualBuilder implements VisualBuilder {
 		for (const key of Object.keys(schema)) {
 			output += `${indent}* ${key} ${'*'.repeat(TERMINAL_WIDTH - 3 - indent.length - key.length)}\n`
 			indent += '* '
-			output += this.printSerial(schema[key], indent)
+			const subSchema = schema[key]
+			if (subSchema) {
+				output += this.printSerial(subSchema, indent)
+			}
 			indent = indent.substr(0, indent.length - 2)
 			output += `${indent}${'*'.repeat(TERMINAL_WIDTH - indent.length)}\n`
 		}

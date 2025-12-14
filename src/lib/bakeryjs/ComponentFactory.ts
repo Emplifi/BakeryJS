@@ -1,12 +1,13 @@
 import { VError } from 'verror'
-import { BatchingBoxInterface, BoxInterface } from './BoxI'
-import ComponentFactoryI from './ComponentFactoryI'
-import { PriorityQueueI } from './queue/PriorityQueueI'
-import { Message } from './Message'
-import { ServiceProvider } from './ServiceProvider'
+import type { BatchingBoxInterface, BoxInterface } from './BoxI'
+import type ComponentFactoryI from './ComponentFactoryI'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import type { Message } from './Message'
+import type { ServiceProvider } from './ServiceProvider'
 import { scanComponentsPath } from './scanComponentsPath'
+import Debug from 'debug'
 
-const debug = require('debug')('bakeryjs:componentProvider')
+const debug = Debug('bakeryjs:componentProvider')
 
 function boxNotFoundError(name: string, baseURIs: string | string[]): Error {
 	const joinedUris = typeof baseURIs == 'string' ? baseURIs : baseURIs.join(',')
@@ -54,7 +55,7 @@ export class ComponentFactory implements ComponentFactoryI {
 			throw new VError(
 				{
 					name: 'ComponentLoadError',
-					cause: error instanceof Error ? error : new Error(error),
+					cause: error instanceof Error ? error : new Error(String(error)),
 					info: {
 						componentName: name
 					}
@@ -85,10 +86,8 @@ export class MultiComponentFactory implements ComponentFactoryI {
 			try {
 				return await factory.create(name, queue, parameters)
 			} catch (reason) {
-				if (!(reason instanceof Error)) {
-					reason = new Error(reason)
-				}
-				if (VError.hasCauseWithName(reason, 'BoxNotFound')) {
+				const error = reason instanceof Error ? reason : new Error(String(reason))
+				if (VError.hasCauseWithName(error, 'BoxNotFound')) {
 					return
 				}
 
@@ -100,7 +99,7 @@ export class MultiComponentFactory implements ComponentFactoryI {
 							factoryBaseURI: factory.baseURI,
 							requestedBoxName: name
 						},
-						cause: reason
+						cause: error
 					},
 					name
 				)

@@ -1,16 +1,16 @@
-import {
-	ConcurrentSchemaComponent,
-	default as FlowBuilderI,
+import type { default as FlowBuilderI } from '../../FlowBuilderI'
+import type {
 	FlowExplicitDescription,
 	SchemaComponent,
 	SchemaObject,
 	SerialSchemaComponent
 } from '../../FlowBuilderI'
-import { DiGraph, Edge, EdgeWithAttribs, NodeWithAttribs, topologicalSort } from 'sb-jsnetworkx'
-import ComponentFactoryI from '../../ComponentFactoryI'
-import { PriorityQueueI } from '../../queue/PriorityQueueI'
-import { Message } from '../../Message'
-import { BatchingBoxInterface, BatchingBoxMeta, BoxInterface, BoxMeta } from '../../BoxI'
+import { DiGraph, topologicalSort } from 'sb-jsnetworkx'
+import type { Edge, EdgeWithAttribs, NodeWithAttribs } from 'sb-jsnetworkx'
+import type ComponentFactoryI from '../../ComponentFactoryI'
+import type { PriorityQueueI } from '../../queue/PriorityQueueI'
+import type { Message } from '../../Message'
+import type { BatchingBoxInterface, BatchingBoxMeta, BoxInterface, BoxMeta } from '../../BoxI'
 import { QZip, Tee } from './joinedQueue'
 import {
 	MemoryPriorityBatchQueue,
@@ -49,7 +49,10 @@ function _analyzeRecursive(
 	}
 
 	// current row of SchemaComponents to analyze and to include into the graph
-	const currentRow: ConcurrentSchemaComponent = schema[0]
+	const currentRow = schema[0]
+	if (!currentRow) {
+		return analyzed
+	}
 	const rest = schema.slice(1)
 	// the generators of the current row
 	const gens: SchemaComponent[] = currentRow.filter(
@@ -72,7 +75,10 @@ function _analyzeRecursive(
 	// For each generator, analyze its subgraph depending solely on the generator
 	;(gens as SchemaObject[]).forEach((gen: SchemaObject) => {
 		for (const parentName of Object.keys(gen)) {
-			_analyzeRecursive(gen[parentName], [parentName], analyzed)
+			const subSchema = gen[parentName]
+			if (subSchema) {
+				_analyzeRecursive(subSchema, [parentName], analyzed)
+			}
 		}
 	})
 
@@ -179,8 +185,9 @@ export class DAGBuilder implements FlowBuilderI {
 				// we are at the root element.  This is the input into the graph.
 				if (boxName === ROOT_NODE) {
 					emitFlowSchema(boxBuildOrder, graph, schema)
-					if (depsQueues.length == 1) {
-						return depsQueues[0]
+					const firstQueue = depsQueues[0]
+					if (depsQueues.length == 1 && firstQueue) {
+						return firstQueue
 					} else {
 						return new Tee(...depsQueues)
 					}
@@ -198,12 +205,13 @@ export class DAGBuilder implements FlowBuilderI {
 					returnValue = noopQueue
 				} else if (depsQueues.length == 1) {
 					// I have a single dependency, so set it to be the output queue
+					const singleQueue = depsQueues[0]
+					if (!singleQueue) {
+						throw new Error(`Expected single dependency queue for ${boxName}`)
+					}
+					returnValue = singleQueue
 					graph.addNode(boxName, {
-						instance: await componentFactory.create(
-							boxName,
-							(returnValue = depsQueues[0]),
-							myParams
-						)
+						instance: await componentFactory.create(boxName, singleQueue, myParams)
 					})
 				} else {
 					// I have more dependencies.  Create a Tee -- single queue that
@@ -228,21 +236,21 @@ export class DAGBuilder implements FlowBuilderI {
 					? new MemoryPriorityBatchQueue(
 							(msgs: Message[]) => selfBatch.process(msgs),
 							{
-								concurrency: selfBatch.meta.concurrency || 1,
+								concurrency: selfBatch.meta.concurrency ?? 1,
 								batch: {
 									size: selfBatch.meta.batch.maxSize,
-									waitms: (selfBatch.meta.batch.timeoutSeconds || DEFAULT_BATCH_TIMEOUT_SEC) * 1000
+									waitms: (selfBatch.meta.batch.timeoutSeconds ?? DEFAULT_BATCH_TIMEOUT_SEC) * 1000
 								}
 							},
 							boxName
-					  )
+						)
 					: new MemoryPrioritySingleQueue(
 							(msg: Message) => selfSingle.process(msg),
 							{
-								concurrency: selfSingle.meta.concurrency || 1
+								concurrency: selfSingle.meta.concurrency ?? 1
 							},
 							boxName
-					  )
+						)
 				graph.addNode(boxName, { input: joinedQ })
 
 				// Select the edges (queues) from the graph
@@ -254,9 +262,12 @@ export class DAGBuilder implements FlowBuilderI {
 				// Store the queues in metadata storage by boxes I am dependent of
 				for (let index = 0; index < inputs.length; index++) {
 					// Edge == [from (i.e. me), parent]
-					const inEdge: Edge = inputs[index]
-					const providingBox: string = inEdge[1] as string
+					const inEdge = inputs[index]
 					const inputQ = inputQs[index]
+					if (!inEdge || !inputQ) {
+						continue
+					}
+					const providingBox: string = inEdge[1] as string
 					inputQ.source = providingBox
 					graph.addEdge(boxName, providingBox, { queue: inputQ })
 				}

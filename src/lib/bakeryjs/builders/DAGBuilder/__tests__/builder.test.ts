@@ -1,15 +1,15 @@
 import { DAGBuilder, ROOT_NODE } from '../builder'
-import { FlowExplicitDescription } from '../../../FlowBuilderI'
-import ComponentFactoryI from '../../../ComponentFactoryI'
-import { PriorityQueueI } from '../../../queue/PriorityQueueI'
-import { Message } from '../../../Message'
-import { BoxInterface, BatchingBoxInterface, BoxMeta, BatchingBoxMeta } from '../../../BoxI'
+import type { FlowExplicitDescription } from '../../../FlowBuilderI'
+import type ComponentFactoryI from '../../../ComponentFactoryI'
+import type { PriorityQueueI } from '../../../queue/PriorityQueueI'
+import type { Message } from '../../../Message'
+import type { BoxInterface, BatchingBoxInterface, BoxMeta, BatchingBoxMeta } from '../../../BoxI'
 import { EventEmitter } from 'events'
 
 // Helper to create a mock BoxInterface (mapper)
 function createMockMapperBox(name: string, meta?: Partial<BoxMeta>): BoxInterface {
 	const emitter = new EventEmitter()
-	return ({
+	return {
 		name,
 		meta: {
 			requires: [],
@@ -21,7 +21,7 @@ function createMockMapperBox(name: string, meta?: Partial<BoxMeta>): BoxInterfac
 		process: jest.fn().mockResolvedValue(undefined),
 		on: emitter.on.bind(emitter),
 		emit: emitter.emit.bind(emitter)
-	} as unknown) as BoxInterface
+	} as unknown as BoxInterface
 }
 
 // Helper to create a mock BoxInterface (generator)
@@ -31,7 +31,7 @@ function createMockGeneratorBox(
 	meta?: Partial<BoxMeta>
 ): BoxInterface {
 	const emitter = new EventEmitter()
-	return ({
+	return {
 		name,
 		meta: {
 			requires: [],
@@ -43,7 +43,7 @@ function createMockGeneratorBox(
 		process: jest.fn().mockResolvedValue(undefined),
 		on: emitter.on.bind(emitter),
 		emit: emitter.emit.bind(emitter)
-	} as unknown) as BoxInterface
+	} as unknown as BoxInterface
 }
 
 // Helper to create a mock BatchingBoxInterface
@@ -61,13 +61,13 @@ function createMockBatchingBox(
 			timeoutSeconds: 0.2
 		}
 	}
-	return ({
+	return {
 		name,
 		meta: { ...baseMeta, ...meta },
 		process: jest.fn().mockResolvedValue(undefined),
 		on: emitter.on.bind(emitter),
 		emit: emitter.emit.bind(emitter)
-	} as unknown) as BatchingBoxInterface
+	} as unknown as BatchingBoxInterface
 }
 
 // Helper to create a mock ComponentFactory
@@ -147,9 +147,9 @@ describe('DAGBuilder', () => {
 			// Boxes should be created in topological order (last first due to reversed edges)
 			// boxC depends on boxB, boxB depends on boxA
 			// So creation order should be: boxC, boxB, boxA
-			expect(factory.creationLog[0].name).toBe('boxC')
-			expect(factory.creationLog[1].name).toBe('boxB')
-			expect(factory.creationLog[2].name).toBe('boxA')
+			expect((factory.creationLog[0] as BoxCreationRecord).name).toBe('boxC')
+			expect((factory.creationLog[1] as BoxCreationRecord).name).toBe('boxB')
+			expect((factory.creationLog[2] as BoxCreationRecord).name).toBe('boxA')
 		})
 
 		it('terminal box receives drain queue', async () => {
@@ -168,8 +168,8 @@ describe('DAGBuilder', () => {
 			await builder.build(schema, factory, drain)
 
 			// boxB is terminal (last box), should receive drain queue
-			expect(factory.creationLog[0].name).toBe('boxB')
-			expect(factory.creationLog[0].queue).toBe(drain)
+			expect((factory.creationLog[0] as BoxCreationRecord).name).toBe('boxB')
+			expect((factory.creationLog[0] as BoxCreationRecord).queue).toBe(drain)
 		})
 
 		it('returns a Flow with input queue', async () => {
@@ -237,7 +237,7 @@ describe('DAGBuilder', () => {
 
 			await builder.build(schema, factory, drain)
 
-			expect(factory.creationLog[0].parameters).toEqual({
+			expect((factory.creationLog[0] as BoxCreationRecord).parameters).toEqual({
 				customParam: 'value'
 			})
 		})
@@ -256,7 +256,7 @@ describe('DAGBuilder', () => {
 
 			await builder.build(schema, factory, drain)
 
-			expect(factory.creationLog[0].parameters).toBeUndefined()
+			expect((factory.creationLog[0] as BoxCreationRecord).parameters).toBeUndefined()
 		})
 	})
 
@@ -335,7 +335,7 @@ describe('DAGBuilder', () => {
 			await builder.build(schema, factory, drain)
 
 			expect(factory.creationLog).toHaveLength(1)
-			expect(factory.creationLog[0].name).toBe('batchBox')
+			expect((factory.creationLog[0] as BoxCreationRecord).name).toBe('batchBox')
 		})
 	})
 
@@ -387,8 +387,8 @@ describe('DAGBuilder', () => {
 			expect(boxNames).toContain('boxD')
 
 			// boxD should be created first (terminal)
-			expect(factory.creationLog[0].name).toBe('boxD')
-			expect(factory.creationLog[0].queue).toBe(drain)
+			expect((factory.creationLog[0] as BoxCreationRecord).name).toBe('boxD')
+			expect((factory.creationLog[0] as BoxCreationRecord).queue).toBe(drain)
 		})
 	})
 
@@ -438,8 +438,8 @@ describe('DAGBuilder', () => {
 			const flow = await builder.build(schema, factory, drain)
 
 			expect(factory.creationLog).toHaveLength(1)
-			expect(factory.creationLog[0].name).toBe('onlyBox')
-			expect(factory.creationLog[0].queue).toBe(drain)
+			expect((factory.creationLog[0] as BoxCreationRecord).name).toBe('onlyBox')
+			expect((factory.creationLog[0] as BoxCreationRecord).queue).toBe(drain)
 			expect(flow).toBeDefined()
 		})
 	})

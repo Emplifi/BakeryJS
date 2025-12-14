@@ -1,4 +1,6 @@
-const debug = require('debug')('bakeryjs:message')
+import Debug from 'debug'
+
+const debug = Debug('bakeryjs:message')
 
 export type MessageData = { [key: string]: any }
 

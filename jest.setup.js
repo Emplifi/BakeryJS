@@ -1,23 +1,14 @@
 // Suppress console output during tests to reduce noise
-// Original console methods are preserved and can be restored if needed
-
-const originalConsole = {
-	log: console.log,
-	error: console.error,
-	warn: console.warn,
-};
+// Uses jest.spyOn for proper mock management
 
 beforeAll(() => {
 	// Mock console methods to suppress output during tests
-	console.log = jest.fn();
-	console.error = jest.fn();
-	console.warn = jest.fn();
+	jest.spyOn(console, 'log').mockImplementation(() => {});
+	jest.spyOn(console, 'error').mockImplementation(() => {});
+	jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 afterAll(() => {
-	// Restore original console methods
-	console.log = originalConsole.log;
-	console.error = originalConsole.error;
-	console.warn = originalConsole.warn;
+	// Restore all mocks
+	jest.restoreAllMocks();
 });
-

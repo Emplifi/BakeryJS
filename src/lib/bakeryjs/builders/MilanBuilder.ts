@@ -1,18 +1,20 @@
-import FlowBuilderI, {
+import type FlowBuilderI from '../FlowBuilderI'
+import type {
 	ConcurrentSchemaComponent,
 	FlowExplicitDescription,
 	SchemaComponent,
 	SchemaObject,
 	SerialSchemaComponent
 } from '../FlowBuilderI'
-import { BatchingBoxInterface, BoxInterface } from '../BoxI'
-import ComponentFactoryI from '../ComponentFactoryI'
-import { PriorityQueueI } from '../queue/PriorityQueueI'
-import { Message } from '../Message'
+import type { BatchingBoxInterface, BoxInterface } from '../BoxI'
+import type ComponentFactoryI from '../ComponentFactoryI'
+import type { PriorityQueueI } from '../queue/PriorityQueueI'
+import type { Message } from '../Message'
 import { MemoryPrioritySingleQueue } from '../queue/MemoryPriorityQueue'
 import { AssertionError } from 'assert'
 import { Flow } from '../Flow'
-import { DiGraph, Edge } from 'sb-jsnetworkx'
+import { DiGraph } from 'sb-jsnetworkx'
+import type { Edge } from 'sb-jsnetworkx'
 
 export const ROOT_NODE = '_root_'
 
@@ -42,7 +44,10 @@ function _analyzeRecursive(
 	}
 
 	// current row of SchemaComponents to analyze and to include into the graph
-	const currentRow: ConcurrentSchemaComponent = schema[0]
+	const currentRow = schema[0]
+	if (!currentRow) {
+		return analyzed
+	}
 	const rest = schema.slice(1)
 	// the generators of the current row
 	const gens: SchemaComponent[] = currentRow.filter(
@@ -65,7 +70,10 @@ function _analyzeRecursive(
 	// For each generator, analyze its subgraph depending solely on the generator
 	;(gens as SchemaObject[]).forEach((gen: SchemaObject) => {
 		for (const parentName of Object.keys(gen)) {
-			_analyzeRecursive(gen[parentName], [parentName], analyzed)
+			const subSchema = gen[parentName]
+			if (subSchema) {
+				_analyzeRecursive(subSchema, [parentName], analyzed)
+			}
 		}
 	})
 
@@ -184,8 +192,12 @@ export class MilanBuilder implements FlowBuilderI {
 		graph: DiGraph,
 		drain?: PriorityQueueI<Message>
 	): Promise<PriorityQueueI<Message>> {
+		const subSchema = schema[key]
+		if (!subSchema) {
+			throw new Error(`Schema key "${key}" not found`)
+		}
 		const serialFunctions: ProcessingCallback[] = await this.buildSerialFunctions(
-			schema[key],
+			subSchema,
 			componentFactory,
 			graph,
 			drain
@@ -194,12 +206,10 @@ export class MilanBuilder implements FlowBuilderI {
 			async (task: Message): Promise<void> => {
 				const appliedFcns = serialFunctions.reduce(
 					(previous: Promise<Message>, serialCallback: ProcessingCallback): Promise<Message> => {
-						return previous.then(
-							async (msg: Message): Promise<Message> => {
-								await serialCallback(msg)
-								return msg
-							}
-						)
+						return previous.then(async (msg: Message): Promise<Message> => {
+							await serialCallback(msg)
+							return msg
+						})
 					},
 					Promise.resolve(task)
 				)

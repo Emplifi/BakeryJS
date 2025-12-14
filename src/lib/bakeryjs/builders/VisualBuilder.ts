@@ -1,4 +1,4 @@
-import { FlowExplicitDescription } from '../FlowBuilderI'
+import type { FlowExplicitDescription } from '../FlowBuilderI'
 
 export interface VisualBuilder {
 	build(schema: FlowExplicitDescription): Promise<string> | string

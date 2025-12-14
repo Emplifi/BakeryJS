@@ -1,21 +1,21 @@
-import {
+import type {
 	BatchingBoxInterface,
 	BatchingBoxMeta,
 	BoxInterface,
 	BoxMeta,
 	OnCleanCallback
 } from './BoxI'
-import { Message, MessageData } from './Message'
-import { PriorityQueueI } from './queue/PriorityQueueI'
+import type { Message, MessageData } from './Message'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
 import VError from 'verror'
-import { ServiceProvider } from './ServiceProvider'
+import type { ServiceProvider } from './ServiceProvider'
 import { AssertionError } from 'assert'
-import ajv from 'ajv'
+import Ajv from 'ajv'
 import { boxEvents } from './BoxEvents'
 import { EventEmitter } from 'events'
 
 export const noopQueue: PriorityQueueI<any> = {
-	push: (msg: any, priority?: number) => undefined,
+	push: (_msg: any, _priority?: number) => undefined,
 	length: 0,
 	target: ''
 }
@@ -228,9 +228,9 @@ abstract class Box extends EventEmitter implements BoxInterface {
 		this.name = name
 		this.meta = meta
 		this.serviceParamsProvider = serviceProvider
-		this.queue = generatorTrace(queue || (noopQueue as PriorityQueueI<Message>), name)
+		this.queue = generatorTrace(queue ?? (noopQueue as PriorityQueueI<Message>), name)
 		if (this.meta.parameters && parameters) {
-			const ajvValidator = new ajv()
+			const ajvValidator = new Ajv()
 			if (ajvValidator.validate(this.meta.parameters, parameters)) {
 				this.serviceParamsProvider = serviceProvider.addParameters(parameters)
 			} else {
@@ -278,13 +278,11 @@ abstract class Box extends EventEmitter implements BoxInterface {
 			this.queue.push(msg)
 			return
 		} catch (error) {
-			if (!(error instanceof Error)) {
-				error = new Error(error.toString())
-			}
+			const cause = error instanceof Error ? error : new Error(String(error))
 			const wrap = new VError(
 				{
 					name: 'BoxInvocationException',
-					cause: error,
+					cause,
 					info: {
 						mode: 'mapper',
 						box: {
@@ -360,10 +358,11 @@ abstract class Box extends EventEmitter implements BoxInterface {
 					this.name
 				)
 			}
+			const cause = error instanceof Error ? error : new Error(String(error))
 			const wrap = new VError(
 				{
 					name: 'BoxInvocationException',
-					cause: error,
+					cause,
 					info: {
 						mode: 'generator',
 						box: {
@@ -382,7 +381,7 @@ abstract class Box extends EventEmitter implements BoxInterface {
 		}
 	}
 
-	private async processAggregator(msg: Message): Promise<any> {
+	private async processAggregator(_msg: Message): Promise<any> {
 		throw new VError(
 			{
 				name: 'NotImplementedError',
@@ -506,10 +505,10 @@ abstract class BatchingBox extends EventEmitter implements BatchingBoxInterface 
 		this.name = name
 		this.meta = meta
 
-		this.queue = generatorTrace(queue || (noopQueue as PriorityQueueI<Message>), name)
+		this.queue = generatorTrace(queue ?? (noopQueue as PriorityQueueI<Message>), name)
 		this.requireSet = new Set(this.meta.requires)
 		if (this.meta.parameters && parameters) {
-			const ajvValidator = new ajv()
+			const ajvValidator = new Ajv()
 			if (ajvValidator.validate(this.meta.parameters, parameters)) {
 				this.serviceParamsProvider = serviceProvider.addParameters(parameters)
 			} else {
@@ -562,19 +561,21 @@ abstract class BatchingBox extends EventEmitter implements BatchingBoxInterface 
 			)
 			this.queue.push(
 				result.map((msg: MessageData, index: number) => {
-					batch[index].setOutput(this.meta.provides, msg)
-					return batch[index]
+					const batchItem = batch[index]
+					if (!batchItem) {
+						throw new Error(`Batch item at index ${index} is undefined`)
+					}
+					batchItem.setOutput(this.meta.provides, msg)
+					return batchItem
 				})
 			)
 			return
 		} catch (error) {
-			if (!(error instanceof Error)) {
-				error = new Error(error.toString())
-			}
+			const cause = error instanceof Error ? error : new Error(String(error))
 			const wrap = new VError(
 				{
 					name: 'BoxInvocationException',
-					cause: error,
+					cause,
 					info: {
 						mode: 'mapper',
 						box: {
@@ -593,7 +594,7 @@ abstract class BatchingBox extends EventEmitter implements BatchingBoxInterface 
 		}
 	}
 
-	private async processAggregator(batch: Message[]): Promise<any> {
+	private async processAggregator(_batch: Message[]): Promise<any> {
 		throw new VError(
 			{
 				name: 'NotImplementedError',

@@ -1,14 +1,16 @@
-import { PriorityQueueI } from './queue/PriorityQueueI'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
 import { Job } from './Job'
-import { DataMessage, Message } from './Message'
-import { FlowExplicitDescription } from './FlowBuilderI'
-import { AttributeDict, DiGraph, Node, topologicalSort } from 'sb-jsnetworkx'
+import { DataMessage } from './Message'
+import type { Message } from './Message'
+import type { FlowExplicitDescription } from './FlowBuilderI'
+import { DiGraph, topologicalSort } from 'sb-jsnetworkx'
+import type { AttributeDict, Node } from 'sb-jsnetworkx'
 import { EventEmitter } from 'events'
 import { ROOT_NODE } from './builders/DAGBuilder/builder'
-import { BatchingBoxMeta, BoxMeta } from './BoxI'
+import type { BatchingBoxMeta, BoxMeta } from './BoxI'
 import { deepStrictEqual } from 'assert'
 import { TracingModel } from './tracingModel'
-import { MsgEvent } from './BoxEvents'
+import type { MsgEvent } from './BoxEvents'
 
 /**
  * We have Boxes set up properly, now we have to interconnect them to the workflow.
@@ -91,13 +93,13 @@ export class Flow extends EventEmitter {
 			boxAttribs.instance.on('msg_finished', (msgInfos: MsgEvent[]) =>
 				// TODO: Defer checking after all the messages of the batch have been added
 				msgInfos.forEach(msgInfo =>
-					this.tracingModel.addMsg(msgInfo.messageId, msgInfo.parentMsgId || '-', msgInfo.boxName)
+					this.tracingModel.addMsg(msgInfo.messageId, msgInfo.parentMsgId ?? '-', msgInfo.boxName)
 				)
 			)
 			// if the instance is the generator, subscribe for `generation_finished`
 			boxAttribs.instance.on('generation_finished', (msgInfos: MsgEvent[]) =>
 				msgInfos.forEach(msgInfo =>
-					this.tracingModel.setDimensionComplete(msgInfo.messageId || '-', msgInfo.boxName)
+					this.tracingModel.setDimensionComplete(msgInfo.messageId ?? '-', msgInfo.boxName)
 				)
 			)
 		}
@@ -148,7 +150,12 @@ export class Flow extends EventEmitter {
 		const boxTopoOrder = topologicalSort(graph).reverse()
 		// Don't analyze root node
 		boxTopoOrder.slice(1).forEach(boxName => {
-			const parentNode: Node = graph.outEdges(boxName)[0][1]
+			const outEdges = graph.outEdges(boxName)
+			const firstEdge = outEdges[0]
+			if (!firstEdge) {
+				throw new Error(`No parent edge found for box ${boxName}`)
+			}
+			const parentNode: Node = firstEdge[1]
 			const parentDimension: Node[] = (graph.node.get(parentNode) as AttributeDict).dimension
 			const myMeta: BoxMeta | BatchingBoxMeta = (graph.node.get(boxName) as AttributeDict).instance
 				.meta

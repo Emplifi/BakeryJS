@@ -1,6 +1,7 @@
 export default function every<T>(arr: T[], evalFunction: (val: T) => boolean) {
 	for (let i = 0; i < arr.length; i++) {
-		if (!evalFunction(arr[i])) {
+		const item = arr[i]
+		if (item !== undefined && !evalFunction(item)) {
 			return false
 		}
 	}

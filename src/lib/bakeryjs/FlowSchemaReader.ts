@@ -1,10 +1,12 @@
-import { FlowExplicitDescription } from './FlowBuilderI'
-import FlowSchemaReaderI from './FlowSchemaReaderI'
+import type { FlowExplicitDescription } from './FlowBuilderI'
+import type FlowSchemaReaderI from './FlowSchemaReaderI'
 
 export default class FlowSchemaReader implements FlowSchemaReaderI {
 	private readonly flowList: { [key: string]: FlowExplicitDescription }
 
 	public constructor(flowsPath: string) {
+		// Dynamic require is intentional here - path is determined at runtime
+
 		this.flowList = require(flowsPath).default
 	}
 
