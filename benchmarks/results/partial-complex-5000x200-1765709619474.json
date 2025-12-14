@@ -1,0 +1,21 @@
+{
+  "status": "incomplete",
+  "reason": "timeout",
+  "flowType": "complex",
+  "config": {
+    "itemCount": 5000,
+    "nestedItemCount": 200
+  },
+  "elapsedMs": 125018,
+  "sentEventCount": 773471,
+  "messagesProcessed": 83143,
+  "expectedMessages": 1000000,
+  "avgTimePerMessageMs": 1.5036503373705543,
+  "messagesPerSecond": 665.0482330544402,
+  "memoryMB": 1837.470848083496,
+  "peakMemoryMB": 2238.449203491211,
+  "timestamp": "2025-12-14T10:53:39.436Z",
+  "nodeVersion": "v24.12.0",
+  "gitCommitSha": "24a8fa4bdfd60d8daf6ecae461f90c89ddf52015",
+  "environment": {}
+}

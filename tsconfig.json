@@ -28,6 +28,7 @@
 			"bakeryjs": ["src/index.ts"],
 			"bakeryjs/*": ["src/lib/bakeryjs/*"]
 		},
+		"typeRoots": ["./node_modules/@types", "./src/types"],
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
 		"experimentalDecorators": true,

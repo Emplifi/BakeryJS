@@ -62,16 +62,18 @@
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"coverage": "jest --coverage",
-		"lint": "eslint src/ tests/ benchmarks/",
-		"lint:fix": "eslint src/ tests/ benchmarks/ --fix",
-		"format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"benchmarks/**/*.ts\"",
-		"format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"benchmarks/**/*.ts\"",
+		"lint": "eslint src/ tests/ benchmarks/ profiling/",
+		"lint:fix": "eslint src/ tests/ benchmarks/ profiling/ --fix",
+		"format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"benchmarks/**/*.ts\" \"profiling/**/*.ts\"",
+		"format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"benchmarks/**/*.ts\" \"profiling/**/*.ts\"",
 		"typecheck": "tsc --noEmit",
 		"code-quality": "npm run format && npm run lint:fix && npm run typecheck",
 		"doc": "typedoc --out ./docs/ src/",
 		"benchmark": "ts-node --transpile-only benchmarks/run.ts",
 		"benchmark:simple": "ts-node --transpile-only benchmarks/run.ts --flow=simple",
 		"benchmark:complex": "ts-node --transpile-only benchmarks/run.ts --flow=complex",
-		"benchmark:verbose": "ts-node --transpile-only benchmarks/run.ts --verbose"
+		"benchmark:verbose": "ts-node --transpile-only benchmarks/run.ts --verbose",
+		"profile": "ts-node --transpile-only profiling/run.ts",
+		"profile:analyze": "ts-node --transpile-only profiling/analyze.ts"
 	}
 }

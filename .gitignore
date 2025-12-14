@@ -78,3 +78,10 @@ typings/
 
 # Serverless directories
 .serverless
+
+# Profiling
+profiling/profiles/*.cpuprofile
+profiling/profiles/*.metadata.json
+profiling/results/*.json
+!profiling/profiles/.gitkeep
+!profiling/results/.gitkeep
