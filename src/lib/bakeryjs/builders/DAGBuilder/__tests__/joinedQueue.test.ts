@@ -49,6 +49,65 @@ describe('new Tee', () => {
 		const input: PriorityQueueI<string> = new Tee<string>(...qs);
 		expect(() => input.push('Money?')).toThrowError(Error);
 	});
+
+	it('Tee into 3 queues', () => {
+		const qs = [getQueueMock(), getQueueMock(), getQueueMock()];
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
+		input.push('test');
+
+		qs.forEach((q) => {
+			expect(q.push).toHaveBeenCalledTimes(1);
+			expect(q.push).toHaveBeenCalledWith('test', undefined);
+		});
+	});
+
+	it('Tee into 5 queues with priority', () => {
+		const qs = [
+			getQueueMock(),
+			getQueueMock(),
+			getQueueMock(),
+			getQueueMock(),
+			getQueueMock(),
+		];
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
+		input.push('data', 7);
+
+		qs.forEach((q) => {
+			expect(q.push).toHaveBeenCalledTimes(1);
+			expect(q.push).toHaveBeenCalledWith('data', 7);
+		});
+	});
+
+	it('Tee has length of 0', () => {
+		const qs = [getQueueMock(), getQueueMock()];
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
+
+		expect(input).toHaveLength(0);
+	});
+
+	it('Tee has empty target', () => {
+		const qs = [getQueueMock(), getQueueMock()];
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
+
+		expect(input.target).toBe('');
+	});
+
+	it('Tee source can be set', () => {
+		const qs = [getQueueMock(), getQueueMock()];
+		const input = new Tee<string>(...qs);
+
+		input.source = 'mySource';
+		expect(input.source).toBe('mySource');
+	});
+
+	it('Tee into 1 queue works', () => {
+		const qs = [getQueueMock()];
+		const input: PriorityQueueI<string> = new Tee<string>(...qs);
+		input.push('single');
+
+		expect(qs[0].push).toHaveBeenCalledTimes(1);
+		expect(qs[0].push).toHaveBeenCalledWith('single', undefined);
+	});
 });
 
 describe('QZip', () => {
@@ -138,5 +197,147 @@ describe('QZip', () => {
 		expect.assertions(2);
 		expect(outQ.push).toHaveBeenCalledTimes(1);
 		expect(outQ.push).toHaveBeenCalledWith(msg, 2);
+	});
+
+	it('Zip of 3 queues', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
+		const zip = new QZip(outQ, 3);
+		const qs: PriorityQueueI<Message>[] = zip.inputs;
+
+		expect(qs).toHaveLength(3);
+
+		const msg = new DataMessage({foo: 'foo'});
+		qs[0].push(msg);
+		expect(outQ.push).not.toHaveBeenCalled();
+
+		qs[1].push(msg);
+		expect(outQ.push).not.toHaveBeenCalled();
+
+		qs[2].push(msg);
+		expect(outQ.push).toHaveBeenCalledTimes(1);
+		expect(outQ.push).toHaveBeenCalledWith(msg, undefined);
+	});
+
+	it('Zip priority uses max across inputs', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
+		const zip = new QZip(outQ, 3);
+		const qs: PriorityQueueI<Message>[] = zip.inputs;
+
+		const msg = new DataMessage({foo: 'foo'});
+		qs[0].push(msg, 5);
+		qs[1].push(msg, 10);
+		qs[2].push(msg, 3);
+
+		expect(outQ.push).toHaveBeenCalledWith(msg, 10);
+	});
+
+	it('Zip handles undefined priorities correctly', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
+		const zip = new QZip(outQ, 2);
+		const qs: PriorityQueueI<Message>[] = zip.inputs;
+
+		const msg = new DataMessage({foo: 'foo'});
+		qs[0].push(msg, undefined);
+		qs[1].push(msg, 5);
+
+		// Max of undefined and 5 should be 5
+		expect(outQ.push).toHaveBeenCalledWith(msg, 5);
+	});
+
+	it('Zip tracks length correctly', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
+		const zip = new QZip(outQ, 2);
+		const qs: PriorityQueueI<Message>[] = zip.inputs;
+
+		expect(zip).toHaveLength(0);
+
+		const msg1 = new DataMessage({foo: 'foo1'});
+		const msg2 = new DataMessage({foo: 'foo2'});
+
+		qs[0].push(msg1);
+		expect(zip).toHaveLength(1);
+
+		qs[0].push(msg2);
+		expect(zip).toHaveLength(2);
+
+		// Complete msg1
+		qs[1].push(msg1);
+		expect(zip).toHaveLength(1);
+
+		// Complete msg2
+		qs[1].push(msg2);
+		expect(zip).toHaveLength(0);
+	});
+
+	it('Zip reports correct size', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
+		const zip = new QZip(outQ, 4);
+
+		expect(zip.size).toBe(4);
+	});
+
+	it('QZip throws when inputs < 2', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
+
+		expect(() => new QZip(outQ, 1)).toThrow();
+		expect(() => new QZip(outQ, 0)).toThrow();
+	});
+
+	it('QZip handles batch messages', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: '',
+		};
+		const zip = new QZip(outQ, 2);
+		const qs: PriorityQueueI<Message>[] = zip.inputs;
+
+		const msg1 = new DataMessage({foo: 'foo1'});
+		const msg2 = new DataMessage({foo: 'foo2'});
+
+		// Push batch to first input
+		qs[0].push([msg1, msg2]);
+		expect(outQ.push).not.toHaveBeenCalled();
+
+		// Push batch to second input
+		qs[1].push([msg1, msg2]);
+		expect(outQ.push).toHaveBeenCalledTimes(2);
+	});
+
+	it('QZip input queues have correct target', () => {
+		const outQ: PriorityQueueI<Message> = {
+			push: jest.fn(),
+			length: 0,
+			target: 'myTarget',
+		};
+		const zip = new QZip(outQ, 2);
+		const qs: PriorityQueueI<Message>[] = zip.inputs;
+
+		expect(qs[0].target).toBe('myTarget');
+		expect(qs[1].target).toBe('myTarget');
 	});
 });

@@ -135,13 +135,10 @@ function emitFlowSchema(
 					.meta,
 			};
 		})
-		.reduce(
-			(metas, item) => {
-				metas[item.name as string] = item.meta;
-				return metas;
-			},
-			{} as FlowBoxesMetadata
-		);
+		.reduce((metas, item) => {
+			metas[item.name as string] = item.meta;
+			return metas;
+		}, {} as FlowBoxesMetadata);
 
 	eventEmitter.emit('flowSchema', schema, boxMetas, edges);
 	return;
@@ -282,9 +279,9 @@ export class DAGBuilder implements FlowBuilderI {
 						: new QZip(joinedQ, inputs.length).inputs;
 
 				// Store the queues in metadata storage by boxes I am dependent of
-				for(let index = 0; index < inputs.length; index++) {
+				for (let index = 0; index < inputs.length; index++) {
 					// Edge == [from (i.e. me), parent]
-					const inEdge: Edge = inputs[index]
+					const inEdge: Edge = inputs[index];
 					const providingBox: string = inEdge[1] as string;
 					const inputQ = inputQs[index];
 					inputQ.source = providingBox;

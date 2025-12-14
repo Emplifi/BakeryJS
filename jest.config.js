@@ -12,4 +12,5 @@ module.exports = {
 		prefix: '<rootDir>/',
 	}),
 	testPathIgnorePatterns: ['<rootDir>/(build|docs|node_modules)/'],
+	setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 };

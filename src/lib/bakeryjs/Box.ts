@@ -478,7 +478,8 @@ abstract class Box extends EventEmitter implements BoxInterface {
 	): Promise<MessageData> | MessageData | Promise<any>;
 }
 
-abstract class BatchingBox extends EventEmitter
+abstract class BatchingBox
+	extends EventEmitter
 	implements BatchingBoxInterface {
 	public readonly name: string;
 	public readonly meta: BatchingBoxMeta;

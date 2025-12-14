@@ -19,7 +19,7 @@ const STATS_SAMPLING_MS = 900;
 const eventEmitter = new EventEmitter();
 
 function qTrace(statsd: boolean = false): MethodDecorator {
-	return function(
+	return function (
 		target: any,
 		property: string | symbol,
 		descriptor: PropertyDescriptor
@@ -27,7 +27,7 @@ function qTrace(statsd: boolean = false): MethodDecorator {
 		assert(property === 'push', 'Queue push decorator not on push!');
 
 		const originValue = descriptor.value;
-		descriptor.value = function(...argsList: any[]) {
+		descriptor.value = function (...argsList: any[]) {
 			const src = (this as any).source;
 			const tgt = (this as any).target;
 			const batchSize: number =

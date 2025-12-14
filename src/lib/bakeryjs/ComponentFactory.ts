@@ -120,6 +120,9 @@ export class MultiComponentFactory implements ComponentFactoryI {
 			return result;
 		}
 
-		throw boxNotFoundError(name, this.factories.map((f) => f.baseURI));
+		throw boxNotFoundError(
+			name,
+			this.factories.map((f) => f.baseURI)
+		);
 	}
 }

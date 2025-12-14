@@ -44,7 +44,7 @@ export class AQueue<T extends Message> implements PriorityQueueI<T> {
 		//TODO Fragile detection. What if T is subclass/instance of Array?
 		if (Array.isArray(message)) {
 			for (let i = 0; i < message.length; i++) {
-				this.queue.push({m:  message[i], p: priority});
+				this.queue.push({m: message[i], p: priority});
 			}
 		} else {
 			this.queue.push({m: message, p: priority});

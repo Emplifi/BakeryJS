@@ -227,3 +227,133 @@ test('Validation error for invalid job', () => {
 
 	expect(() => program.run((job as any) as FlowDescription)).toThrowError();
 });
+
+describe('Program constructor', () => {
+	test('creates program with empty service container', () => {
+		const p = new Program({}, {componentPaths: []});
+		expect(p).toBeInstanceOf(Program);
+	});
+
+	test('creates program with custom service container', () => {
+		const customLogger = {
+			log: jest.fn(),
+			error: jest.fn(),
+		};
+		const p = new Program({logger: customLogger}, {componentPaths: []});
+		expect(p).toBeInstanceOf(Program);
+	});
+
+	test('creates program with multiple component paths', () => {
+		const p = new Program(
+			{},
+			{
+				componentPaths: [
+					`${__dirname}/../test-data/`,
+					`${__dirname}/../test-data/`,
+				],
+			}
+		);
+		expect(p).toBeInstanceOf(Program);
+	});
+});
+
+describe('Program.on', () => {
+	test('registers event listener for sent events', async () => {
+		const p = new Program(
+			{},
+			{componentPaths: [`${__dirname}/../test-data/`]}
+		);
+		const sentCallback = jest.fn();
+		p.on('sent', sentCallback);
+
+		const job = {process: [['helloworld']]};
+		const drain: MessageData[] = [];
+		await p.run(job, (msg: MessageData) => drain.push(msg));
+
+		expect(sentCallback).toHaveBeenCalled();
+	});
+
+	test('registers event listener for run events', async () => {
+		const p = new Program(
+			{},
+			{componentPaths: [`${__dirname}/../test-data/`]}
+		);
+		const runCallback = jest.fn();
+		p.on('run', runCallback);
+
+		const job = {process: [['helloworld']]};
+		const drain: MessageData[] = [];
+		await p.run(job, (msg: MessageData) => drain.push(msg));
+
+		expect(runCallback).toHaveBeenCalled();
+	});
+});
+
+describe('Program.run validation', () => {
+	test('throws error for empty process array', () => {
+		const job = {
+			process: [],
+		};
+
+		expect(() =>
+			program.run((job as any) as FlowDescription)
+		).toThrowError();
+	});
+
+	test('throws error for missing process property', () => {
+		const job = {
+			parameters: {},
+		};
+
+		expect(() =>
+			program.run((job as any) as FlowDescription)
+		).toThrowError();
+	});
+
+	test('throws error for invalid nested structure', () => {
+		const job = {
+			process: [['valid'], 'invalid'],
+		};
+
+		expect(() =>
+			program.run((job as any) as FlowDescription)
+		).toThrowError();
+	});
+});
+
+describe('Program.run with drain callback', () => {
+	test('calls drain callback for each output message', async () => {
+		const drainCallback = jest.fn();
+		const job = {process: [['helloworld']]};
+
+		await program.run(job, drainCallback);
+
+		expect(drainCallback).toHaveBeenCalledTimes(1);
+		expect(drainCallback).toHaveBeenCalledWith(
+			expect.objectContaining({msg: 'Hello World!'})
+		);
+	});
+
+	test('runs without drain callback', async () => {
+		const job = {process: [['helloworld']]};
+
+		// Should not throw
+		await expect(program.run(job)).resolves.toBeUndefined();
+	});
+});
+
+describe('Program.runFlow', () => {
+	test('processes job with initial value', async () => {
+		const drain: MessageData[] = [];
+		const job = {process: [['checksum']]};
+
+		await program.run(job, (msg: MessageData) => drain.push(msg), {
+			words: 10,
+			punct: 5,
+		});
+
+		expect(drain).toHaveLength(1);
+		expect(drain[0]).toHaveProperty('words', 10);
+		expect(drain[0]).toHaveProperty('punct', 5);
+	});
+});

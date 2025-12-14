@@ -11,9 +11,10 @@ test('tracingModel: One dimension completes before the other starts. TypeError: 
 			[
 				{
 					hellobatchworld: [['wordbatchcountslow']],
-					helloworld: [['wordcount']]
-				}
-			]],
+					helloworld: [['wordcount']],
+				},
+			],
+		],
 	};
 
 	await program.run(job);
