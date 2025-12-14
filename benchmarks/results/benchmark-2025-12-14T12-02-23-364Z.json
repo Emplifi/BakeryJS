@@ -1,0 +1,32 @@
+[
+  {
+    "name": "complex-1000x100",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 1000,
+      "nestedItemCount": 100
+    },
+    "metrics": {
+      "totalTimeMs": 1537,
+      "messagesProcessed": 100000,
+      "avgTimePerMessageMs": 0.01537,
+      "memoryUsedMB": 161.6480941772461,
+      "peakMemoryMB": 0,
+      "heapStats": {
+        "heapUsed": 336178984,
+        "heapTotal": 441401344,
+        "external": 7911794
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 136,
+      "lastSentMs": 1536,
+      "drainCompleteMs": 1537,
+      "sentEventCount": 905031
+    },
+    "timestamp": "2025-12-14T12:02:23.326Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  }
+]
