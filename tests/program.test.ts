@@ -320,3 +320,39 @@ describe('Program.runFlow', () => {
 		expect(drain[0]).toHaveProperty('punct', 5)
 	})
 })
+
+describe('Program.run with flow id', () => {
+	test('throws error for non-existent flow name', async () => {
+		// This tests the hasFlow path (line 188) with a flow name that doesn't exist
+		const job: FlowDescription = { flow: 'non-existent-flow' }
+
+		await expect(program.run(job)).rejects.toThrow()
+	})
+
+	test('runs flow from catalog by name', async () => {
+		// This tests the hasFlow path (lines 187-197) with a valid flow name
+		// The 'all' flow is defined in src/flows/flows.ts and uses tick -> print
+		const job: FlowDescription = { flow: 'all' }
+		const drain: MessageData[] = []
+
+		await program.run(job, (msg: MessageData) => drain.push(msg))
+
+		// The tick component generates messages that go through print
+		expect(drain.length).toBeGreaterThan(0)
+	})
+})
+
+describe('Program.run unrecognized description', () => {
+	test('throws JobValidationError for flow with neither flow nor process', () => {
+		// Jobs that don't match either schema throw JobValidationError from AJV
+		const invalidJob = { neither: 'flow', nor: 'process' }
+
+		expect(() => program.run(invalidJob as any as FlowDescription)).toThrow()
+	})
+
+	test('throws error for empty object', () => {
+		const emptyJob = {}
+
+		expect(() => program.run(emptyJob as any as FlowDescription)).toThrow()
+	})
+})

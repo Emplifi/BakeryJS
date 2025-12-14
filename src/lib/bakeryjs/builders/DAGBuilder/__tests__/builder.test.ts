@@ -442,5 +442,114 @@ describe('DAGBuilder', () => {
 			expect((factory.creationLog[0] as BoxCreationRecord).queue).toBe(drain)
 			expect(flow).toBeDefined()
 		})
+
+		it('throws error for empty process array (no boxes to tee)', async () => {
+			const boxRegistry = new Map<string, () => BoxInterface>()
+			const factory = createMockComponentFactory(boxRegistry)
+			const drain = createMockDrainQueue()
+
+			// An empty process array triggers an assertion error
+			// because Tee can't be created with zero queues
+			const schema: FlowExplicitDescription = {
+				process: []
+			}
+
+			await expect(builder.build(schema, factory, drain)).rejects.toThrow(
+				"Can't tee into zero queues!"
+			)
+		})
+
+		it('throws error for process with empty row', async () => {
+			const boxRegistry = new Map<string, () => BoxInterface>()
+			const factory = createMockComponentFactory(boxRegistry)
+			const drain = createMockDrainQueue()
+
+			// A process with an empty first row also triggers assertion error
+			const schema: FlowExplicitDescription = {
+				process: [[]] as any
+			}
+
+			await expect(builder.build(schema, factory, drain)).rejects.toThrow(
+				"Can't tee into zero queues!"
+			)
+		})
+	})
+
+	describe('Batching box with default timeout', () => {
+		it('uses default timeout when not specified', async () => {
+			// Create a batching box without timeoutSeconds to cover DEFAULT_BATCH_TIMEOUT_SEC branch
+			const boxRegistry = new Map<string, () => BatchingBoxInterface>([
+				[
+					'batchBoxNoTimeout',
+					() =>
+						createMockBatchingBox('batchBoxNoTimeout', {
+							batch: { maxSize: 5 }
+						})
+				]
+			])
+
+			const factory = createMockComponentFactory(boxRegistry)
+			const drain = createMockDrainQueue()
+
+			const schema: FlowExplicitDescription = {
+				process: [['batchBoxNoTimeout']]
+			}
+
+			const flow = await builder.build(schema, factory, drain)
+
+			expect(factory.creationLog).toHaveLength(1)
+			expect((factory.creationLog[0] as BoxCreationRecord).name).toBe('batchBoxNoTimeout')
+			expect(flow).toBeDefined()
+		})
+	})
+
+	describe('Concurrency handling', () => {
+		it('uses default concurrency when not specified for batching box', async () => {
+			// Create a batching box without concurrency to cover the ?? 1 branch
+			const batchingBox = createMockBatchingBox('batchNoConcurrency', {
+				batch: { maxSize: 5, timeoutSeconds: 0.5 }
+			})
+			// Remove concurrency from meta
+			delete (batchingBox.meta as any).concurrency
+
+			const boxRegistry = new Map<string, () => BatchingBoxInterface>([
+				['batchNoConcurrency', () => batchingBox]
+			])
+
+			const factory = createMockComponentFactory(boxRegistry)
+			const drain = createMockDrainQueue()
+
+			const schema: FlowExplicitDescription = {
+				process: [['batchNoConcurrency']]
+			}
+
+			const flow = await builder.build(schema, factory, drain)
+
+			expect(factory.creationLog).toHaveLength(1)
+			expect(flow).toBeDefined()
+		})
+
+		it('uses default concurrency when not specified for single box', async () => {
+			// Create a mapper box without concurrency
+			const mapperBox = createMockMapperBox('mapperNoConcurrency')
+			// Remove concurrency from meta
+			delete (mapperBox.meta as any).concurrency
+
+			const boxRegistry = new Map<string, () => BoxInterface>([
+				['mapperNoConcurrency', () => mapperBox]
+			])
+
+			const factory = createMockComponentFactory(boxRegistry)
+			const drain = createMockDrainQueue()
+
+			const schema: FlowExplicitDescription = {
+				process: [['mapperNoConcurrency']]
+			}
+
+			const flow = await builder.build(schema, factory, drain)
+
+			expect(factory.creationLog).toHaveLength(1)
+			expect(flow).toBeDefined()
+		})
 	})
 })

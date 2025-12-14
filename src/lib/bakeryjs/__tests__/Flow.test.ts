@@ -10,13 +10,17 @@ import type { BoxInterface, BoxMeta } from '../BoxI'
 /**
  * Helper to create a mock box instance with proper event emitter behavior
  */
-function createMockBox(name: string, dimension: string[] = []): BoxInterface {
+function createMockBox(
+	name: string,
+	dimension: string[] = [],
+	options: { emits?: string[]; aggregates?: boolean } = {}
+): BoxInterface {
 	const emitter = new EventEmitter()
 	const meta: BoxMeta = {
 		provides: [],
 		requires: [],
-		emits: [],
-		aggregates: false
+		emits: options.emits ?? [],
+		aggregates: options.aggregates ?? false
 	}
 	return {
 		name,
@@ -222,6 +226,83 @@ describe('Flow', () => {
 			const flow = new Flow(queue, graph)
 
 			await expect(flow.destroy()).resolves.toBeUndefined()
+		})
+	})
+
+	describe('analyzeDimensions', () => {
+		it('handles generator boxes that emit new dimensions', () => {
+			const queue = new MemoryPrioritySingleQueue(
+				(task: Message) => Promise.resolve(),
+				{ concurrency: 1 },
+				'__root__'
+			)
+
+			const graph = new DiGraph()
+			// Add ROOT_NODE
+			graph.addNode(ROOT_NODE, {
+				instance: createMockBox(ROOT_NODE)
+			})
+
+			// Add a generator box that emits 'items'
+			const generatorBox = createMockBox('generator', [], { emits: ['items'] })
+			graph.addNode('generator', { instance: generatorBox })
+
+			// Edge from generator to ROOT_NODE (child to parent)
+			graph.addEdge('generator', ROOT_NODE)
+
+			// Creating the flow triggers dimension analysis
+			const flow = new Flow(queue, graph)
+			expect(flow).toBeInstanceOf(Flow)
+		})
+
+		it('handles aggregator boxes that reduce dimensions', () => {
+			const queue = new MemoryPrioritySingleQueue(
+				(task: Message) => Promise.resolve(),
+				{ concurrency: 1 },
+				'__root__'
+			)
+
+			const graph = new DiGraph()
+			// Add ROOT_NODE
+			graph.addNode(ROOT_NODE, {
+				instance: createMockBox(ROOT_NODE)
+			})
+
+			// Add a generator box that emits 'items'
+			const generatorBox = createMockBox('generator', [], { emits: ['items'] })
+			graph.addNode('generator', { instance: generatorBox })
+			graph.addEdge('generator', ROOT_NODE)
+
+			// Add an aggregator box that aggregates the 'items' dimension
+			const aggregatorBox = createMockBox('aggregator', [], { aggregates: true })
+			graph.addNode('aggregator', { instance: aggregatorBox })
+			graph.addEdge('aggregator', 'generator')
+
+			// Creating the flow triggers dimension analysis
+			const flow = new Flow(queue, graph)
+			expect(flow).toBeInstanceOf(Flow)
+		})
+
+		it('throws error when box has no parent edge', () => {
+			const queue = new MemoryPrioritySingleQueue(
+				(task: Message) => Promise.resolve(),
+				{ concurrency: 1 },
+				'__root__'
+			)
+
+			const graph = new DiGraph()
+			// Add ROOT_NODE
+			graph.addNode(ROOT_NODE, {
+				instance: createMockBox(ROOT_NODE)
+			})
+
+			// Add a box with no edge to parent (disconnected)
+			const orphanBox = createMockBox('orphan')
+			graph.addNode('orphan', { instance: orphanBox })
+			// No edge added - orphan has no parent
+
+			// Creating the flow should throw
+			expect(() => new Flow(queue, graph)).toThrow('No parent edge found for box orphan')
 		})
 	})
 })
@@ -516,5 +597,68 @@ describe('FlowCatalog', () => {
 
 			expect(mockBuilder.build).toHaveBeenCalledWith(mockSchema, mockComponentFactory, mockDrain)
 		})
+	})
+})
+
+// FlowCatalog debug mode tests
+describe('FlowCatalog debug mode', () => {
+	it('calls visualBuilder.build and logs when debug is enabled', async () => {
+		// We need to test the branch where debug.enabled is true
+		// To do this, we'll create a custom test that manipulates the debug state
+
+		// First, let's reset modules and mock debug before importing FlowCatalog
+		jest.resetModules()
+
+		// Create a mock debug function with enabled = true
+		const mockDebugFn = jest.fn() as jest.Mock & { enabled: boolean }
+		mockDebugFn.enabled = true
+
+		jest.doMock('debug', () => {
+			const mockDebug = () => mockDebugFn
+			return { default: mockDebug, __esModule: true }
+		})
+
+		// Now import FlowCatalog with the mocked debug module
+		const { FlowCatalog: FlowCatalogWithDebug } = await import('../FlowCatalog')
+
+		const mockSchema: FlowExplicitDescription = { process: [['boxA']] }
+		const mockFlow = {} as Flow
+		const mockVisualOutput = 'visual-schema-output'
+		const mockSchemaReader = {
+			getFlowSchema: jest.fn()
+		}
+		const mockComponentFactory = {
+			create: jest.fn(),
+			baseURI: 'file:///mock/'
+		}
+		const mockBuilder = {
+			build: jest.fn().mockResolvedValue(mockFlow)
+		}
+		const mockVisualBuilder = {
+			build: jest.fn().mockResolvedValue(mockVisualOutput)
+		}
+
+		const originalConsoleLog = console.log
+		console.log = jest.fn()
+
+		try {
+			const catalog = new FlowCatalogWithDebug(
+				mockSchemaReader as any,
+				mockComponentFactory as any,
+				mockBuilder as any,
+				mockVisualBuilder as any
+			)
+
+			await catalog.buildFlow(mockSchema)
+
+			// Verify visualBuilder.build was called when debug is enabled
+			expect(mockVisualBuilder.build).toHaveBeenCalledWith(mockSchema)
+			// Verify the visual schema was logged
+			expect(console.log).toHaveBeenCalledWith(mockVisualOutput)
+		} finally {
+			console.log = originalConsoleLog
+			jest.resetModules()
+			jest.dontMock('debug')
+		}
 	})
 })

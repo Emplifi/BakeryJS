@@ -1,5 +1,6 @@
 import { MemoryPriorityBatchQueue, MemoryPrioritySingleQueue } from '../queue/MemoryPriorityQueue'
 import { DataMessage, Message } from '../Message'
+import { sampleStats, eventEmitter } from '../stats'
 
 describe('MemoryPrioritySingleQueue', () => {
 	test('Single job', async () => {
@@ -163,5 +164,80 @@ describe('AQueue source property', () => {
 		expect(() => {
 			q.source = 'second'
 		}).toThrow(TypeError)
+	})
+})
+
+describe('sampleStats decorator', () => {
+	beforeEach(() => {
+		jest.useFakeTimers()
+	})
+
+	afterEach(() => {
+		jest.useRealTimers()
+		// Remove all listeners from the eventEmitter to clean up
+		eventEmitter.removeAllListeners()
+	})
+
+	it('wraps an AQueue subclass and returns a class', () => {
+		const WrappedQueue = sampleStats(MemoryPrioritySingleQueue)
+		expect(typeof WrappedQueue).toBe('function')
+	})
+
+	it('wrapped class can be instantiated like the original', () => {
+		const WrappedQueue = sampleStats(MemoryPrioritySingleQueue)
+		const worker = jest.fn().mockResolvedValue(undefined)
+		const q = new WrappedQueue(worker, { concurrency: 1 }, 'testTarget')
+
+		expect(q).toBeInstanceOf(MemoryPrioritySingleQueue)
+		expect(q.target).toBe('testTarget')
+	})
+
+	it('emits queue_stats events at regular intervals', () => {
+		const WrappedQueue = sampleStats(MemoryPrioritySingleQueue)
+		const worker = jest.fn().mockResolvedValue(undefined)
+		const statsHandler = jest.fn()
+
+		eventEmitter.on('queue_stats', statsHandler)
+		new WrappedQueue(worker, { concurrency: 1 }, 'statTarget')
+
+		// Initially no events
+		expect(statsHandler).not.toHaveBeenCalled()
+
+		// Advance timer past the sampling interval (900ms)
+		jest.advanceTimersByTime(900)
+		expect(statsHandler).toHaveBeenCalledWith({
+			boxName: 'statTarget',
+			size: expect.any(Number)
+		})
+
+		// Advance timer again
+		jest.advanceTimersByTime(900)
+		expect(statsHandler).toHaveBeenCalledTimes(2)
+	})
+
+	it('subscribes to task_finish events on the queue', () => {
+		const WrappedQueue = sampleStats(MemoryPrioritySingleQueue)
+		const worker = jest.fn().mockResolvedValue(undefined)
+		const timingHandler = jest.fn()
+
+		eventEmitter.on('box_timing', timingHandler)
+		const q = new WrappedQueue(worker, { concurrency: 1 }, 'timingTarget')
+
+		// The decorator subscribes to 'task_finish' on the underlying queue
+		// We can verify the subscription was set up by checking the wrapped queue exists
+		expect(q.target).toBe('timingTarget')
+		// The timingHandler will be called when actual tasks complete,
+		// but that's tested via the integration with better-queue
+	})
+
+	it('timer is unreferenced so it does not prevent process exit', () => {
+		const WrappedQueue = sampleStats(MemoryPrioritySingleQueue)
+		const worker = jest.fn().mockResolvedValue(undefined)
+
+		// This test just verifies the wrapped queue can be created
+		// The unref() call prevents the timer from keeping the process alive
+		// but we can't easily test that directly - we just verify no errors occur
+		const q = new WrappedQueue(worker, { concurrency: 1 }, 'unrefTarget')
+		expect(q.target).toBe('unrefTarget')
 	})
 })

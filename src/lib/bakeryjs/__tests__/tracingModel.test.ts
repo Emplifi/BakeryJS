@@ -260,4 +260,221 @@ describe('TracingModel', () => {
 			expect(jobDoneMock).toHaveBeenCalledTimes(1)
 		})
 	})
+
+	describe('Edge cases', () => {
+		it('handles dimension complete before any children pass through', () => {
+			const boxGraph = createGeneratorBoxGraph()
+			const dimGraph = createGeneratorDimGraph()
+			const jobDoneMock = jest.fn()
+
+			const tracing = new TracingModel(boxGraph, dimGraph, jobDoneMock)
+
+			const jobId = '/job1'
+
+			// Job passes through root dimension boxes
+			tracing.addMsg(jobId, ROOT_PARENT, ROOT_NODE)
+			tracing.addMsg(jobId, ROOT_PARENT, 'generator')
+
+			// Mark dimension as complete before any children - simulates empty generation
+			tracing.setDimensionComplete(jobId, 'childBox')
+
+			// Should complete since there are no children to wait for
+			expect(jobDoneMock).toHaveBeenCalledWith(jobId)
+		})
+
+		it('handles children completing before dimension marked complete', () => {
+			const boxGraph = createGeneratorBoxGraph()
+			const dimGraph = createGeneratorDimGraph()
+			const jobDoneMock = jest.fn()
+
+			const tracing = new TracingModel(boxGraph, dimGraph, jobDoneMock)
+
+			const jobId = '/job1'
+			const child1 = '/job1/child1'
+			const child2 = '/job1/child2'
+
+			// Job enters root
+			tracing.addMsg(jobId, ROOT_PARENT, ROOT_NODE)
+			tracing.addMsg(jobId, ROOT_PARENT, 'generator')
+
+			// Both children complete
+			tracing.addMsg(child1, jobId, 'childBox')
+			tracing.addMsg(child2, jobId, 'childBox')
+
+			// Not done yet - dimension not marked complete
+			expect(jobDoneMock).not.toHaveBeenCalled()
+
+			// Now mark complete
+			tracing.setDimensionComplete(jobId, 'childBox')
+			expect(jobDoneMock).toHaveBeenCalledWith(jobId)
+		})
+
+		it('handles same message passing multiple boxes in same dimension', () => {
+			// Create a flow with two boxes in the same dimension
+			const boxGraph = new DiGraph()
+			const rootDim: string[] = []
+
+			boxGraph.addNode(ROOT_NODE, { dimension: rootDim })
+			boxGraph.addNode('boxA', { dimension: rootDim })
+			boxGraph.addNode('boxB', { dimension: rootDim })
+
+			boxGraph.addEdge('boxA', ROOT_NODE)
+			boxGraph.addEdge('boxB', 'boxA')
+
+			const dimGraph = new DiGraph()
+			dimGraph.addNode(rootDim, { boxes: [ROOT_NODE, 'boxA', 'boxB'] })
+
+			const jobDoneMock = jest.fn()
+			const tracing = new TracingModel(boxGraph, dimGraph, jobDoneMock)
+
+			const jobId = '/job1'
+
+			// Message passes through boxes - should track same message
+			tracing.addMsg(jobId, ROOT_PARENT, 'boxA')
+			expect(jobDoneMock).not.toHaveBeenCalled()
+
+			tracing.addMsg(jobId, ROOT_PARENT, ROOT_NODE)
+			expect(jobDoneMock).not.toHaveBeenCalled()
+
+			tracing.addMsg(jobId, ROOT_PARENT, 'boxB')
+			expect(jobDoneMock).toHaveBeenCalledWith(jobId)
+		})
+	})
+
+	describe('Experimental tracing disabled', () => {
+		const originalEnv = process.env.BAKERYJS_DISABLE_EXPERIMENTAL_TRACING
+
+		afterEach(() => {
+			if (originalEnv === undefined) {
+				delete process.env.BAKERYJS_DISABLE_EXPERIMENTAL_TRACING
+			} else {
+				process.env.BAKERYJS_DISABLE_EXPERIMENTAL_TRACING = originalEnv
+			}
+		})
+
+		it('uses done flag instead of delete when experimental tracing disabled', () => {
+			process.env.BAKERYJS_DISABLE_EXPERIMENTAL_TRACING = 'true'
+
+			const boxGraph = createSimpleBoxGraph()
+			const dimGraph = createSimpleDimGraph()
+			const jobDoneMock = jest.fn()
+
+			const tracing = new TracingModel(boxGraph, dimGraph, jobDoneMock)
+
+			const jobId = '/job1'
+
+			// Message passes through all boxes
+			tracing.addMsg(jobId, ROOT_PARENT, 'boxA')
+			tracing.addMsg(jobId, ROOT_PARENT, 'boxB')
+
+			// Should still call jobDone
+			expect(jobDoneMock).toHaveBeenCalledWith(jobId)
+		})
+	})
+
+	describe('Nested dimensions', () => {
+		// Shared dimension references for nested tests
+		const NESTED_ROOT_DIM: string[] = []
+		const NESTED_CHILD_DIM = ['dim1']
+		const NESTED_GRANDCHILD_DIM = ['dim1', 'dim2']
+
+		function createNestedDimGraph(): DiGraph {
+			// Create a flow with nested dimensions:
+			// root [] -> child ['dim1'] -> grandchild ['dim1', 'dim2']
+			const dimGraph = new DiGraph()
+
+			dimGraph.addNode(NESTED_ROOT_DIM, { boxes: [ROOT_NODE, 'generator1'] })
+			dimGraph.addNode(NESTED_CHILD_DIM, { boxes: ['childBox', 'generator2'] })
+			dimGraph.addNode(NESTED_GRANDCHILD_DIM, { boxes: ['grandchildBox'] })
+
+			dimGraph.addEdge(NESTED_CHILD_DIM, NESTED_ROOT_DIM)
+			dimGraph.addEdge(NESTED_GRANDCHILD_DIM, NESTED_CHILD_DIM)
+
+			return dimGraph
+		}
+
+		function createNestedBoxGraph(): DiGraph {
+			const boxGraph = new DiGraph()
+
+			boxGraph.addNode(ROOT_NODE, { dimension: NESTED_ROOT_DIM })
+			boxGraph.addNode('generator1', { dimension: NESTED_ROOT_DIM })
+			boxGraph.addNode('childBox', { dimension: NESTED_CHILD_DIM })
+			boxGraph.addNode('generator2', { dimension: NESTED_CHILD_DIM })
+			boxGraph.addNode('grandchildBox', { dimension: NESTED_GRANDCHILD_DIM })
+
+			boxGraph.addEdge('generator1', ROOT_NODE)
+			boxGraph.addEdge('childBox', 'generator1')
+			boxGraph.addEdge('generator2', 'childBox')
+			boxGraph.addEdge('grandchildBox', 'generator2')
+
+			return boxGraph
+		}
+
+		it('handles nested generator dimensions', () => {
+			const boxGraph = createNestedBoxGraph()
+			const dimGraph = createNestedDimGraph()
+			const jobDoneMock = jest.fn()
+
+			const tracing = new TracingModel(boxGraph, dimGraph, jobDoneMock)
+
+			const jobId = '/job1'
+			const child1 = '/job1/child1'
+			const grandchild1 = '/job1/child1/grandchild1'
+
+			// Job passes through root
+			tracing.addMsg(jobId, ROOT_PARENT, ROOT_NODE)
+			tracing.addMsg(jobId, ROOT_PARENT, 'generator1')
+
+			// Child passes through child dimension
+			tracing.addMsg(child1, jobId, 'childBox')
+			tracing.addMsg(child1, jobId, 'generator2')
+
+			// Grandchild passes through grandchild dimension
+			tracing.addMsg(grandchild1, child1, 'grandchildBox')
+
+			// Mark grandchild dimension complete
+			tracing.setDimensionComplete(child1, 'grandchildBox')
+
+			// Mark child dimension complete
+			tracing.setDimensionComplete(jobId, 'childBox')
+
+			// Job should be done
+			expect(jobDoneMock).toHaveBeenCalledWith(jobId)
+		})
+
+		it('waits for all nested dimensions to complete', () => {
+			const boxGraph = createNestedBoxGraph()
+			const dimGraph = createNestedDimGraph()
+			const jobDoneMock = jest.fn()
+
+			const tracing = new TracingModel(boxGraph, dimGraph, jobDoneMock)
+
+			const jobId = '/job1'
+			const child1 = '/job1/child1'
+			const grandchild1 = '/job1/child1/grandchild1'
+
+			// Job passes through root
+			tracing.addMsg(jobId, ROOT_PARENT, ROOT_NODE)
+			tracing.addMsg(jobId, ROOT_PARENT, 'generator1')
+
+			// Child passes through child dimension
+			tracing.addMsg(child1, jobId, 'childBox')
+			tracing.addMsg(child1, jobId, 'generator2')
+
+			// Grandchild passes through grandchild dimension
+			tracing.addMsg(grandchild1, child1, 'grandchildBox')
+
+			// Mark child dimension complete but NOT grandchild
+			tracing.setDimensionComplete(jobId, 'childBox')
+
+			// Job should NOT be done - grandchild dimension not complete
+			expect(jobDoneMock).not.toHaveBeenCalled()
+
+			// Now mark grandchild dimension complete
+			tracing.setDimensionComplete(child1, 'grandchildBox')
+
+			// Job should now be done
+			expect(jobDoneMock).toHaveBeenCalledWith(jobId)
+		})
+	})
 })
