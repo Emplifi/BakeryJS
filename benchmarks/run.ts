@@ -19,11 +19,11 @@
  *   BAKERYJS_DISABLE_EXPERIMENTAL_TRACING=1 npm run benchmark
  */
 
-import {BenchmarkResult} from './types';
-import {parseArgs, printBenchmarkHeader, ParsedArgs} from './cli';
-import {buildBenchmarkConfigs, BenchmarkConfigEntry} from './config';
-import {runBenchmark} from './runner';
-import {formatResult, printSummaryComparison, saveResults} from './output';
+import { BenchmarkResult } from './types'
+import { parseArgs, printBenchmarkHeader, ParsedArgs } from './cli'
+import { buildBenchmarkConfigs, BenchmarkConfigEntry } from './config'
+import { runBenchmark } from './runner'
+import { formatResult, printSummaryComparison, saveResults } from './output'
 
 /**
  * Run all benchmarks for the given configurations
@@ -32,31 +32,31 @@ async function runAllBenchmarks(
 	configs: BenchmarkConfigEntry[],
 	args: ParsedArgs
 ): Promise<BenchmarkResult[]> {
-	const results: BenchmarkResult[] = [];
+	const results: BenchmarkResult[] = []
 
-	for (const {flowType, config} of configs) {
-		console.log(`\nRunning ${flowType} benchmark with config:`, config);
+	for (const { flowType, config } of configs) {
+		console.log(`\nRunning ${flowType} benchmark with config:`, config)
 
 		for (let run = 0; run < args.runs; run++) {
-			if (args.runs > 1) console.log(`  Run ${run + 1}/${args.runs}...`);
+			if (args.runs > 1) console.log(`  Run ${run + 1}/${args.runs}...`)
 
 			try {
 				const result = await runBenchmark({
 					flowType,
 					config,
 					verbose: args.verbose,
-					timeout: args.timeout,
-				});
-				results.push(result);
-				console.log(formatResult(result));
+					timeout: args.timeout
+				})
+				results.push(result)
+				console.log(formatResult(result))
 			} catch (err) {
-				console.error(`\nBenchmark error: ${(err as Error).message}`);
+				console.error(`\nBenchmark error: ${(err as Error).message}`)
 				// Continue with other benchmarks
 			}
 		}
 	}
 
-	return results;
+	return results
 }
 
 /**
@@ -64,28 +64,28 @@ async function runAllBenchmarks(
  */
 async function main(): Promise<void> {
 	// Parse command line arguments
-	const args = parseArgs();
+	const args = parseArgs()
 
 	// Print header information
-	printBenchmarkHeader(args);
+	printBenchmarkHeader(args)
 
 	// Build benchmark configurations
-	const configs = buildBenchmarkConfigs(args);
+	const configs = buildBenchmarkConfigs(args)
 
 	// Run all benchmarks
-	const results = await runAllBenchmarks(configs, args);
+	const results = await runAllBenchmarks(configs, args)
 
 	// Print summary comparison
-	printSummaryComparison(results);
+	printSummaryComparison(results)
 
 	// Save results to file
-	saveResults(results);
+	saveResults(results)
 
 	// Force exit since Program may have lingering event listeners
-	process.exit(0);
+	process.exit(0)
 }
 
-main().catch((err) => {
-	console.error('Benchmark failed:', err);
-	process.exit(1);
-});
+main().catch(err => {
+	console.error('Benchmark failed:', err)
+	process.exit(1)
+})

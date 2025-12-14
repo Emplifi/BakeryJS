@@ -1,18 +1,18 @@
-import ComponentFactoryI from './ComponentFactoryI';
-import {PriorityQueueI} from './queue/PriorityQueueI';
-import {Message} from './Message';
-import {Flow} from './Flow';
+import ComponentFactoryI from './ComponentFactoryI'
+import { PriorityQueueI } from './queue/PriorityQueueI'
+import { Message } from './Message'
+import { Flow } from './Flow'
 
 // eslint-disable-next-line @typescript-eslint/no-use-before-define
-export type SchemaComponent = string | SchemaObject;
-export type ConcurrentSchemaComponent = SchemaComponent[];
-export type SerialSchemaComponent = ConcurrentSchemaComponent[];
-export type SchemaObject = {[key: string]: SerialSchemaComponent};
+export type SchemaComponent = string | SchemaObject
+export type ConcurrentSchemaComponent = SchemaComponent[]
+export type SerialSchemaComponent = ConcurrentSchemaComponent[]
+export type SchemaObject = { [key: string]: SerialSchemaComponent }
 export type FlowExplicitDescription = {
-	[key: string]: SerialSchemaComponent | {[key: string]: any} | undefined;
-	process: SerialSchemaComponent;
-	parameters?: {[key: string]: any};
-};
+	[key: string]: SerialSchemaComponent | { [key: string]: any } | undefined
+	process: SerialSchemaComponent
+	parameters?: { [key: string]: any }
+}
 
 // TODO: export this automatically from type SchemaObject
 export const SchemaObjectValidation = {
@@ -26,8 +26,8 @@ export const SchemaObjectValidation = {
 			title:
 				'Set of parameters passed to particular boxes.  Key is a box identifier, value is arbitrary.',
 			patternProperties: {
-				'^.*$': {title: 'Arbitrary parameter value'},
-			},
+				'^.*$': { title: 'Arbitrary parameter value' }
+			}
 		},
 		process: {
 			$id: 'process',
@@ -36,27 +36,26 @@ export const SchemaObjectValidation = {
 			minItems: 1,
 			items: {
 				type: 'array',
-				title:
-					'Set of boxes to be run in parallel consuming outputs of boxes of previous stage',
+				title: 'Set of boxes to be run in parallel consuming outputs of boxes of previous stage',
 				minItems: 1,
 				items: {
 					oneOf: [
-						{type: 'string', title: 'name of the box'},
+						{ type: 'string', title: 'name of the box' },
 						{
 							type: 'object',
 							title: 'generator and boxes processing its output',
 							patternProperties: {
 								'^.*$': {
-									$ref: 'process',
-								},
-							},
-						},
-					],
-				},
-			},
-		},
-	},
-};
+									$ref: 'process'
+								}
+							}
+						}
+					]
+				}
+			}
+		}
+	}
+}
 
 // I am building Flow and receive the entry to it (the Queue)
 export default interface FlowBuilderI {
@@ -64,5 +63,5 @@ export default interface FlowBuilderI {
 		schema: FlowExplicitDescription,
 		componentFactory: ComponentFactoryI,
 		drain?: PriorityQueueI<Message>
-	): Promise<Flow> | Flow;
+	): Promise<Flow> | Flow
 }

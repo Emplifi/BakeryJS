@@ -3,22 +3,22 @@ import {
 	BatchingBoxMeta,
 	BoxInterface,
 	BoxMeta,
-	OnCleanCallback,
-} from './BoxI';
-import {Message, MessageData} from './Message';
-import {PriorityQueueI} from './queue/PriorityQueueI';
-import VError from 'verror';
-import {ServiceProvider} from './ServiceProvider';
-import {AssertionError} from 'assert';
-import ajv from 'ajv';
-import {boxEvents} from './BoxEvents';
-import {EventEmitter} from 'events';
+	OnCleanCallback
+} from './BoxI'
+import { Message, MessageData } from './Message'
+import { PriorityQueueI } from './queue/PriorityQueueI'
+import VError from 'verror'
+import { ServiceProvider } from './ServiceProvider'
+import { AssertionError } from 'assert'
+import ajv from 'ajv'
+import { boxEvents } from './BoxEvents'
+import { EventEmitter } from 'events'
 
 export const noopQueue: PriorityQueueI<any> = {
 	push: (msg: any, priority?: number) => undefined,
 	length: 0,
-	target: '',
-};
+	target: ''
+}
 
 /**
  * Type of the executing code definition of the Box.
@@ -54,7 +54,7 @@ export type BoxExecutiveDefinition = (
 	serviceProvider: ServiceProvider,
 	value: MessageData,
 	emit: (chunk: MessageData[], priority?: number) => void
-) => Promise<MessageData> | MessageData | Promise<any>;
+) => Promise<MessageData> | MessageData | Promise<any>
 
 /**
  * Type of the code definition executing batches of the Box.
@@ -86,19 +86,19 @@ export type BoxExecutiveDefinition = (
 export type BoxExecutiveBatchDefinition = (
 	serviceParamsProvider: ServiceProvider,
 	batch: MessageData[]
-) => Promise<MessageData[]> | MessageData[];
+) => Promise<MessageData[]> | MessageData[]
 
 export type BoxFactorySignature = new (
 	providedName: string,
 	serviceParamsProvider: ServiceProvider,
 	q?: PriorityQueueI<Message>
-) => BoxInterface;
+) => BoxInterface
 
 export type BatchingBoxFactorySignature = new (
 	providedName: string,
 	serviceParamsProvider: ServiceProvider,
 	q?: PriorityQueueI<Message>
-) => BatchingBoxInterface;
+) => BatchingBoxInterface
 
 /**
  * # Box
@@ -191,11 +191,11 @@ export type BatchingBoxFactorySignature = new (
  * @internalapi
  */
 abstract class Box extends EventEmitter implements BoxInterface {
-	private readonly queue: PriorityQueueI<Message>;
-	protected readonly serviceParamsProvider: ServiceProvider;
-	public readonly name: string;
-	public readonly meta: BoxMeta;
-	public readonly onClean: OnCleanCallback[] = [];
+	private readonly queue: PriorityQueueI<Message>
+	protected readonly serviceParamsProvider: ServiceProvider
+	public readonly name: string
+	public readonly meta: BoxMeta
+	public readonly onClean: OnCleanCallback[] = []
 
 	/**
 	 * The Box is a basic unit of execution. It comprises of two levels:
@@ -223,39 +223,34 @@ abstract class Box extends EventEmitter implements BoxInterface {
 		queue?: PriorityQueueI<Message>,
 		parameters?: any
 	) {
-		super();
-		const {generatorTrace} = boxEvents(this);
-		this.name = name;
-		this.meta = meta;
-		this.serviceParamsProvider = serviceProvider;
-		this.queue = generatorTrace(
-			queue || (noopQueue as PriorityQueueI<Message>),
-			name
-		);
+		super()
+		const { generatorTrace } = boxEvents(this)
+		this.name = name
+		this.meta = meta
+		this.serviceParamsProvider = serviceProvider
+		this.queue = generatorTrace(queue || (noopQueue as PriorityQueueI<Message>), name)
 		if (this.meta.parameters && parameters) {
-			const ajvValidator = new ajv();
+			const ajvValidator = new ajv()
 			if (ajvValidator.validate(this.meta.parameters, parameters)) {
-				this.serviceParamsProvider = serviceProvider.addParameters(
-					parameters
-				);
+				this.serviceParamsProvider = serviceProvider.addParameters(parameters)
 			} else {
-				const errs = ajvValidator.errors;
+				const errs = ajvValidator.errors
 				throw new VError(
 					{
 						name: 'BoxParametersValidationError',
 						info: {
 							schema: this.meta.parameters,
 							parameters: parameters,
-							validationErrors: errs,
-						},
+							validationErrors: errs
+						}
 					},
 					'Box parameters must conform to the schema defined in the box. Schema: %s, parameters: %s',
 					JSON.stringify(this.meta.parameters),
 					JSON.stringify(parameters)
-				);
+				)
 			}
 		} else {
-			this.serviceParamsProvider = serviceProvider;
+			this.serviceParamsProvider = serviceProvider
 		}
 	}
 
@@ -265,27 +260,26 @@ abstract class Box extends EventEmitter implements BoxInterface {
 				name: 'InconsistentBoxError',
 				info: {
 					name: this.name,
-					meta: this.meta,
-				},
+					meta: this.meta
+				}
 			},
 			"Box '%s': Can't invoke `emitCallback` unless being a generator/aggregator! Either set metadata filed 'emits' or 'aggregates'.",
 			this.name
-		);
+		)
 	}
 
 	private async processMapper(msg: Message): Promise<any> {
 		try {
 			const result = await this.processValue(
 				msg.getInput(this.meta.requires),
-				(chunk: MessageData[], priority?: number) =>
-					this.neverEmitCallback()
-			);
-			msg.setOutput(this.meta.provides, result);
-			this.queue.push(msg);
-			return;
+				(chunk: MessageData[], priority?: number) => this.neverEmitCallback()
+			)
+			msg.setOutput(this.meta.provides, result)
+			this.queue.push(msg)
+			return
 		} catch (error) {
 			if (!(error instanceof Error)) {
-				error = new Error(error.toString());
+				error = new Error(error.toString())
 			}
 			const wrap = new VError(
 				{
@@ -295,60 +289,57 @@ abstract class Box extends EventEmitter implements BoxInterface {
 						mode: 'mapper',
 						box: {
 							name: this.name,
-							meta: this.meta,
+							meta: this.meta
 						},
-						value: msg.getInput(this.meta.requires),
-					},
+						value: msg.getInput(this.meta.requires)
+					}
 				},
 				"The box '%s' in a %s mode encountered an exception.",
 				this.name,
 				'mapper'
-			);
+			)
 
-			throw wrap;
+			throw wrap
 		}
 	}
 
 	private async processGenerator(value: Message): Promise<any> {
 		try {
-			let siblingsCount = 0;
+			let siblingsCount = 0
 			// Prevent the queue from being pushed after generator has resolved
-			const {guardQueue} = boxEvents(this);
-			const guardedQ = guardQueue(this.queue);
+			const { guardQueue } = boxEvents(this)
+			const guardedQ = guardQueue(this.queue)
 
 			const retValue: any = await this.processValue(
 				value.getInput(this.meta.requires),
 				(chunk: MessageData[], priority?: number) => {
-					siblingsCount += chunk.length;
+					siblingsCount += chunk.length
 					guardedQ.push(
-						chunk.map((msg) => {
-							const parent: Message = value.create();
-							parent.setOutput(this.meta.provides, msg);
-							return parent;
+						chunk.map(msg => {
+							const parent: Message = value.create()
+							parent.setOutput(this.meta.provides, msg)
+							return parent
 						}),
 						priority
-					);
+					)
 				}
-			);
+			)
 
-			guardedQ.revoke();
+			guardedQ.revoke()
 			this.emit('generation_finished', [
 				{
 					boxName: this.name,
 					messageId: value.id,
 					parentMsgId: value.parent && value.parent.id,
-					generated: siblingsCount,
-				},
-			]);
+					generated: siblingsCount
+				}
+			])
 			// TODO: what to do with the retValue?
 			// I might have stopped in the middle of generation due to external problems
 			// (e.g. social network refuses to keep responding )
-			return retValue;
+			return retValue
 		} catch (error) {
-			if (
-				error instanceof TypeError &&
-				error.message.includes('revoked')
-			) {
+			if (error instanceof TypeError && error.message.includes('revoked')) {
 				throw new VError(
 					{
 						name: 'GeneratorMisbehaveException',
@@ -356,18 +347,18 @@ abstract class Box extends EventEmitter implements BoxInterface {
 							mode: 'generator',
 							box: {
 								name: this.name,
-								meta: this.meta,
+								meta: this.meta
 							},
 							value: value.getInput(this.meta.requires),
 							description:
 								'Generator should return a promise that would be resolved once all the messages had been emitted.' +
 								'  This error occurs when generator attempts to emit messages after its promise has been resolved.' +
-								'  The code of the generator should be repaired to keep the contract.',
-						},
+								'  The code of the generator should be repaired to keep the contract.'
+						}
 					},
 					'Generator %s emitted messages after its promise had been resolved.',
 					this.name
-				);
+				)
 			}
 			const wrap = new VError(
 				{
@@ -377,17 +368,17 @@ abstract class Box extends EventEmitter implements BoxInterface {
 						mode: 'generator',
 						box: {
 							name: this.name,
-							meta: this.meta,
+							meta: this.meta
 						},
-						value: value.getInput(this.meta.requires),
-					},
+						value: value.getInput(this.meta.requires)
+					}
 				},
 				"The box '%s' in a %s mode encountered an exception.",
 				this.name,
 				'generator'
-			);
+			)
 
-			throw wrap;
+			throw wrap
 		}
 	}
 
@@ -398,11 +389,11 @@ abstract class Box extends EventEmitter implements BoxInterface {
 				message: "Box '%s': Aggregator has not been implemented yet.",
 				info: {
 					name: this.name,
-					meta: this.meta,
-				},
+					meta: this.meta
+				}
 			},
 			this.name
-		);
+		)
 	}
 
 	/**
@@ -425,31 +416,30 @@ abstract class Box extends EventEmitter implements BoxInterface {
 	 * @internalapi
 	 */
 	public async process(msg: Message): Promise<any> {
-		const isGenerator: boolean = this.meta.emits.length > 0;
-		const isAggregator: boolean = this.meta.aggregates;
-		const isMapper: boolean = !isAggregator && !isGenerator;
+		const isGenerator: boolean = this.meta.emits.length > 0
+		const isAggregator: boolean = this.meta.aggregates
+		const isMapper: boolean = !isAggregator && !isGenerator
 
 		if (isAggregator) {
-			return await this.processAggregator(msg);
+			return await this.processAggregator(msg)
 		}
 
 		try {
 			if (isMapper) {
-				return await this.processMapper(msg);
+				return await this.processMapper(msg)
 			} else if (isGenerator) {
-				await this.processGenerator(msg);
-				return true;
+				await this.processGenerator(msg)
+				return true
 			} else {
 				throw new AssertionError({
-					message:
-						'Box that is neither Mapper nor Generator nor Aggregator',
-				});
+					message: 'Box that is neither Mapper nor Generator nor Aggregator'
+				})
 			}
 		} catch (error) {
-			this.serviceParamsProvider.get('logger').error(error);
+			this.serviceParamsProvider.get('logger').error(error)
 			// TODO: Stop processing (let it bubble up to the queue processor? And the queue then breaks the flow?)
 			// TODO: Send the batch into error-drain
-			return null;
+			return null
 		}
 	}
 
@@ -475,18 +465,16 @@ abstract class Box extends EventEmitter implements BoxInterface {
 	protected abstract processValue(
 		msg: MessageData,
 		emit: (batch: MessageData[], priority?: number) => void
-	): Promise<MessageData> | MessageData | Promise<any>;
+	): Promise<MessageData> | MessageData | Promise<any>
 }
 
-abstract class BatchingBox
-	extends EventEmitter
-	implements BatchingBoxInterface {
-	public readonly name: string;
-	public readonly meta: BatchingBoxMeta;
-	public readonly onClean: OnCleanCallback[] = [];
-	private readonly queue: PriorityQueueI<Message>;
-	private readonly requireSet: Set<string>;
-	protected readonly serviceParamsProvider: ServiceProvider;
+abstract class BatchingBox extends EventEmitter implements BatchingBoxInterface {
+	public readonly name: string
+	public readonly meta: BatchingBoxMeta
+	public readonly onClean: OnCleanCallback[] = []
+	private readonly queue: PriorityQueueI<Message>
+	private readonly requireSet: Set<string>
+	protected readonly serviceParamsProvider: ServiceProvider
 
 	/**
 	 * The Box is a basic unit of execution. It comprises of two levels:
@@ -512,41 +500,36 @@ abstract class BatchingBox
 		queue?: PriorityQueueI<Message>,
 		parameters?: any
 	) {
-		super();
-		const {generatorTrace} = boxEvents(this);
+		super()
+		const { generatorTrace } = boxEvents(this)
 
-		this.name = name;
-		this.meta = meta;
+		this.name = name
+		this.meta = meta
 
-		this.queue = generatorTrace(
-			queue || (noopQueue as PriorityQueueI<Message>),
-			name
-		);
-		this.requireSet = new Set(this.meta.requires);
+		this.queue = generatorTrace(queue || (noopQueue as PriorityQueueI<Message>), name)
+		this.requireSet = new Set(this.meta.requires)
 		if (this.meta.parameters && parameters) {
-			const ajvValidator = new ajv();
+			const ajvValidator = new ajv()
 			if (ajvValidator.validate(this.meta.parameters, parameters)) {
-				this.serviceParamsProvider = serviceProvider.addParameters(
-					parameters
-				);
+				this.serviceParamsProvider = serviceProvider.addParameters(parameters)
 			} else {
-				const errs = ajvValidator.errors;
+				const errs = ajvValidator.errors
 				throw new VError(
 					{
 						name: 'BoxParametersValidationError',
 						info: {
 							schema: this.meta.parameters,
 							parameters: parameters,
-							validationErrors: errs,
-						},
+							validationErrors: errs
+						}
 					},
 					'Box parameters must conform to the schema defined in the box. Schema: %s, parameters: %s',
 					JSON.stringify(this.meta.parameters),
 					JSON.stringify(parameters)
-				);
+				)
 			}
 		} else {
-			this.serviceParamsProvider = serviceProvider;
+			this.serviceParamsProvider = serviceProvider
 		}
 	}
 
@@ -556,41 +539,37 @@ abstract class BatchingBox
 				// Entering the user-defined code.  Let's handle a case when the box
 				// requests batching but the code treats the input as a single message.
 				new Proxy(
-					batch.map((msg) => msg.getInput(this.meta.requires)),
+					batch.map(msg => msg.getInput(this.meta.requires)),
 					{
 						get: (target: MessageData[], prop: any, receiver) => {
-							if (
-								this.requireSet.has(prop) &&
-								!Number.isInteger(prop) &&
-								!Array.prototype[prop]
-							) {
+							if (this.requireSet.has(prop) && !Number.isInteger(prop) && !Array.prototype[prop]) {
 								throw new VError(
 									{
 										name: 'BatchError',
 										info: {
-											property: prop,
-										},
+											property: prop
+										}
 									},
 									'Accessing property %s on the whole batch.  Probably the box requires batching but the executive code assumes single message.',
 									prop
-								);
+								)
 							} else {
-								return Reflect.get(target, prop, receiver);
+								return Reflect.get(target, prop, receiver)
 							}
-						},
+						}
 					}
 				)
-			);
+			)
 			this.queue.push(
 				result.map((msg: MessageData, index: number) => {
-					batch[index].setOutput(this.meta.provides, msg);
-					return batch[index];
+					batch[index].setOutput(this.meta.provides, msg)
+					return batch[index]
 				})
-			);
-			return;
+			)
+			return
 		} catch (error) {
 			if (!(error instanceof Error)) {
-				error = new Error(error.toString());
+				error = new Error(error.toString())
 			}
 			const wrap = new VError(
 				{
@@ -600,19 +579,17 @@ abstract class BatchingBox
 						mode: 'mapper',
 						box: {
 							name: this.name,
-							meta: this.meta,
+							meta: this.meta
 						},
-						batch: batch.map((msg) =>
-							msg.getInput(this.meta.requires)
-						),
-					},
+						batch: batch.map(msg => msg.getInput(this.meta.requires))
+					}
 				},
 				"The box '%s' in a %s mode encountered an exception.",
 				this.name,
 				'mapper'
-			);
+			)
 
-			throw wrap;
+			throw wrap
 		}
 	}
 
@@ -623,11 +600,11 @@ abstract class BatchingBox
 				message: "Box '%s': Aggregator has not been implemented yet.",
 				info: {
 					name: this.name,
-					meta: this.meta,
-				},
+					meta: this.meta
+				}
 			},
 			this.name
-		);
+		)
 	}
 
 	/**
@@ -650,29 +627,28 @@ abstract class BatchingBox
 	 * @internalapi
 	 */
 	public async process(batch: Message[]): Promise<any> {
-		const isAggregator: boolean = this.meta.aggregates;
-		const isMapper = !isAggregator;
+		const isAggregator: boolean = this.meta.aggregates
+		const isMapper = !isAggregator
 
 		if (isAggregator) {
-			return await this.processAggregator(batch);
+			return await this.processAggregator(batch)
 		}
 
-		const data = batch;
+		const data = batch
 		if (data.length > 0) {
 			try {
 				if (isMapper) {
-					return await this.processMapper(data);
+					return await this.processMapper(data)
 				} else {
 					throw new AssertionError({
-						message:
-							'BatchingBox that is neither aggregator nor mapper!',
-					});
+						message: 'BatchingBox that is neither aggregator nor mapper!'
+					})
 				}
 			} catch (error) {
-				this.serviceParamsProvider.get('logger').error(error);
+				this.serviceParamsProvider.get('logger').error(error)
 				// TODO: Stop processing (let it bubble up to the queue processor? And the queue then breaks the flow?)
 				// TODO: Send the batch into error-drain
-				return null;
+				return null
 			}
 		}
 	}
@@ -698,7 +674,7 @@ abstract class BatchingBox
 	 */
 	protected abstract processValue(
 		msgBatch: MessageData[]
-	): Promise<MessageData[]> | MessageData[] | Promise<any>;
+	): Promise<MessageData[]> | MessageData[] | Promise<any>
 }
 
 /**
@@ -725,15 +701,15 @@ function boxSingleFactory(
 			q?: PriorityQueueI<Message>,
 			parameters?: any
 		) {
-			super(providedName, metadata, serviceProvider, q, parameters);
+			super(providedName, metadata, serviceProvider, q, parameters)
 		}
 		protected processValue(
 			msg: MessageData,
 			emit: (msgs: MessageData[], priority?: number) => void
 		) {
-			return processValueDef(this.serviceParamsProvider, msg, emit);
+			return processValueDef(this.serviceParamsProvider, msg, emit)
 		}
-	};
+	}
 }
 
 /**
@@ -761,12 +737,12 @@ function boxBatchingFactory(
 			q?: PriorityQueueI<Message>,
 			parameters?: any
 		) {
-			super(providedName, metadata, serviceProvider, q, parameters);
+			super(providedName, metadata, serviceProvider, q, parameters)
 		}
 		protected processValue(msgs: MessageData[]) {
-			return processValueDef(this.serviceParamsProvider, msgs);
+			return processValueDef(this.serviceParamsProvider, msgs)
 		}
-	};
+	}
 }
 
 /**
@@ -790,11 +766,8 @@ export function boxFactory(
 		return boxBatchingFactory(
 			metadata as BatchingBoxMeta,
 			processValueDef as BoxExecutiveBatchDefinition
-		);
+		)
 	} else {
-		return boxSingleFactory(
-			metadata as BoxMeta,
-			processValueDef as BoxExecutiveDefinition
-		);
+		return boxSingleFactory(metadata as BoxMeta, processValueDef as BoxExecutiveDefinition)
 	}
 }

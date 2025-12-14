@@ -20,7 +20,7 @@
  * TracingModel must track: N messages at level 1, N*M messages at level 2
  */
 
-import {FlowExplicitDescription} from '../../src/lib/bakeryjs/FlowBuilderI';
+import { FlowExplicitDescription } from '../../src/lib/bakeryjs/FlowBuilderI'
 
 /**
  * Creates a complex flow configuration with the specified item counts
@@ -50,26 +50,25 @@ export function createComplexFlow(
 									// Stage 2: Parallel mappers
 									['mapper6', 'mapper7', 'mapper8'],
 									// Stage 3: Final mapper
-									['mapper9'],
-								],
-							},
-						],
-					],
-				},
-			],
+									['mapper9']
+								]
+							}
+						]
+					]
+				}
+			]
 		],
 		parameters: {
 			'configurable-generator': itemCount,
-			'nested-generator': nestedItemCount,
-		},
-	};
+			'nested-generator': nestedItemCount
+		}
+	}
 }
 
 /**
  * Default complex flow configuration
  * N=100 first level items, M=10 nested items = 1000 total leaf messages
  */
-export const complexFlow: FlowExplicitDescription = createComplexFlow(100, 10);
+export const complexFlow: FlowExplicitDescription = createComplexFlow(100, 10)
 
-export default complexFlow;
-
+export default complexFlow

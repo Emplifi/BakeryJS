@@ -2,7 +2,7 @@
  * Result formatting utilities for benchmark runner
  */
 
-import {BenchmarkResult} from '../types';
+import { BenchmarkResult } from '../types'
 
 /**
  * Format a benchmark result for console output
@@ -14,9 +14,7 @@ export function formatResult(result: BenchmarkResult): string {
 		`${'='.repeat(60)}`,
 		`Flow Type: ${result.flowType}`,
 		`Config: items=${result.config.itemCount}${
-			result.config.nestedItemCount
-				? `, nested=${result.config.nestedItemCount}`
-				: ''
+			result.config.nestedItemCount ? `, nested=${result.config.nestedItemCount}` : ''
 		}`,
 		``,
 		`Performance Metrics:`,
@@ -30,9 +28,9 @@ export function formatResult(result: BenchmarkResult): string {
 		`  First Sent: ${result.eventTimings.firstSentMs.toFixed(2)} ms`,
 		`  Last Sent: ${result.eventTimings.lastSentMs.toFixed(2)} ms`,
 		`  Drain Complete: ${result.eventTimings.drainCompleteMs.toFixed(2)} ms`,
-		`  Total Sent Events: ${result.eventTimings.sentEventCount}`,
-	];
-	return lines.join('\n');
+		`  Total Sent Events: ${result.eventTimings.sentEventCount}`
+	]
+	return lines.join('\n')
 }
 
 /**
@@ -40,27 +38,24 @@ export function formatResult(result: BenchmarkResult): string {
  */
 export function printSummaryComparison(results: BenchmarkResult[]): void {
 	if (results.length <= 1) {
-		return;
+		return
 	}
 
-	console.log('\n' + '='.repeat(60));
-	console.log('SUMMARY COMPARISON');
-	console.log('='.repeat(60));
-	console.log(
-		'\n| Benchmark | Messages | Time (ms) | Avg/Msg (ms) | Memory (MB) |'
-	);
-	console.log(
-		'|-----------|----------|-----------|--------------|-------------|'
-	);
+	console.log('\n' + '='.repeat(60))
+	console.log('SUMMARY COMPARISON')
+	console.log('='.repeat(60))
+	console.log('\n| Benchmark | Messages | Time (ms) | Avg/Msg (ms) | Memory (MB) |')
+	console.log('|-----------|----------|-----------|--------------|-------------|')
 
 	for (const r of results) {
 		console.log(
 			`| ${r.name.padEnd(9)} | ${String(r.metrics.messagesProcessed).padStart(
 				8
-			)} | ${r.metrics.totalTimeMs.toFixed(1).padStart(9)} | ${r.metrics.avgTimePerMessageMs
+			)} | ${r.metrics.totalTimeMs
+				.toFixed(1)
+				.padStart(9)} | ${r.metrics.avgTimePerMessageMs
 				.toFixed(4)
 				.padStart(12)} | ${r.metrics.memoryUsedMB.toFixed(2).padStart(11)} |`
-		);
+		)
 	}
 }
-

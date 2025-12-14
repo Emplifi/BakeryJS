@@ -2,7 +2,7 @@
  * Git utilities for benchmark runner
  */
 
-import {execSync} from 'child_process';
+import { execSync } from 'child_process'
 
 /**
  * Get the current git commit SHA
@@ -10,8 +10,8 @@ import {execSync} from 'child_process';
  */
 export function getGitCommitSha(): string | undefined {
 	try {
-		return execSync('git rev-parse HEAD', {encoding: 'utf8'}).trim();
+		return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
 	} catch {
-		return undefined;
+		return undefined
 	}
 }

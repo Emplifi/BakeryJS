@@ -4,7 +4,7 @@
  * A simple mapper that tracks processing time and optionally adds
  * an artificial delay to simulate real-world processing.
  */
-import {boxFactory, ServiceProvider, MessageData} from '../../../src';
+import { boxFactory, ServiceProvider, MessageData } from '../../../src'
 
 module.exports = boxFactory(
 	{
@@ -17,24 +17,23 @@ module.exports = boxFactory(
 			type: 'number',
 			minimum: 0,
 			maximum: 1000,
-			default: 0,
-		},
+			default: 0
+		}
 	},
 	async function processValue(
 		serviceProvider: ServiceProvider,
 		value: MessageData
 	): Promise<MessageData> {
-		const delayMs = (serviceProvider.parameters as number) || 0;
+		const delayMs = (serviceProvider.parameters as number) || 0
 
 		if (delayMs > 0) {
-			await new Promise((resolve) => setTimeout(resolve, delayMs));
+			await new Promise(resolve => setTimeout(resolve, delayMs))
 		}
 
 		return {
 			processed: true,
 			processorId: 'mapper',
-			processedAt: Date.now(),
-		};
+			processedAt: Date.now()
+		}
 	}
-);
-
+)

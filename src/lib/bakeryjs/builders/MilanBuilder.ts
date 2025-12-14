@@ -3,20 +3,20 @@ import FlowBuilderI, {
 	FlowExplicitDescription,
 	SchemaComponent,
 	SchemaObject,
-	SerialSchemaComponent,
-} from '../FlowBuilderI';
-import {BatchingBoxInterface, BoxInterface} from '../BoxI';
-import ComponentFactoryI from '../ComponentFactoryI';
-import {PriorityQueueI} from '../queue/PriorityQueueI';
-import {Message} from '../Message';
-import {MemoryPrioritySingleQueue} from '../queue/MemoryPriorityQueue';
-import {AssertionError} from 'assert';
-import {Flow} from '../Flow';
-import {DiGraph, Edge} from 'sb-jsnetworkx';
+	SerialSchemaComponent
+} from '../FlowBuilderI'
+import { BatchingBoxInterface, BoxInterface } from '../BoxI'
+import ComponentFactoryI from '../ComponentFactoryI'
+import { PriorityQueueI } from '../queue/PriorityQueueI'
+import { Message } from '../Message'
+import { MemoryPrioritySingleQueue } from '../queue/MemoryPriorityQueue'
+import { AssertionError } from 'assert'
+import { Flow } from '../Flow'
+import { DiGraph, Edge } from 'sb-jsnetworkx'
 
-export const ROOT_NODE = '_root_';
+export const ROOT_NODE = '_root_'
 
-type ProcessingCallback = (msg: Message) => Promise<void> | void;
+type ProcessingCallback = (msg: Message) => Promise<void> | void
 /**
  * Build recursively a directed graph from the SchemaObject.
  * TODO: (idea2) Analyze the graph in external logical program (SWI Prolog)
@@ -38,42 +38,39 @@ function _analyzeRecursive(
 ): DiGraph {
 	// return if nothing to do
 	if (schema.length == 0) {
-		return analyzed;
+		return analyzed
 	}
 
 	// current row of SchemaComponents to analyze and to include into the graph
-	const currentRow: ConcurrentSchemaComponent = schema[0];
-	const rest = schema.slice(1);
+	const currentRow: ConcurrentSchemaComponent = schema[0]
+	const rest = schema.slice(1)
 	// the generators of the current row
 	const gens: SchemaComponent[] = currentRow.filter(
 		(obj: SchemaComponent) => typeof obj !== 'string'
-	);
+	)
 	// the mappers of the current row
 	const maps: SchemaComponent[] = currentRow.filter(
 		(obj: string | SchemaObject) => typeof obj === 'string'
-	);
+	)
 
 	// each of the current row depends on each of the previous row
 	// note that the edge orientation is reversed
 	currentRow.forEach((box: SchemaComponent) => {
-		const boxNames: string[] =
-			typeof box === 'string' ? [box] : Object.keys(box);
-		boxNames.forEach((boxName) => {
-			analyzed.addEdgesFrom(
-				previous.map((pBox: string) => [boxName, pBox] as Edge)
-			);
-		});
-	});
+		const boxNames: string[] = typeof box === 'string' ? [box] : Object.keys(box)
+		boxNames.forEach(boxName => {
+			analyzed.addEdgesFrom(previous.map((pBox: string) => [boxName, pBox] as Edge))
+		})
+	})
 
 	// For each generator, analyze its subgraph depending solely on the generator
-	(gens as SchemaObject[]).forEach((gen: SchemaObject) => {
+	;(gens as SchemaObject[]).forEach((gen: SchemaObject) => {
 		for (const parentName of Object.keys(gen)) {
-			_analyzeRecursive(gen[parentName], [parentName], analyzed);
+			_analyzeRecursive(gen[parentName], [parentName], analyzed)
 		}
-	});
+	})
 
 	// we have completed the row, so proceed the rest
-	return _analyzeRecursive(rest, maps as string[], analyzed);
+	return _analyzeRecursive(rest, maps as string[], analyzed)
 }
 
 /**
@@ -84,9 +81,9 @@ function _analyzeRecursive(
  * @private
  */
 function analyzeSchema(schema: SerialSchemaComponent): DiGraph {
-	const graph: DiGraph = new DiGraph();
-	graph.addNode(ROOT_NODE);
-	return _analyzeRecursive(schema, [ROOT_NODE], graph);
+	const graph: DiGraph = new DiGraph()
+	graph.addNode(ROOT_NODE)
+	return _analyzeRecursive(schema, [ROOT_NODE], graph)
 }
 
 export class MilanBuilder implements FlowBuilderI {
@@ -95,16 +92,16 @@ export class MilanBuilder implements FlowBuilderI {
 		componentFactory: ComponentFactoryI,
 		drain?: PriorityQueueI<Message>
 	): Promise<Flow> {
-		const graph = analyzeSchema(schema.process);
+		const graph = analyzeSchema(schema.process)
 		const rootQ = await this.buildPriorityQueue(
-			{process: schema.process},
+			{ process: schema.process },
 			'process',
 			componentFactory,
 			graph,
 			drain
-		);
+		)
 
-		return new Flow(rootQ, graph);
+		return new Flow(rootQ, graph)
 	}
 
 	private async createConcurrentFunction(
@@ -113,20 +110,21 @@ export class MilanBuilder implements FlowBuilderI {
 		graph: DiGraph,
 		queue?: PriorityQueueI<Message>
 	) {
-		const component:
-			| BoxInterface
-			| BatchingBoxInterface = await componentFactory.create(name, queue);
-		graph.addNode(name, {instance: component});
-		const selfSingle: BoxInterface = component as BoxInterface;
-		const selfBatch: BatchingBoxInterface = component as BatchingBoxInterface;
+		const component: BoxInterface | BatchingBoxInterface = await componentFactory.create(
+			name,
+			queue
+		)
+		graph.addNode(name, { instance: component })
+		const selfSingle: BoxInterface = component as BoxInterface
+		const selfBatch: BatchingBoxInterface = component as BatchingBoxInterface
 
 		if (selfBatch.meta.batch) {
 			throw new AssertionError({
-				message: "MilanBuilder can't use BatchingBox!",
-			});
+				message: "MilanBuilder can't use BatchingBox!"
+			})
 		}
 
-		return (msg: Message) => selfSingle.process(msg);
+		return (msg: Message) => selfSingle.process(msg)
 	}
 
 	private async buildConcurrentFunctions(
@@ -135,38 +133,23 @@ export class MilanBuilder implements FlowBuilderI {
 		graph: DiGraph,
 		drain?: PriorityQueueI<Message>
 	): Promise<ProcessingCallback[]> {
-		const concurrentFunctions: ProcessingCallback[] = [];
+		const concurrentFunctions: ProcessingCallback[] = []
 		for (const boxName of concurrentSchema) {
 			if (typeof boxName !== 'string') {
 				for (const key of Object.keys(boxName)) {
-					const queue = await this.buildPriorityQueue(
-						boxName,
-						key,
-						componentFactory,
-						graph,
-						drain
-					);
+					const queue = await this.buildPriorityQueue(boxName, key, componentFactory, graph, drain)
 					concurrentFunctions.push(
-						await this.createConcurrentFunction(
-							componentFactory,
-							key,
-							graph,
-							queue
-						)
-					);
+						await this.createConcurrentFunction(componentFactory, key, graph, queue)
+					)
 				}
 			} else {
 				concurrentFunctions.push(
-					await this.createConcurrentFunction(
-						componentFactory,
-						boxName,
-						graph
-					)
-				);
+					await this.createConcurrentFunction(componentFactory, boxName, graph)
+				)
 			}
 		}
 
-		return concurrentFunctions;
+		return concurrentFunctions
 	}
 
 	private async buildSerialFunctions(
@@ -176,26 +159,22 @@ export class MilanBuilder implements FlowBuilderI {
 		drain?: PriorityQueueI<Message>
 	): Promise<ProcessingCallback[]> {
 		const serialFunctions: Promise<ProcessingCallback>[] = serialSchema.map(
-			async (
-				schema: ConcurrentSchemaComponent
-			): Promise<ProcessingCallback> => {
+			async (schema: ConcurrentSchemaComponent): Promise<ProcessingCallback> => {
 				const concurrentFunctions: ProcessingCallback[] = await this.buildConcurrentFunctions(
 					schema,
 					componentFactory,
 					graph,
 					drain
-				);
+				)
 				return async (msg: Message): Promise<void> => {
 					await Promise.all(
-						concurrentFunctions.map(
-							(processCbk: ProcessingCallback) => processCbk(msg)
-						)
-					);
-				};
+						concurrentFunctions.map((processCbk: ProcessingCallback) => processCbk(msg))
+					)
+				}
 			}
-		);
+		)
 
-		return await Promise.all(serialFunctions);
+		return await Promise.all(serialFunctions)
 	}
 
 	private async buildPriorityQueue(
@@ -210,34 +189,31 @@ export class MilanBuilder implements FlowBuilderI {
 			componentFactory,
 			graph,
 			drain
-		);
+		)
 		return new MemoryPrioritySingleQueue(
 			async (task: Message): Promise<void> => {
 				const appliedFcns = serialFunctions.reduce(
-					(
-						previous: Promise<Message>,
-						serialCallback: ProcessingCallback
-					): Promise<Message> => {
+					(previous: Promise<Message>, serialCallback: ProcessingCallback): Promise<Message> => {
 						return previous.then(
 							async (msg: Message): Promise<Message> => {
-								await serialCallback(msg);
-								return msg;
+								await serialCallback(msg)
+								return msg
 							}
-						);
+						)
 					},
 					Promise.resolve(task)
-				);
+				)
 
 				if (drain) {
 					appliedFcns.then((msg: Message): void => {
-						drain.push(msg);
-					});
+						drain.push(msg)
+					})
 				}
 			},
 			{
-				concurrency: 10,
+				concurrency: 10
 			},
 			ROOT_NODE
-		);
+		)
 	}
 }

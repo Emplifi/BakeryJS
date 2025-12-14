@@ -1,6 +1,6 @@
 export type ServiceContainer = {
-	[key: string]: any;
-};
+	[key: string]: any
+}
 
 /**
  * Container for both built-in and user-defined services.
@@ -12,30 +12,30 @@ export type ServiceContainer = {
  */
 export class ServiceProvider {
 	/** @internalapi */
-	private readonly services: ServiceContainer;
-	public readonly parameters: any;
+	private readonly services: ServiceContainer
+	public readonly parameters: any
 
 	/** @internalapi */
 	public constructor(services: ServiceContainer) {
-		this.services = services;
+		this.services = services
 	}
 
 	/** @publicapi */
 	public get(name: string): any {
 		if (this.services[name] == null) {
-			throw new Error(`Service "${name}" was not found.`);
+			throw new Error(`Service "${name}" was not found.`)
 		}
 
-		return this.services[name];
+		return this.services[name]
 	}
 
 	/** @internalapi */
 	public setAllIn(theContainer: ServiceContainer): void {
-		Object.assign(this.services, theContainer);
+		Object.assign(this.services, theContainer)
 	}
 
 	/** @internalapi */
 	public addParameters(params: any): ServiceProvider {
-		return Object.create(this, {parameters: {value: params}});
+		return Object.create(this, { parameters: { value: params } })
 	}
 }

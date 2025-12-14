@@ -9,6 +9,21 @@
 	},
 	"plugins": ["@typescript-eslint"],
 	"extends": ["plugin:prettier/recommended"],
+	"rules": {
+		"prettier/prettier": [
+			"error",
+			{
+				"semi": false,
+				"singleQuote": true,
+				"tabWidth": 2,
+				"trailingComma": "none",
+				"printWidth": 100,
+				"bracketSpacing": true,
+				"arrowParens": "avoid",
+				"endOfLine": "lf"
+			}
+		]
+	},
 	"overrides": [
 		{
 			"files": ["*.ts"],
@@ -23,7 +38,19 @@
 				],
 				"@typescript-eslint/explicit-member-accessibility": "warn",
 				"@typescript-eslint/interface-name-prefix": "warn",
-				"@typescript-eslint/member-delimiter-style": "error",
+				"@typescript-eslint/member-delimiter-style": [
+					"error",
+					{
+						"multiline": {
+							"delimiter": "none",
+							"requireLast": false
+						},
+						"singleline": {
+							"delimiter": "semi",
+							"requireLast": false
+						}
+					}
+				],
 				"@typescript-eslint/member-ordering": [
 					"warn",
 					{

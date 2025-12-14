@@ -10,7 +10,7 @@
  * - 1 dimension: Root dimension only
  */
 
-import {FlowExplicitDescription} from '../../src/lib/bakeryjs/FlowBuilderI';
+import { FlowExplicitDescription } from '../../src/lib/bakeryjs/FlowBuilderI'
 
 /**
  * Creates a simple flow configuration with the specified item count
@@ -22,20 +22,19 @@ export function createSimpleFlow(itemCount: number): FlowExplicitDescription {
 		process: [
 			[
 				{
-					'configurable-generator': [['mapper1'], ['mapper2']],
-				},
-			],
+					'configurable-generator': [['mapper1'], ['mapper2']]
+				}
+			]
 		],
 		parameters: {
-			'configurable-generator': itemCount,
-		},
-	};
+			'configurable-generator': itemCount
+		}
+	}
 }
 
 /**
  * Default simple flow configuration
  */
-export const simpleFlow: FlowExplicitDescription = createSimpleFlow(100);
+export const simpleFlow: FlowExplicitDescription = createSimpleFlow(100)
 
-export default simpleFlow;
-
+export default simpleFlow

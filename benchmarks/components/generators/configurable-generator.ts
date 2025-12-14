@@ -4,9 +4,9 @@
  * Generates a configurable number of messages for benchmarking purposes.
  * The number of items is controlled by the 'itemCount' parameter.
  */
-import {boxFactory, ServiceProvider, MessageData} from '../../../src';
+import { boxFactory, ServiceProvider, MessageData } from '../../../src'
 
-const DEFAULT_ITEM_COUNT = 100;
+const DEFAULT_ITEM_COUNT = 100
 
 module.exports = boxFactory(
 	{
@@ -19,38 +19,37 @@ module.exports = boxFactory(
 			type: 'number',
 			minimum: 1,
 			maximum: 10000000,
-			default: DEFAULT_ITEM_COUNT,
-		},
+			default: DEFAULT_ITEM_COUNT
+		}
 	},
 	async function processValue(
 		serviceProvider: ServiceProvider,
 		value: MessageData,
 		emit: (chunk: MessageData[], priority?: number) => void
 	): Promise<void> {
-		const itemCount =
-			(serviceProvider.parameters as number) || DEFAULT_ITEM_COUNT;
-		const generatorId = 'gen1';
-		const batchSize = 100; // Emit in batches for efficiency
+		const itemCount = (serviceProvider.parameters as number) || DEFAULT_ITEM_COUNT
+		const generatorId = 'gen1'
+		const batchSize = 100 // Emit in batches for efficiency
 
-		const items: MessageData[] = [];
+		const items: MessageData[] = []
 
 		for (let i = 0; i < itemCount; i++) {
 			items.push({
 				item: i,
 				generatorId,
-				timestamp: Date.now(),
-			});
+				timestamp: Date.now()
+			})
 
 			// Emit in batches
 			if (items.length >= batchSize) {
-				emit(items.slice());
-				items.length = 0;
+				emit(items.slice())
+				items.length = 0
 			}
 		}
 
 		// Emit remaining items
 		if (items.length > 0) {
-			emit(items);
+			emit(items)
 		}
 	}
-);
+)

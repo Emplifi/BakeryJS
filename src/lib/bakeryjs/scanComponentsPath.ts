@@ -1,8 +1,8 @@
-import {join} from 'path';
-import * as fs from 'fs';
-import {parseComponentName} from './componentNameParser';
+import { join } from 'path'
+import * as fs from 'fs'
+import { parseComponentName } from './componentNameParser'
 
-type ComponentsMap = {[componentName: string]: string};
+type ComponentsMap = { [componentName: string]: string }
 
 // TODO: Make async
 function scanComponentsPath(
@@ -10,27 +10,23 @@ function scanComponentsPath(
 	parentDir: string = '',
 	availableComponents: ComponentsMap = {}
 ): ComponentsMap {
-	const files = fs.readdirSync(componentsPath);
+	const files = fs.readdirSync(componentsPath)
 	for (const file of files) {
-		const filePath = join(componentsPath, file);
-		const stat = fs.statSync(filePath);
+		const filePath = join(componentsPath, file)
+		const stat = fs.statSync(filePath)
 		if (stat.isDirectory()) {
 			if (file !== '.' && file !== '..') {
-				scanComponentsPath(
-					filePath,
-					join(parentDir, file),
-					availableComponents
-				);
+				scanComponentsPath(filePath, join(parentDir, file), availableComponents)
 			}
 		} else {
-			const name = parseComponentName(join(parentDir, file));
+			const name = parseComponentName(join(parentDir, file))
 			if (!name) {
-				continue;
+				continue
 			}
-			availableComponents[name] = filePath;
+			availableComponents[name] = filePath
 		}
 	}
-	return availableComponents;
+	return availableComponents
 }
 
-export {scanComponentsPath};
+export { scanComponentsPath }

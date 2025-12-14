@@ -4,8 +4,8 @@
 
 /** Memory tracking state */
 export interface MemoryTrackerState {
-	peakMemory: number;
-	intervalId: NodeJS.Timeout | null;
+	peakMemory: number
+	intervalId: NodeJS.Timeout | null
 }
 
 /**
@@ -16,17 +16,17 @@ export interface MemoryTrackerState {
 export function createMemoryTracker(intervalMs: number = 10): MemoryTrackerState {
 	const state: MemoryTrackerState = {
 		peakMemory: 0,
-		intervalId: null,
-	};
+		intervalId: null
+	}
 
 	state.intervalId = setInterval(() => {
-		const mem = process.memoryUsage();
+		const mem = process.memoryUsage()
 		if (mem.heapUsed > state.peakMemory) {
-			state.peakMemory = mem.heapUsed;
+			state.peakMemory = mem.heapUsed
 		}
-	}, intervalMs);
+	}, intervalMs)
 
-	return state;
+	return state
 }
 
 /**
@@ -34,8 +34,8 @@ export function createMemoryTracker(intervalMs: number = 10): MemoryTrackerState
  */
 export function stopMemoryTracker(state: MemoryTrackerState): void {
 	if (state.intervalId) {
-		clearInterval(state.intervalId);
-		state.intervalId = null;
+		clearInterval(state.intervalId)
+		state.intervalId = null
 	}
 }
 
@@ -43,18 +43,18 @@ export function stopMemoryTracker(state: MemoryTrackerState): void {
  * Get current memory snapshot
  */
 export function getMemorySnapshot(): {
-	heapUsed: number;
-	heapTotal: number;
-	external: number;
-	rss: number;
+	heapUsed: number
+	heapTotal: number
+	external: number
+	rss: number
 } {
-	const mem = process.memoryUsage();
+	const mem = process.memoryUsage()
 	return {
 		heapUsed: mem.heapUsed,
 		heapTotal: mem.heapTotal,
 		external: mem.external,
-		rss: mem.rss,
-	};
+		rss: mem.rss
+	}
 }
 
 /**
@@ -62,7 +62,6 @@ export function getMemorySnapshot(): {
  */
 export function forceGC(): void {
 	if (global.gc) {
-		global.gc();
+		global.gc()
 	}
 }
-
