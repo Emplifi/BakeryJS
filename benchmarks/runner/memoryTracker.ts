@@ -1,42 +1,55 @@
 /**
  * Memory tracking utilities for benchmark runner
+ *
+ * IMPORTANT: Accurate peak memory tracking during heavy async processing is
+ * challenging in Node.js. When the event loop is saturated with microtasks
+ * (Promises), timer-based sampling (setInterval/setImmediate) gets starved
+ * and never executes. Worker threads can't access the parent's heap memory.
+ *
+ * Current approach:
+ * - Track start memory before processing begins
+ * - Track end memory after processing completes
+ * - Peak memory is approximated as the end memory (highest point before GC)
+ *
+ * For true peak tracking, BakeryJS would need to expose memory sampling hooks.
  */
 
 /** Memory tracking state */
 export interface MemoryTrackerState {
 	peakMemory: number
-	intervalId: NodeJS.Timeout | null
+	startMemory: number
 }
 
 /**
- * Create a memory tracker that monitors peak memory usage
- * @param intervalMs - How often to check memory (default: 10ms)
- * @returns Memory tracker state with cleanup function
+ * Create a memory tracker
+ * Captures the initial heap state for baseline comparison
+ * @returns Memory tracker state
  */
-export function createMemoryTracker(intervalMs: number = 10): MemoryTrackerState {
-	const state: MemoryTrackerState = {
-		peakMemory: 0,
-		intervalId: null
+export function createMemoryTracker(): MemoryTrackerState {
+	const mem = process.memoryUsage()
+	return {
+		peakMemory: mem.heapUsed,
+		startMemory: mem.heapUsed
 	}
-
-	state.intervalId = setInterval(() => {
-		const mem = process.memoryUsage()
-		if (mem.heapUsed > state.peakMemory) {
-			state.peakMemory = mem.heapUsed
-		}
-	}, intervalMs)
-
-	return state
 }
 
 /**
- * Stop memory tracking and clean up
+ * Update peak memory with current snapshot
+ * Call this when you have an opportunity to sample (e.g., between processing phases)
+ */
+export function updatePeakMemory(state: MemoryTrackerState): void {
+	const mem = process.memoryUsage()
+	if (mem.heapUsed > state.peakMemory) {
+		state.peakMemory = mem.heapUsed
+	}
+}
+
+/**
+ * Stop memory tracking and take final peak sample
+ * The end of processing is typically when memory is highest
  */
 export function stopMemoryTracker(state: MemoryTrackerState): void {
-	if (state.intervalId) {
-		clearInterval(state.intervalId)
-		state.intervalId = null
-	}
+	updatePeakMemory(state)
 }
 
 /**
