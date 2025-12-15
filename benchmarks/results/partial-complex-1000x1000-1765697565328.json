@@ -1,0 +1,21 @@
+{
+  "status": "incomplete",
+  "reason": "timeout",
+  "flowType": "complex",
+  "config": {
+    "itemCount": 1000,
+    "nestedItemCount": 1000
+  },
+  "elapsedMs": 119999,
+  "sentEventCount": 665787,
+  "messagesProcessed": 73415,
+  "expectedMessages": 1000000,
+  "avgTimePerMessageMs": 1.6345297282571682,
+  "messagesPerSecond": 611.7967649730415,
+  "memoryMB": 1730.902214050293,
+  "peakMemoryMB": 2356.5486755371094,
+  "timestamp": "2025-12-14T07:32:45.326Z",
+  "environment": {
+    "BAKERYJS_DISABLE_EXPERIMENTAL_TRACING": "1"
+  }
+}

@@ -1,19 +1,20 @@
-import {boxFactory, ServiceProvider, MessageData} from '../../../';
+import type { Logger } from '../../../lib/bakeryjs/ServiceProvider'
+import { boxFactory, ServiceProvider, MessageData } from '../../../'
 
 const Print = boxFactory(
 	{
 		requires: ['jobId', 'raw'],
 		provides: [],
 		emits: [],
-		aggregates: false,
+		aggregates: false
 	},
 	function processValue(
 		services: ServiceProvider,
 		input: MessageData,
-		neverEmit: (chunk: MessageData[], priority?: number) => void
+		_neverEmit: (chunk: MessageData[], priority?: number) => void
 	): MessageData {
-		services.get('logger').log({printBox: JSON.stringify(input)});
-		return {};
+		services.get<Logger>('logger').log({ printBox: JSON.stringify(input) })
+		return {}
 	}
-);
-export default Print;
+)
+export default Print

@@ -1,26 +1,18 @@
-const REMOVABLE_SUBSTRINGS = [
-	'_/',
-	'boxes/',
-	'generators/',
-	'processors/',
-	'.coffee',
-	'.ts',
-	'.js',
-];
+const REMOVABLE_SUBSTRINGS = ['_/', 'boxes/', 'generators/', 'processors/', '.coffee', '.ts', '.js']
 
-const MODULE_REGEXP = new RegExp('(?:/|^)[^./][^/]+.(?:coffee|js|ts)$');
+const MODULE_REGEXP = new RegExp('(?:/|^)[^./][^/]+.(?:coffee|js|ts)$')
 
 const parseComponentName = (path: string): string | null => {
 	if (!MODULE_REGEXP.test(path)) {
-		return null;
+		return null
 	}
 
-	let name = path;
+	let name = path
 	for (const removableSubstring of REMOVABLE_SUBSTRINGS) {
-		name = name.replace(removableSubstring, '');
+		name = name.replace(removableSubstring, '')
 	}
 
-	return name;
-};
+	return name
+}
 
-export {parseComponentName};
+export { parseComponentName }

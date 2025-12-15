@@ -1,0 +1,209 @@
+[
+  {
+    "name": "simple-10",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 19,
+      "messagesProcessed": 10,
+      "avgTimePerMessageMs": 1.9,
+      "memoryUsedMB": 7.970466613769531,
+      "peakMemoryMB": 70.85595703125,
+      "heapStats": {
+        "heapUsed": 75052968,
+        "heapTotal": 117538816,
+        "external": 7965187
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 13,
+      "lastSentMs": 17,
+      "drainCompleteMs": 19,
+      "sentEventCount": 12
+    },
+    "timestamp": "2025-12-14T11:53:40.940Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  },
+  {
+    "name": "simple-100",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 100
+    },
+    "metrics": {
+      "totalTimeMs": 19,
+      "messagesProcessed": 100,
+      "avgTimePerMessageMs": 0.19,
+      "memoryUsedMB": -12.008491516113281,
+      "peakMemoryMB": 60.205230712890625,
+      "heapStats": {
+        "heapUsed": 66894376,
+        "heapTotal": 123830272,
+        "external": 7965228
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 7,
+      "lastSentMs": 17,
+      "drainCompleteMs": 19,
+      "sentEventCount": 102
+    },
+    "timestamp": "2025-12-14T11:53:41.001Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  },
+  {
+    "name": "simple-1000",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 1000
+    },
+    "metrics": {
+      "totalTimeMs": 60,
+      "messagesProcessed": 1000,
+      "avgTimePerMessageMs": 0.06,
+      "memoryUsedMB": -1.7769699096679688,
+      "peakMemoryMB": 80.65184020996094,
+      "heapStats": {
+        "heapUsed": 69162392,
+        "heapTotal": 130908160,
+        "external": 7926611
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 4,
+      "lastSentMs": 58,
+      "drainCompleteMs": 60,
+      "sentEventCount": 1011
+    },
+    "timestamp": "2025-12-14T11:53:41.100Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  },
+  {
+    "name": "complex-10x5",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 10,
+      "nestedItemCount": 5
+    },
+    "metrics": {
+      "totalTimeMs": 29,
+      "messagesProcessed": 50,
+      "avgTimePerMessageMs": 0.58,
+      "memoryUsedMB": -2.8328323364257812,
+      "peakMemoryMB": 83.60364532470703,
+      "heapStats": {
+        "heapUsed": 70836136,
+        "heapTotal": 131694592,
+        "external": 7943036
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 15,
+      "lastSentMs": 27,
+      "drainCompleteMs": 29,
+      "sentEventCount": 504
+    },
+    "timestamp": "2025-12-14T11:53:41.168Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  },
+  {
+    "name": "complex-10x10",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 10,
+      "nestedItemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 23,
+      "messagesProcessed": 100,
+      "avgTimePerMessageMs": 0.23,
+      "memoryUsedMB": -1.0331649780273438,
+      "peakMemoryMB": 81.52619934082031,
+      "heapStats": {
+        "heapUsed": 73862456,
+        "heapTotal": 134578176,
+        "external": 7934844
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 7,
+      "lastSentMs": 21,
+      "drainCompleteMs": 23,
+      "sentEventCount": 954
+    },
+    "timestamp": "2025-12-14T11:53:41.232Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  },
+  {
+    "name": "complex-50x10",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 50,
+      "nestedItemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 52,
+      "messagesProcessed": 500,
+      "avgTimePerMessageMs": 0.104,
+      "memoryUsedMB": 15.965301513671875,
+      "peakMemoryMB": 89.48546600341797,
+      "heapStats": {
+        "heapUsed": 94685304,
+        "heapTotal": 136675328,
+        "external": 7934803
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 6,
+      "lastSentMs": 50,
+      "drainCompleteMs": 52,
+      "sentEventCount": 4754
+    },
+    "timestamp": "2025-12-14T11:53:41.320Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  },
+  {
+    "name": "complex-100x10",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 100,
+      "nestedItemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 93,
+      "messagesProcessed": 1000,
+      "avgTimePerMessageMs": 0.093,
+      "memoryUsedMB": -48.001136779785156,
+      "peakMemoryMB": 86.09968566894531,
+      "heapStats": {
+        "heapUsed": 48419808,
+        "heapTotal": 203784192,
+        "external": 7934803
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 7,
+      "lastSentMs": 91,
+      "drainCompleteMs": 93,
+      "sentEventCount": 9504
+    },
+    "timestamp": "2025-12-14T11:53:41.451Z",
+    "nodeVersion": "v24.12.0",
+    "gitCommitSha": "613cdc18edfe6bbddf3f9bb77b745467478898f6",
+    "environment": {}
+  }
+]

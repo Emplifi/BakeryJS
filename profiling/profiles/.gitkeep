@@ -1,0 +1,3 @@
+# This directory stores generated CPU profile files (.cpuprofile)
+# These files are gitignored as they are large and machine-specific
+

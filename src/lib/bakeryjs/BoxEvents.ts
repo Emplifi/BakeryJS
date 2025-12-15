@@ -1,25 +1,22 @@
-import {Message} from './Message';
-import {PriorityQueueI} from './queue/PriorityQueueI';
-import {EventEmitter} from 'events';
+import type { Message } from './Message'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import type { EventEmitter } from 'events'
 
 interface RevocableQueue extends PriorityQueueI<Message> {
-	revoke(): void;
+	revoke(): void
 }
 
 export type MsgEvent = {
-	boxName: string;
-	messageId: string;
-	parentMsgId: string | undefined;
-	generated?: number;
-};
+	boxName: string
+	messageId: string
+	parentMsgId: string | undefined
+	generated?: number
+}
 
 type ModuleOutput = {
-	generatorTrace: (
-		priorityQ: PriorityQueueI<Message>,
-		boxName: string
-	) => PriorityQueueI<Message>;
-	guardQueue: (priorityQ: PriorityQueueI<Message>) => RevocableQueue;
-};
+	generatorTrace: (priorityQ: PriorityQueueI<Message>, boxName: string) => PriorityQueueI<Message>
+	guardQueue: (priorityQ: PriorityQueueI<Message>) => RevocableQueue
+}
 
 export function boxEvents(flowEmitter: EventEmitter): ModuleOutput {
 	/**
@@ -36,47 +33,44 @@ export function boxEvents(flowEmitter: EventEmitter): ModuleOutput {
 		priorityQ: PriorityQueueI<Message>,
 		boxName: string
 	): PriorityQueueI<Message> {
-		function tracedPush(
-			msgs: Message[] | Message,
-			priority?: number
-		): void {
-			let messages: Message[];
+		function tracedPush(msgs: Message[] | Message, priority?: number): void {
+			let messages: Message[]
 			if (!Array.isArray(msgs)) {
-				messages = [msgs];
+				messages = [msgs]
 			} else {
-				messages = msgs;
+				messages = msgs
 			}
 
-			priorityQ.push.apply(priorityQ, [msgs, priority]);
-			const messagesTrace: MsgEvent[] = messages.map((m) => {
+			priorityQ.push.apply(priorityQ, [msgs, priority])
+			const messagesTrace: MsgEvent[] = messages.map(m => {
 				return {
 					boxName: boxName,
 					messageId: m.id,
-					parentMsgId: m.parent && m.parent.id,
-				};
-			});
-			flowEmitter.emit('msg_finished', messagesTrace);
+					parentMsgId: m.parent && m.parent.id
+				}
+			})
+			flowEmitter.emit('msg_finished', messagesTrace)
 		}
 
 		return Object.create(priorityQ, {
-			push: {value: tracedPush},
-		});
+			push: { value: tracedPush }
+		})
 	}
 
 	function guardQueue(priorityQ: PriorityQueueI<Message>): RevocableQueue {
 		// Prevent errors when generator (wrongly) resolves before emits have finished
 		// Make pushing into queue through proxy and revoke it once generator resolves
 		// Any push after will result in TypeError
-		const {proxy, revoke} = Proxy.revocable(priorityQ.push, {
+		const { proxy, revoke } = Proxy.revocable(priorityQ.push, {
 			apply: (tgt, thisArg, argsList) => {
-				Reflect.apply(tgt, priorityQ, argsList);
-			},
-		});
+				Reflect.apply(tgt, priorityQ, argsList)
+			}
+		})
 		return Object.create(priorityQ, {
-			push: {value: proxy},
-			revoke: {value: revoke},
-		});
+			push: { value: proxy },
+			revoke: { value: revoke }
+		})
 	}
 
-	return {generatorTrace, guardQueue};
+	return { generatorTrace, guardQueue }
 }

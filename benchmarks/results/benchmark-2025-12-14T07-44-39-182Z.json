@@ -1,0 +1,31 @@
+[
+  {
+    "name": "simple-10",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 20,
+      "messagesProcessed": 10,
+      "avgTimePerMessageMs": 2,
+      "memoryUsedMB": -4.232444763183594,
+      "peakMemoryMB": 49.825584411621094,
+      "heapStats": {
+        "heapUsed": 52985416,
+        "heapTotal": 83853312,
+        "external": 2655723
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 14,
+      "lastSentMs": 18,
+      "drainCompleteMs": 20,
+      "sentEventCount": 12
+    },
+    "timestamp": "2025-12-14T07:44:39.149Z",
+    "nodeVersion": "v22.18.0",
+    "gitCommitSha": "6bf863f750e0f3e341a09ec3e831f01f672a00c4",
+    "environment": {}
+  }
+]

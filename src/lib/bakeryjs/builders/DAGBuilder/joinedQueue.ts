@@ -1,9 +1,10 @@
-import {PriorityQueueI} from '../../queue/PriorityQueueI';
-import {Options, VError} from 'verror';
-import {Message} from '../../Message';
-import assert from 'assert';
-import {qTrace} from '../../stats';
-import every from '../../../bakeryjs/eval/every';
+import type { PriorityQueueI } from '../../queue/PriorityQueueI'
+import type { Options } from 'verror'
+import { VError } from 'verror'
+import type { Message } from '../../Message'
+import assert from 'assert'
+import { qTrace } from '../../stats'
+import every from '../../../bakeryjs/eval/every'
 
 /**
  * Assume one has several queues already set up.  We wan't a queue-like endpoint
@@ -16,58 +17,56 @@ import every from '../../../bakeryjs/eval/every';
  * @throws VError QueueOperationError exception with field *cause*
  */
 export class Tee<T> implements PriorityQueueI<T> {
-	private queues: PriorityQueueI<T>[];
-	public readonly target: string;
-	public readonly length: number = 0;
-	public source: string | undefined;
+	private queues: PriorityQueueI<T>[]
+	public readonly target: string
+	public readonly length: number = 0
+	public source: string | undefined
 	public constructor(...queues: PriorityQueueI<T>[]) {
-		assert(queues.length > 0, "Can't tee into zero queues!");
-		this.queues = queues;
-		this.target = '';
+		assert(queues.length > 0, "Can't tee into zero queues!")
+		this.queues = queues
+		this.target = ''
 	}
 
 	@qTrace(false)
-	public push(pld: T, priority?: number) {
+	public push(pld: T, priority?: number): void {
 		try {
-			this.queues.forEach((q: PriorityQueueI<T>) =>
-				q.push(pld, priority)
-			);
+			this.queues.forEach((q: PriorityQueueI<T>) => q.push(pld, priority))
 		} catch (err) {
 			throw new VError(
 				{
 					name: 'QueueOperationError',
-					cause: err,
+					cause: err
 				} as Options,
 				'Push into a queue failed.'
-			);
+			)
 		}
 	}
 }
 
 class FakeQueue implements PriorityQueueI<Message> {
-	private qzip: QZip;
-	private readonly index: number;
-	public readonly target: string;
-	public source: string | undefined;
+	private qzip: QZip
+	private readonly index: number
+	public readonly target: string
+	public source: string | undefined
 
 	public constructor(qzip: QZip, index: number, target: string) {
-		this.qzip = qzip;
-		this.index = index;
-		this.target = target;
+		this.qzip = qzip
+		this.index = index
+		this.target = target
 	}
 
 	@qTrace(false)
-	public push(msgs: Message | Message[], priority?: number) {
+	public push(msgs: Message | Message[], priority?: number): void {
 		if (msgs instanceof Array) {
 			//TODO: fragile detection. What if Message is instanceof Array?
-			msgs.forEach((msg) => this.qzip._push(this.index, msg, priority));
+			msgs.forEach(msg => this.qzip._push(this.index, msg, priority))
 		} else {
-			return this.qzip._push(this.index, msgs, priority);
+			this.qzip._push(this.index, msgs, priority)
 		}
 	}
 
-	public get length() {
-		return this.qzip.length;
+	public get length(): number {
+		return this.qzip.length
 	}
 }
 
@@ -87,7 +86,7 @@ class FakeQueue implements PriorityQueueI<Message> {
  */
 export class QZip {
 	/** The output queue */
-	private readonly output: PriorityQueueI<Message>;
+	private readonly output: PriorityQueueI<Message>
 
 	/** Hash-map holding state of each *Message*. The *key* is Message.id, the value
 	 * is
@@ -95,20 +94,20 @@ export class QZip {
 	 * 2. the aggregated priority*/
 	private readonly msgJoinedState: {
 		[index: string]: {
-			flags: Array<boolean>;
-			priority: number | undefined;
-		};
-	};
-
-	/** The queue-like input interfaces */
-	public readonly inputs: PriorityQueueI<Message>[];
-	/** Number of inputs being joined. */
-	public get size() {
-		return this.inputs.length;
+			flags: Array<boolean>
+			priority: number | undefined
+		}
 	}
 
-	public get length() {
-		return Object.entries(this.msgJoinedState).length;
+	/** The queue-like input interfaces */
+	public readonly inputs: PriorityQueueI<Message>[]
+	/** Number of inputs being joined. */
+	public get size(): number {
+		return this.inputs.length
+	}
+
+	public get length(): number {
+		return Object.entries(this.msgJoinedState).length
 	}
 
 	/**
@@ -117,13 +116,13 @@ export class QZip {
 	 * @param inputs How many inputs are we going to join?  Must be > 1.
 	 */
 	public constructor(output: PriorityQueueI<Message>, inputs: number) {
-		assert(inputs > 1, 'Not going to join/merge/zip less then 2 inputs.');
-		this.msgJoinedState = {};
-		this.output = output;
+		assert(inputs > 1, 'Not going to join/merge/zip less then 2 inputs.')
+		this.msgJoinedState = {}
+		this.output = output
 
 		this.inputs = Array(inputs)
 			.fill(undefined, 0)
-			.map((_, k: number) => new FakeQueue(this, k, this.output.target));
+			.map((_, k: number) => new FakeQueue(this, k, this.output.target))
 	}
 
 	/**
@@ -142,19 +141,16 @@ export class QZip {
 			this.msgJoinedState[msg.id] ||
 			(this.msgJoinedState[msg.id] = {
 				flags: Array(this.size).fill(false, 0),
-				priority: undefined,
-			});
+				priority: undefined
+			})
 
-		state.flags[idxOfInput] = true;
+		state.flags[idxOfInput] = true
 		if (priority !== undefined) {
-			state.priority = Math.max(
-				priority,
-				state.priority !== undefined ? state.priority : -Infinity
-			);
+			state.priority = Math.max(priority, state.priority !== undefined ? state.priority : -Infinity)
 		}
 		if (every(state.flags, Boolean)) {
-			this.output.push(msg, state.priority);
-			delete this.msgJoinedState[msg.id];
+			this.output.push(msg, state.priority)
+			delete this.msgJoinedState[msg.id]
 		}
 	}
 }

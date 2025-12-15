@@ -1,47 +1,51 @@
-import {
-	Flow,
-	FlowDescription,
-	FlowIdDescValidation,
-	hasFlow,
-	hasProcess,
-} from './Flow';
-import {Job} from './Job';
-import {ServiceContainer, ServiceProvider} from './ServiceProvider';
-import {ComponentFactory, MultiComponentFactory} from './ComponentFactory';
-import {DefaultVisualBuilder} from './builders/DefaultVisualBuilder';
-import {FlowCatalog} from './FlowCatalog';
-import FlowSchemaReader from './FlowSchemaReader';
-import {DataMessage, Message, MessageData} from './Message';
-import {PriorityQueueI} from './queue/PriorityQueueI';
-import {DAGBuilder} from './builders/DAGBuilder/builder';
-import {eventEmitter} from './stats';
-import ajv from 'ajv';
-import {SchemaObjectValidation} from './FlowBuilderI';
-import {MultiError} from 'verror';
-import VError = require('verror');
-const debug = require('debug')('bakeryjs:Program');
+import { Flow, FlowIdDescValidation, hasFlow, hasProcess } from './Flow'
+import type { FlowDescription } from './Flow'
+import { Job } from './Job'
+import type { Logger } from './ServiceProvider'
+import { ServiceContainer, ServiceProvider } from './ServiceProvider'
+import { ComponentFactory, MultiComponentFactory } from './ComponentFactory'
+import { DefaultVisualBuilder } from './builders/DefaultVisualBuilder'
+import { FlowCatalog } from './FlowCatalog'
+import FlowSchemaReader from './FlowSchemaReader'
+import { DataMessage } from './Message'
+import type { Message, MessageData } from './Message'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import { DAGBuilder } from './builders/DAGBuilder/builder'
+import { eventEmitter } from './stats'
+import Ajv from 'ajv'
+import { SchemaObjectValidation } from './FlowBuilderI'
+import VError, { MultiError } from 'verror'
+import Debug from 'debug'
+const debug = Debug('bakeryjs:Program')
+
+function debugLog(message: string): void {
+	if (debug.enabled) {
+		console.log(message)
+	}
+}
 
 type UserConfiguration = {
-	componentPaths?: string[];
-};
+	componentPaths?: string[]
+}
 
-type DrainCallback = (msg: MessageData) => void;
-function createDrainPush(
-	drainCallback: DrainCallback
-): PriorityQueueI<Message> {
+type DrainCallback = (msg: MessageData) => void
+function createDrainPush(drainCallback: DrainCallback): PriorityQueueI<Message> {
 	return {
 		push(msgs: DataMessage | DataMessage[], priority?: number) {
 			if (Array.isArray(msgs)) {
 				for (let i = 0; i < msgs.length; i++) {
-					drainCallback(msgs[i].export());
+					const msg = msgs[i]
+					if (msg) {
+						drainCallback(msg.export())
+					}
 				}
 			} else {
-				drainCallback(msgs.export());
+				drainCallback(msgs.export())
 			}
 		},
 		length: 0,
-		target: 'drain',
-	};
+		target: 'drain'
+	}
 }
 
 /**
@@ -72,49 +76,42 @@ function createDrainPush(
  * @publicapi
  */
 export class Program {
-	private readonly serviceProvider: ServiceProvider;
-	private readonly multiComponentFactory: MultiComponentFactory;
-	private readonly catalog: FlowCatalog;
-	private readonly ajv: ajv.Ajv;
+	private readonly serviceProvider: ServiceProvider
+	private readonly multiComponentFactory: MultiComponentFactory
+	private readonly catalog: FlowCatalog
+	private readonly ajv: Ajv
 
-	public constructor(
-		serviceContainer: ServiceContainer,
-		userConf: UserConfiguration
-	) {
+	public constructor(serviceContainer: ServiceContainer, userConf: UserConfiguration) {
 		// set default services
-		this.serviceProvider = new ServiceProvider({
-			logger: {
-				log(message: any): void {
-					console.log(message);
-				},
-				error(message: any): void {
-					console.error(message);
-				},
+		const defaultLogger: Logger = {
+			log(message: unknown): void {
+				console.log(message)
 			},
-		});
+			error(message: unknown): void {
+				console.error(message)
+			}
+		}
+		this.serviceProvider = new ServiceProvider({
+			logger: defaultLogger
+		})
 
 		// set the provided services, optionally overwriting the default
-		this.serviceProvider.setAllIn(serviceContainer);
+		this.serviceProvider.setAllIn(serviceContainer)
 
 		// set the built-in component factory
-		this.multiComponentFactory = new MultiComponentFactory();
+		this.multiComponentFactory = new MultiComponentFactory()
 		this.multiComponentFactory.push(
-			new ComponentFactory(
-				`${__dirname}/../../components/`,
-				this.serviceProvider
-			)
-		);
+			new ComponentFactory(`${__dirname}/../../components/`, this.serviceProvider)
+		)
 
 		// set the provided component factories
 		if (userConf.componentPaths) {
 			userConf.componentPaths
 				// we have to conserve priority of paths
 				.reverse()
-				.forEach((userPath) =>
-					this.multiComponentFactory.push(
-						new ComponentFactory(userPath, this.serviceProvider)
-					)
-				);
+				.forEach(userPath =>
+					this.multiComponentFactory.push(new ComponentFactory(userPath, this.serviceProvider))
+				)
 		}
 
 		this.catalog = new FlowCatalog(
@@ -122,27 +119,74 @@ export class Program {
 			this.multiComponentFactory,
 			new DAGBuilder(),
 			new DefaultVisualBuilder()
-		);
+		)
 
-		this.ajv = new ajv({
-			schemas: [FlowIdDescValidation, SchemaObjectValidation],
-		});
+		this.ajv = new Ajv({
+			schemas: [FlowIdDescValidation, SchemaObjectValidation]
+		})
 	}
 
 	public on(eventName: string, callback: (...args: any[]) => any): void {
-		eventEmitter.on(eventName, callback);
+		eventEmitter.on(eventName, callback)
+	}
+
+	public off(eventName: string, callback: (...args: any[]) => any): void {
+		eventEmitter.off(eventName, callback)
 	}
 
 	public runFlow(flow: Flow, jobInitialValue?: MessageData): Promise<void> {
-		const job = new Job(jobInitialValue);
+		const job = new Job(jobInitialValue)
 		if (debug.enabled) {
-			console.log('Program run ----->');
+			console.log('Program run ----->')
 		}
-		// TODO: separate this from stats EE -- it is shared accross various flows
-		eventEmitter.emit('run', flow, job);
-		return flow.process(job);
+		eventEmitter.emit('run', flow, job)
+		return flow.process(job)
+	}
 
-		// setTimeout(() => flow.process(new Job()),2000);
+	/**
+	 * Validates the flow description against expected schemas.
+	 * @throws VError if validation fails
+	 */
+	private validateFlowDescription(flowDesc: FlowDescription): void {
+		const isValid = this.ajv.validate(
+			{ oneOf: [{ $ref: 'bakeryjs/flow' }, { $ref: 'bakeryjs/flowbuilder' }] },
+			flowDesc
+		)
+		if (isValid) {
+			return
+		}
+		const errs = this.ajv.errors
+		if (!errs) {
+			return
+		}
+		throw new VError(
+			{
+				name: 'JobValidationError',
+				cause: new MultiError(
+					errs.filter(e => e.instancePath !== '').map(e => new VError(e.message))
+				),
+				info: {
+					schema: [this.ajv.getSchema('bakeryjs/flowbuilder'), this.ajv.getSchema('bakeryjs/flow')]
+				}
+			},
+			'Job definition should match exactly one of the two schemes.',
+			true
+		)
+	}
+
+	/**
+	 * Executes a flow promise with error logging.
+	 */
+	private executeFlowWithLogging(
+		flowPromise: Promise<Flow>,
+		jobInitialValue?: MessageData
+	): Promise<void> {
+		return flowPromise
+			.then(f => this.runFlow(f, jobInitialValue))
+			.catch(error => {
+				this.serviceProvider.get<Logger>('logger').error(error)
+				throw error
+			})
 	}
 
 	/**
@@ -162,72 +206,21 @@ export class Program {
 		flowDesc: FlowDescription,
 		drainCallback?: DrainCallback,
 		jobInitialValue?: MessageData
-	): Promise<any> {
-		if (
-			!this.ajv.validate(
-				{
-					oneOf: [
-						{$ref: 'bakeryjs/flow'},
-						{$ref: 'bakeryjs/flowbuilder'},
-					],
-				},
-				flowDesc
-			)
-		) {
-			const errs = this.ajv.errors;
-			if (errs) {
-				throw new VError(
-					{
-						name: 'JobValidationError',
-						cause: new MultiError(
-							errs
-								.filter((e) => e.dataPath !== '')
-								.map((e) => new VError(e.message))
-						),
-						info: {
-							schema: [
-								this.ajv.getSchema('bakeryjs/flowbuilder'),
-								this.ajv.getSchema('bakeryjs/flow'),
-							],
-						},
-					},
-					'Job definition should match exactly one of the two schemes.',
-					true
-				);
-			}
-		}
-		const drain = drainCallback
-			? createDrainPush(drainCallback)
-			: undefined;
-		if (debug.enabled) {
-			console.log('dispatch on flow description:');
-		}
+	): Promise<void> {
+		this.validateFlowDescription(flowDesc)
+		const drain = drainCallback ? createDrainPush(drainCallback) : undefined
+		debugLog('dispatch on flow description:')
 		if (hasFlow(flowDesc)) {
-			if (debug.enabled) {
-				console.log('getting flow from catalog');
-			}
-			return this.catalog
-				.getFlow(flowDesc.flow, drain)
-				.then((f) => this.runFlow(f, jobInitialValue))
-				.catch((error) => {
-					this.serviceProvider.get('logger').error(error);
-					throw error;
-				});
-		} else if (hasProcess(flowDesc)) {
-			if (debug.enabled) {
-				console.log('building flow from SchemaObject');
-			}
-			return this.catalog
-				.buildFlow(flowDesc, drain)
-				.then((f) => this.runFlow(f, jobInitialValue))
-				.catch((error) => {
-					this.serviceProvider.get('logger').error(error);
-					throw error;
-				});
-		} else {
-			throw new TypeError(
-				`Unrecognized flow description. ${JSON.stringify(flowDesc)}`
-			);
+			debugLog('getting flow from catalog')
+			return this.executeFlowWithLogging(
+				this.catalog.getFlow(flowDesc.flow, drain),
+				jobInitialValue
+			)
 		}
+		if (hasProcess(flowDesc)) {
+			debugLog('building flow from SchemaObject')
+			return this.executeFlowWithLogging(this.catalog.buildFlow(flowDesc, drain), jobInitialValue)
+		}
+		throw new TypeError(`Unrecognized flow description. ${JSON.stringify(flowDesc)}`)
 	}
 }

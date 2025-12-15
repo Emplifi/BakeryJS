@@ -1,39 +1,24 @@
-import {
-	ConcurrentSchemaComponent,
-	default as FlowBuilderI,
+import type { default as FlowBuilderI } from '../../FlowBuilderI'
+import type {
 	FlowExplicitDescription,
 	SchemaComponent,
 	SchemaObject,
-	SerialSchemaComponent,
-} from '../../FlowBuilderI';
-import {
-	DiGraph,
-	Edge,
-	EdgeWithAttribs,
-	NodeWithAttribs,
-	topologicalSort,
-} from 'sb-jsnetworkx';
-import ComponentFactoryI from '../../ComponentFactoryI';
-import {PriorityQueueI} from '../../queue/PriorityQueueI';
-import {Message} from '../../Message';
-import {
-	BatchingBoxInterface,
-	BatchingBoxMeta,
-	BoxInterface,
-	BoxMeta,
-} from '../../BoxI';
-import {QZip, Tee} from './joinedQueue';
-import {
-	MemoryPriorityBatchQueue,
-	MemoryPrioritySingleQueue,
-} from '../../queue/MemoryPriorityQueue';
-import {noopQueue} from '../../Box';
-import {ok as assert} from 'assert';
-import {eventEmitter} from '../../stats';
-import {Flow} from '../../Flow';
+	SerialSchemaComponent
+} from '../../FlowBuilderI'
+import { DiGraph, topologicalSort } from 'sb-jsnetworkx'
+import type { Edge, EdgeWithAttribs, NodeWithAttribs } from 'sb-jsnetworkx'
+import type ComponentFactoryI from '../../ComponentFactoryI'
+import type { PriorityQueueI } from '../../queue/PriorityQueueI'
+import type { Message } from '../../Message'
+import type { BatchingBoxInterface, BatchingBoxMeta, BoxInterface, BoxMeta } from '../../BoxI'
+import { QZip, Tee } from './joinedQueue'
+import { FastPriorityBatchQueue, FastPriorityQueue } from '../../queue/FastPriorityQueue'
+import { ok as assert } from 'assert'
+import { eventEmitter } from '../../stats'
+import { Flow } from '../../Flow'
 
-const DEFAULT_BATCH_TIMEOUT_SEC = 0.2;
-export const ROOT_NODE = '_root_';
+const DEFAULT_BATCH_TIMEOUT_SEC = 0.2
+export const ROOT_NODE = '_root_'
 
 /**
  * Build recursively a directed graph from the SchemaObject.
@@ -56,42 +41,45 @@ function _analyzeRecursive(
 ): DiGraph {
 	// return if nothing to do
 	if (schema.length == 0) {
-		return analyzed;
+		return analyzed
 	}
 
 	// current row of SchemaComponents to analyze and to include into the graph
-	const currentRow: ConcurrentSchemaComponent = schema[0];
-	const rest = schema.slice(1);
+	const currentRow = schema[0]
+	if (!currentRow) {
+		return analyzed
+	}
+	const rest = schema.slice(1)
 	// the generators of the current row
 	const gens: SchemaComponent[] = currentRow.filter(
 		(obj: SchemaComponent) => typeof obj !== 'string'
-	);
+	)
 	// the mappers of the current row
 	const maps: SchemaComponent[] = currentRow.filter(
 		(obj: string | SchemaObject) => typeof obj === 'string'
-	);
+	)
 
 	// each of the current row depends on each of the previous row
 	// note that the edge orientation is reversed
 	currentRow.forEach((box: SchemaComponent) => {
-		const boxNames: string[] =
-			typeof box === 'string' ? [box] : Object.keys(box);
-		boxNames.forEach((boxName) => {
-			analyzed.addEdgesFrom(
-				previous.map((pBox: string) => [boxName, pBox] as Edge)
-			);
-		});
-	});
+		const boxNames: string[] = typeof box === 'string' ? [box] : Object.keys(box)
+		boxNames.forEach(boxName => {
+			analyzed.addEdgesFrom(previous.map((pBox: string) => [boxName, pBox] as Edge))
+		})
+	})
 
 	// For each generator, analyze its subgraph depending solely on the generator
-	(gens as SchemaObject[]).forEach((gen: SchemaObject) => {
+	;(gens as SchemaObject[]).forEach((gen: SchemaObject) => {
 		for (const parentName of Object.keys(gen)) {
-			_analyzeRecursive(gen[parentName], [parentName], analyzed);
+			const subSchema = gen[parentName]
+			if (subSchema) {
+				_analyzeRecursive(subSchema, [parentName], analyzed)
+			}
 		}
-	});
+	})
 
 	// we have completed the row, so proceed the rest
-	return _analyzeRecursive(rest, maps as string[], analyzed);
+	return _analyzeRecursive(rest, maps as string[], analyzed)
 }
 
 /**
@@ -102,14 +90,14 @@ function _analyzeRecursive(
  * @private
  */
 function analyzeSchema(schema: SerialSchemaComponent): DiGraph {
-	const graph: DiGraph = new DiGraph();
-	graph.addNode(ROOT_NODE);
-	return _analyzeRecursive(schema, [ROOT_NODE], graph);
+	const graph: DiGraph = new DiGraph()
+	graph.addNode(ROOT_NODE)
+	return _analyzeRecursive(schema, [ROOT_NODE], graph)
 }
 
 type FlowBoxesMetadata = {
-	[index: string]: BoxMeta | BatchingBoxMeta;
-};
+	[index: string]: BoxMeta | BatchingBoxMeta
+}
 
 /**
  *
@@ -119,32 +107,24 @@ type FlowBoxesMetadata = {
  */
 //TODO: extract into EEmiter of the flow itself
 // when emitting from stats EE, we can't distinguish events of various flows
-function emitFlowSchema(
-	boxNames: string[],
-	graph: DiGraph,
-	schema: FlowExplicitDescription
-): void {
-	const edges = graph.inEdges();
+function emitFlowSchema(boxNames: string[], graph: DiGraph, schema: FlowExplicitDescription): void {
+	const edges = graph.inEdges()
 	const boxMetas: FlowBoxesMetadata = graph
 		.nodes(true)
 		.filter((n: NodeWithAttribs) => n[0] !== ROOT_NODE)
 		.map((n: NodeWithAttribs) => {
 			return {
 				name: n[0],
-				meta: (n[1].instance as BoxInterface | BatchingBoxInterface)
-					.meta,
-			};
+				meta: (n[1].instance as BoxInterface | BatchingBoxInterface).meta
+			}
 		})
-		.reduce(
-			(metas, item) => {
-				metas[item.name as string] = item.meta;
-				return metas;
-			},
-			{} as FlowBoxesMetadata
-		);
+		.reduce((metas, item) => {
+			metas[item.name as string] = item.meta
+			return metas
+		}, {} as FlowBoxesMetadata)
 
-	eventEmitter.emit('flowSchema', schema, boxMetas, edges);
-	return;
+	eventEmitter.emit('flowSchema', schema, boxMetas, edges)
+	return
 }
 
 /**
@@ -153,149 +133,178 @@ function emitFlowSchema(
  * particular boxes (from the flow-outgoing queues) and their flow-incoming queues.
  */
 export class DAGBuilder implements FlowBuilderI {
+	/**
+	 * Main build method - orchestrates the flow construction process.
+	 * CC: ~3 (sequential method calls)
+	 */
 	public async build(
 		schema: FlowExplicitDescription,
 		componentFactory: ComponentFactoryI,
 		drain?: PriorityQueueI<Message>
 	): Promise<Flow> {
-		// Directed graph of connected boxes.  Notice, that we are going to build the boxes from the end, i.e.
-		// create the last box first, then a queue directing to it, then a box feeding the directing queue etc.
-		//
-		// Thus, the edges in the graph are oriented conversely, from the requiring box to the providing one.
-		const graph: DiGraph = analyzeSchema(schema['process']);
-		// storage of metadata to box.
-		// instance: box instance -- we need to reference it when instantiating flow-incoming queue into the box.
-		// outputs: array of flow-outgoing queues from the box.
+		const graph: DiGraph = analyzeSchema(schema['process'])
+		const boxBuildOrder: string[] = topologicalSort(graph) as string[]
 
-		// See https://en.wikipedia.org/wiki/Topological_sorting
-		//
-		// As we have the graph oriented conversely (see comments above), we get array of box names sorted in such a way
-		// that for a particular box `A` all the boxes requiring A are listed before the `A` itself.
-		const boxBuildOrder: string[] = topologicalSort(graph) as string[];
-		// Now, go through the boxes and
-		// 1. instantiate the box (as all its flow-dependents are already instantiated, inlcuding their queues, we have all the information)
-		// 2. instantiate all the flow-incoming queues (i.e. where the messages will come into this box)
-		const rootQ = await boxBuildOrder.reduce(
-			/**
-			 * @param prevBoxReady -- the outgoing queue of the last instantiated box
-			 * It has no sense until the last box is `_root_`.  Then it is a desired
-			 * input queue into the whole DAG.
-			 * @param boxName -- we are going to bring this box to life
-			 */
-			async (
-				prevBoxReady: Promise<PriorityQueueI<Message>>,
-				boxName: string
-			): Promise<PriorityQueueI<Message>> => {
-				// we must be sure all the output edges are stored in the boxMeta for the box/node being currently processed.
-				// This is done *after* the box instantiation (asynchronous), so we will wait until the previous step
-				// has completed successfully.
-				await prevBoxReady;
-				let returnValue: PriorityQueueI<Message>;
+		await this.instantiateAllBoxes(boxBuildOrder, graph, schema, componentFactory, drain)
+		const rootQ = this.getRootQueue(graph)
 
-				// All my dependencies are done, as well as the queues feeding them.
-				// Or I am a terminal box without dependencies
-				const depsQueues: PriorityQueueI<Message>[] = graph
-					.inEdges(boxName, true)
-					.map((edgeInfo: EdgeWithAttribs) => edgeInfo[2].queue);
+		emitFlowSchema(boxBuildOrder, graph, schema)
+		graph.addNode(ROOT_NODE, { input: rootQ })
 
-				// we are at the root element.  This is the input into the graph.
-				if (boxName === ROOT_NODE) {
-					emitFlowSchema(boxBuildOrder, graph, schema);
-					if (depsQueues.length == 1) {
-						return depsQueues[0];
-					} else {
-						return new Tee(...depsQueues);
+		return new Flow(rootQ, graph)
+	}
+
+	/**
+	 * Instantiates all boxes in topological order.
+	 * CC: ~2 (loop + await)
+	 */
+	private async instantiateAllBoxes(
+		boxBuildOrder: string[],
+		graph: DiGraph,
+		schema: FlowExplicitDescription,
+		componentFactory: ComponentFactoryI,
+		drain?: PriorityQueueI<Message>
+	): Promise<void> {
+		for (const boxName of boxBuildOrder) {
+			if (boxName === ROOT_NODE) {
+				continue
+			}
+			await this.instantiateBox(boxName, graph, schema, componentFactory, drain)
+			this.wireBoxInputQueues(boxName, graph)
+		}
+	}
+
+	/**
+	 * Instantiates a single box and assigns its output queue.
+	 * CC: ~4 (branching on depsQueues count)
+	 */
+	private async instantiateBox(
+		boxName: string,
+		graph: DiGraph,
+		schema: FlowExplicitDescription,
+		componentFactory: ComponentFactoryI,
+		drain?: PriorityQueueI<Message>
+	): Promise<void> {
+		const depsQueues = this.getDependencyQueues(boxName, graph)
+		const myParams = this.getBoxParams(boxName, schema)
+		const outputQueue = this.resolveOutputQueue(depsQueues)
+
+		const instance = await componentFactory.create(boxName, outputQueue ?? drain, myParams)
+		graph.addNode(boxName, { instance })
+	}
+
+	/**
+	 * Gets queues from boxes that depend on this box.
+	 * CC: ~1
+	 */
+	private getDependencyQueues(boxName: string, graph: DiGraph): PriorityQueueI<Message>[] {
+		return graph.inEdges(boxName, true).map((edgeInfo: EdgeWithAttribs) => edgeInfo[2].queue)
+	}
+
+	/**
+	 * Gets parameters for a box from schema.
+	 * CC: ~2
+	 */
+	private getBoxParams(boxName: string, schema: FlowExplicitDescription): any {
+		return schema.parameters ? ((schema.parameters as any)[boxName] as any) : undefined
+	}
+
+	/**
+	 * Resolves the output queue based on dependency queues.
+	 * CC: ~3 (branching on queue count)
+	 */
+	private resolveOutputQueue(
+		depsQueues: PriorityQueueI<Message>[]
+	): PriorityQueueI<Message> | undefined {
+		if (depsQueues.length === 0) {
+			return undefined // Terminal box - will use drain
+		}
+		if (depsQueues.length === 1) {
+			return depsQueues[0]
+		}
+		return new Tee(...depsQueues)
+	}
+
+	/**
+	 * Creates and wires input queues for a box.
+	 * CC: ~4 (batch check + loop)
+	 */
+	private wireBoxInputQueues(boxName: string, graph: DiGraph): void {
+		const instance = (graph.node.get(boxName) as any).instance
+		assert(instance !== undefined)
+
+		const inputQueue = this.createInputQueue(instance, boxName)
+		graph.addNode(boxName, { input: inputQueue })
+
+		this.wireInputEdges(boxName, graph, inputQueue)
+	}
+
+	/**
+	 * Creates the appropriate input queue (batch or single) for a box.
+	 * CC: ~2
+	 */
+	private createInputQueue(
+		instance: BoxInterface | BatchingBoxInterface,
+		boxName: string
+	): PriorityQueueI<Message> {
+		const batchMeta = (instance as BatchingBoxInterface).meta.batch
+		if (batchMeta) {
+			return new FastPriorityBatchQueue(
+				(msgs: Message[]) => (instance as BatchingBoxInterface).process(msgs),
+				{
+					concurrency: instance.meta.concurrency ?? 1,
+					batch: {
+						size: batchMeta.maxSize,
+						waitMs: (batchMeta.timeoutSeconds ?? DEFAULT_BATCH_TIMEOUT_SEC) * 1000
 					}
-				}
+				},
+				boxName
+			)
+		}
+		return new FastPriorityQueue(
+			(msg: Message) => (instance as BoxInterface).process(msg),
+			{ concurrency: instance.meta.concurrency ?? 1 },
+			boxName
+		)
+	}
 
-				const myParams: any = schema.parameters
-					? ((schema.parameters as any)[boxName] as any)
-					: undefined;
-				if (depsQueues.length == 0) {
-					// no queues from me, no dependencies => I am a terminal box
-					// output goes into drain
-					graph.addNode(boxName, {
-						instance: await componentFactory.create(
-							boxName,
-							drain,
-							myParams
-						),
-					});
-					returnValue = noopQueue;
-				} else if (depsQueues.length == 1) {
-					// I have a single dependency, so set it to be the output queue
-					graph.addNode(boxName, {
-						instance: await componentFactory.create(
-							boxName,
-							(returnValue = depsQueues[0]),
-							myParams
-						),
-					});
-				} else {
-					// I have more dependencies.  Create a Tee -- single queue that
-					// splits into more, and let the Tee be the output
-					graph.addNode(boxName, {
-						instance: await componentFactory.create(
-							boxName,
-							(returnValue = new Tee(...depsQueues)),
-							myParams
-						),
-					});
-				}
+	/**
+	 * Wires input edges by setting up queues between boxes.
+	 * CC: ~3
+	 */
+	private wireInputEdges(
+		boxName: string,
+		graph: DiGraph,
+		inputQueue: PriorityQueueI<Message>
+	): void {
+		const inputs: Edge[] = graph.outEdges(boxName)
+		const inputQs: PriorityQueueI<Message>[] =
+			inputs.length === 1 ? [inputQueue] : new QZip(inputQueue, inputs.length).inputs
 
-				// The box is instantiated, let's instantiate feeding queues
-				// notice that boxMeta[boxName].instance is populated in the if -- else above
-				const instance = (graph.node.get(boxName) as any).instance;
-				assert(instance !== undefined);
+		for (let index = 0; index < inputs.length; index++) {
+			const inEdge = inputs[index]
+			const inputQ = inputQs[index]
+			if (!inEdge || !inputQ) {
+				continue
+			}
+			const providingBox: string = inEdge[1] as string
+			inputQ.source = providingBox
+			graph.addEdge(boxName, providingBox, { queue: inputQ })
+		}
+	}
 
-				const selfSingle: BoxInterface = instance as BoxInterface;
-				const selfBatch: BatchingBoxInterface = instance as BatchingBoxInterface;
-				const joinedQ = selfBatch.meta.batch
-					? new MemoryPriorityBatchQueue(
-							(msgs: Message[]) => selfBatch.process(msgs),
-							{
-								concurrency: selfBatch.meta.concurrency || 1,
-								batch: {
-									size: selfBatch.meta.batch.maxSize,
-									waitms:
-										(selfBatch.meta.batch.timeoutSeconds ||
-											DEFAULT_BATCH_TIMEOUT_SEC) * 1000,
-								},
-							},
-							boxName
-					  )
-					: new MemoryPrioritySingleQueue(
-							(msg: Message) => selfSingle.process(msg),
-							{
-								concurrency: selfSingle.meta.concurrency || 1,
-							},
-							boxName
-					  );
-				graph.addNode(boxName, {input: joinedQ});
+	/**
+	 * Gets the root queue from the graph (entry point into the flow).
+	 * CC: ~2
+	 */
+	private getRootQueue(graph: DiGraph): PriorityQueueI<Message> {
+		const depsQueues: PriorityQueueI<Message>[] = graph
+			.inEdges(ROOT_NODE, true)
+			.map((edgeInfo: EdgeWithAttribs) => edgeInfo[2].queue)
 
-				// Select the edges (queues) from the graph
-				// and prepare the same number of of queues joining into `joinedQ`
-				const inputs: Edge[] = graph.outEdges(boxName);
-				const inputQs: PriorityQueueI<Message>[] =
-					inputs.length === 1
-						? [joinedQ]
-						: new QZip(joinedQ, inputs.length).inputs;
-
-				// Store the queues in metadata storage by boxes I am dependent of
-				for(let index = 0; index < inputs.length; index++) {
-					// Edge == [from (i.e. me), parent]
-					const inEdge: Edge = inputs[index]
-					const providingBox: string = inEdge[1] as string;
-					const inputQ = inputQs[index];
-					inputQ.source = providingBox;
-					graph.addEdge(boxName, providingBox, {queue: inputQ});
-				}
-				return returnValue;
-			},
-			Promise.resolve(noopQueue)
-		);
-
-		graph.addNode(ROOT_NODE, {input: rootQ});
-		return new Flow(rootQ, graph);
+		if (depsQueues.length === 1 && depsQueues[0]) {
+			return depsQueues[0]
+		}
+		return new Tee(...depsQueues)
 	}
 }

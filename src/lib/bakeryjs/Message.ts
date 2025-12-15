@@ -1,8 +1,10 @@
-const debug = require('debug')('bakeryjs:message');
+import Debug from 'debug'
 
-export type MessageData = {[key: string]: any};
+const debug = Debug('bakeryjs:message')
 
-let messageId = 0;
+export type MessageData = { [key: string]: any }
+
+let messageId = 0
 
 /**
  * ### Identifiable message
@@ -10,11 +12,11 @@ let messageId = 0;
  * The Identifiable with data and their accessors and the flag that the generation is not finished.
  */
 export interface Message {
-	readonly id: string;
-	readonly parent: Message | undefined;
-	create(values?: MessageData): Message;
-	getInput(requires: string[]): MessageData;
-	setOutput(provides: string[], output: MessageData): void;
+	readonly id: string
+	readonly parent: Message | undefined
+	create(values?: MessageData): Message
+	getInput(requires: string[]): MessageData
+	setOutput(provides: string[], output: MessageData): void
 }
 
 /**
@@ -43,65 +45,63 @@ export interface Message {
  * @internalapi
  */
 export class DataMessage implements Message {
-	private readonly _id: string;
-	protected data: MessageData;
-	public readonly parent: Message | undefined;
+	private readonly _id: string
+	protected data: MessageData
+	public readonly parent: Message | undefined
 
 	public constructor(initData?: MessageData, parent?: Message) {
-		this._id = `${messageId++}`;
-		this.parent = parent;
-		this.data = initData ? initData : {};
+		this._id = `${messageId++}`
+		this.parent = parent
+		this.data = initData ? initData : {}
 	}
 
 	public get id(): string {
-		return (this.parent ? `${this.parent.id}` : '') + '/' + this._id;
+		return (this.parent ? `${this.parent.id}` : '') + '/' + this._id
 	}
 
 	public create(values?: MessageData): Message {
 		const newData = values
 			? Object.create(this.data, Object.getOwnPropertyDescriptors(values))
-			: Object.create(this.data);
-		return new DataMessage(newData, this);
+			: Object.create(this.data)
+		return new DataMessage(newData, this)
 	}
 
 	// TODO: (code detail) the flow executor should create a Data Access Object that will guard the fields and
 	// pass the DAO into the box.  The factory of the DAO could be a method of the Message.
 	public getInput(requires: string[]): MessageData {
-		const input: MessageData = {};
+		const input: MessageData = {}
 		for (const r of requires) {
-			input[r] = this.data[r];
+			input[r] = this.data[r]
 		}
-		debug(`set input: ${JSON.stringify(input)}`);
+		debug(`set input: ${JSON.stringify(input)}`)
 
-		return input;
+		return input
 	}
 
 	public setOutput(provides: string[], output: MessageData): void {
-		const currentKeys = Object.keys(this.data);
-		const intersectionKeys = currentKeys.filter(
-			(key: string) => provides.indexOf(key) !== -1
-		);
+		const currentKeys = Object.keys(this.data)
+		const intersectionKeys = currentKeys.filter((key: string) => provides.indexOf(key) !== -1)
 		if (intersectionKeys.length > 0) {
 			throw new Error(
 				`Cannot provide some data because the message already contains following results "${intersectionKeys.join(
 					'", "'
 				)}".`
-			);
+			)
 		}
 
-		debug(`set output: ${JSON.stringify(output)}`);
+		debug(`set output: ${JSON.stringify(output)}`)
 		for (const p of provides) {
-			this.data[p] = output[p];
+			this.data[p] = output[p]
 		}
 	}
 
 	public export(): MessageData {
-		const protoChain: MessageData[] = [];
-		let obj = this.data;
+		const protoChain: MessageData[] = []
+		let obj = this.data
 		while (obj !== Object.prototype) {
-			protoChain.unshift(obj);
-			obj = Object.getPrototypeOf(obj) as MessageData;
+			protoChain.unshift(obj)
+			obj = Object.getPrototypeOf(obj) as MessageData
 		}
-		return Object.assign({}, ...protoChain);
+		return Object.assign({}, ...protoChain)
 	}
 }

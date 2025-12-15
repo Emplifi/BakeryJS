@@ -1,0 +1,32 @@
+[
+  {
+    "name": "simple-10000",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 10000
+    },
+    "metrics": {
+      "totalTimeMs": 640,
+      "messagesProcessed": 10000,
+      "avgTimePerMessageMs": 0.064,
+      "memoryUsedMB": 40.39404296875,
+      "peakMemoryMB": 93.52953338623047,
+      "heapStats": {
+        "heapUsed": 94204848,
+        "heapTotal": 122732544,
+        "external": 2665803
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 10,
+      "lastSentMs": 639,
+      "drainCompleteMs": 640,
+      "sentEventCount": 10101
+    },
+    "timestamp": "2025-12-14T07:12:10.191Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {
+      "BAKERYJS_DISABLE_EXPERIMENTAL_TRACING": "1"
+    }
+  }
+]

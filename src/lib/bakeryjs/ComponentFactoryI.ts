@@ -1,11 +1,11 @@
-import {BatchingBoxInterface, BoxInterface} from './BoxI';
-import {PriorityQueueI} from './queue/PriorityQueueI';
-import {Message} from './Message';
+import type { BatchingBoxInterface, BoxInterface } from './BoxI'
+import type { PriorityQueueI } from './queue/PriorityQueueI'
+import type { Message } from './Message'
 
 export default interface ComponentFactoryI {
 	create(
 		name: string,
 		queue?: PriorityQueueI<Message>,
 		parameters?: any
-	): Promise<BoxInterface | BatchingBoxInterface>;
+	): Promise<BoxInterface | BatchingBoxInterface>
 }

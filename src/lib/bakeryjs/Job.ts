@@ -1,14 +1,14 @@
-import {MessageData} from './Message';
+import type { MessageData } from './Message'
 
-let jobId = 0;
+let jobId = 0
 
 export class Job {
-	public readonly jobId: string;
+	public readonly jobId: string
 
 	public constructor(jobInitialValue?: MessageData) {
-		this.jobId = `${jobId++}`;
+		this.jobId = `${jobId++}`
 		if (jobInitialValue) {
-			Object.assign(this, jobInitialValue);
+			Object.assign(this, jobInitialValue)
 		}
 	}
 }

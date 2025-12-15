@@ -1,0 +1,202 @@
+[
+  {
+    "name": "simple-10",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 18,
+      "messagesProcessed": 10,
+      "avgTimePerMessageMs": 1.8,
+      "memoryUsedMB": 3.976043701171875,
+      "peakMemoryMB": 52.961341857910156,
+      "heapStats": {
+        "heapUsed": 56292144,
+        "heapTotal": 80609280,
+        "external": 2680299
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 0,
+      "lastSentMs": null,
+      "drainCompleteMs": 18,
+      "sentEventCount": 12
+    },
+    "timestamp": "2025-12-14T07:08:21.888Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {}
+  },
+  {
+    "name": "simple-100",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 100
+    },
+    "metrics": {
+      "totalTimeMs": 12,
+      "messagesProcessed": 100,
+      "avgTimePerMessageMs": 0.12,
+      "memoryUsedMB": -1.3421478271484375,
+      "peakMemoryMB": 52.30023193359375,
+      "heapStats": {
+        "heapUsed": 55843240,
+        "heapTotal": 84639744,
+        "external": 2661483
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 0,
+      "lastSentMs": null,
+      "drainCompleteMs": 12,
+      "sentEventCount": 102
+    },
+    "timestamp": "2025-12-14T07:08:21.902Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {}
+  },
+  {
+    "name": "simple-1000",
+    "flowType": "simple",
+    "config": {
+      "itemCount": 1000
+    },
+    "metrics": {
+      "totalTimeMs": 70,
+      "messagesProcessed": 1000,
+      "avgTimePerMessageMs": 0.07,
+      "memoryUsedMB": 5.768516540527344,
+      "peakMemoryMB": 61.411827087402344,
+      "heapStats": {
+        "heapUsed": 62718712,
+        "heapTotal": 88834048,
+        "external": 2666987
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 0,
+      "lastSentMs": null,
+      "drainCompleteMs": 70,
+      "sentEventCount": 1011
+    },
+    "timestamp": "2025-12-14T07:08:21.973Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {}
+  },
+  {
+    "name": "complex-10x5",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 10,
+      "nestedItemCount": 5
+    },
+    "metrics": {
+      "totalTimeMs": 29,
+      "messagesProcessed": 50,
+      "avgTimePerMessageMs": 0.58,
+      "memoryUsedMB": -1.669403076171875,
+      "peakMemoryMB": 58.11369323730469,
+      "heapStats": {
+        "heapUsed": 61789128,
+        "heapTotal": 89882624,
+        "external": 2674155
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 0,
+      "lastSentMs": null,
+      "drainCompleteMs": 29,
+      "sentEventCount": 504
+    },
+    "timestamp": "2025-12-14T07:08:22.003Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {}
+  },
+  {
+    "name": "complex-10x10",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 10,
+      "nestedItemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 22,
+      "messagesProcessed": 100,
+      "avgTimePerMessageMs": 0.22,
+      "memoryUsedMB": 3.1503829956054688,
+      "peakMemoryMB": 62.506324768066406,
+      "heapStats": {
+        "heapUsed": 65914472,
+        "heapTotal": 92241920,
+        "external": 2681803
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 0,
+      "lastSentMs": null,
+      "drainCompleteMs": 22,
+      "sentEventCount": 954
+    },
+    "timestamp": "2025-12-14T07:08:22.026Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {}
+  },
+  {
+    "name": "complex-50x10",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 50,
+      "nestedItemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 59,
+      "messagesProcessed": 500,
+      "avgTimePerMessageMs": 0.118,
+      "memoryUsedMB": -4.4381866455078125,
+      "peakMemoryMB": 65.64802551269531,
+      "heapStats": {
+        "heapUsed": 62078304,
+        "heapTotal": 95387648,
+        "external": 2667275
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 0,
+      "lastSentMs": null,
+      "drainCompleteMs": 59,
+      "sentEventCount": 4754
+    },
+    "timestamp": "2025-12-14T07:08:22.086Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {}
+  },
+  {
+    "name": "complex-100x10",
+    "flowType": "complex",
+    "config": {
+      "itemCount": 100,
+      "nestedItemCount": 10
+    },
+    "metrics": {
+      "totalTimeMs": 98,
+      "messagesProcessed": 1000,
+      "avgTimePerMessageMs": 0.098,
+      "memoryUsedMB": 13.544395446777344,
+      "peakMemoryMB": 70.93738555908203,
+      "heapStats": {
+        "heapUsed": 77101136,
+        "heapTotal": 100630528,
+        "external": 2681899
+      }
+    },
+    "eventTimings": {
+      "firstSentMs": 0,
+      "lastSentMs": null,
+      "drainCompleteMs": 98,
+      "sentEventCount": 9504
+    },
+    "timestamp": "2025-12-14T07:08:22.186Z",
+    "nodeVersion": "v22.18.0",
+    "environment": {}
+  }
+]
