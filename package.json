@@ -1,6 +1,6 @@
 {
 	"name": "bakeryjs",
-	"version": "1.0.0",
+	"version": "1.0.0-alpha.1",
 	"description": "FBP-inspired data processing library for Node.js",
 	"main": "build/index.js",
 	"types": "build/index.d.ts",
