@@ -27,6 +27,11 @@ describe('Priority Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('8.1 Higher priority first', () => {
 		it('processes higher priority messages before lower priority', async () => {
 			// Use priority-generator that emits items with different priorities

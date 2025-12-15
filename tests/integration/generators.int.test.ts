@@ -27,6 +27,11 @@ describe('Generator Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('2.1 Single emission', () => {
 		it('generator emits 1 message and sub-flow processes it', async () => {
 			const job = {

@@ -22,6 +22,11 @@ describe('Flow Topology Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('1.1 Single box flow', () => {
 		it('processes single box and drains message', async () => {
 			const job = { process: [['helloworld']] }

@@ -24,6 +24,11 @@ describe('BatchingBox Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('4.1 Batch size trigger', () => {
 		it('batches messages up to maxSize', async () => {
 			// hellobatchworld emits 5 messages over time

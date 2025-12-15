@@ -24,6 +24,11 @@ describe('Events Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('7.1 sent event emission', () => {
 		it('emits sent event for each message transition', async () => {
 			const job = {

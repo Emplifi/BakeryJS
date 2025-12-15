@@ -27,6 +27,11 @@ describe('Job Lifecycle Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('6.1 Simple job completion', () => {
 		it('linear flow completes and promise resolves', async () => {
 			const job = { process: [['helloworld'], ['wordcount'], ['checksum']] }

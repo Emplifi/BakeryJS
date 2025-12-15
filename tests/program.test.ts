@@ -2,14 +2,29 @@ import { Program, MessageData } from 'bakeryjs'
 import { FlowExplicitDescription } from 'bakeryjs/FlowBuilderI'
 import { FlowDescription } from 'bakeryjs/Flow'
 
-const program = new Program(
-	{},
-	{
-		componentPaths: [`${__dirname}/../test-data/`]
+let program: Program
+let consoleLogSentCallback: (
+	timestamp: number,
+	source: string,
+	target: string,
+	batchSize: number
+) => void
+
+beforeAll(() => {
+	program = new Program(
+		{},
+		{
+			componentPaths: [`${__dirname}/../test-data/`]
+		}
+	)
+	consoleLogSentCallback = (timestamp, source, target, batchSize) => {
+		console.log(`${new Date(timestamp)} Sent: ${source} --> ${target} (${batchSize})`)
 	}
-)
-program.on('sent', (timestamp, source, target, batchSize) => {
-	console.log(`${new Date(timestamp)} Sent: ${source} --> ${target} (${batchSize})`)
+	program.on('sent', consoleLogSentCallback)
+})
+
+afterAll(() => {
+	program.off('sent', consoleLogSentCallback)
 })
 
 test('Store `Hello World!` with all default configuration', async () => {
@@ -18,10 +33,14 @@ test('Store `Hello World!` with all default configuration', async () => {
 	}
 
 	const transitions: any[] = []
-	program.on('sent', (timestamp, src, tgt) => transitions.push({ from: src, to: tgt }))
+	const trackSent = (timestamp: number, src: string, tgt: string): number =>
+		transitions.push({ from: src, to: tgt })
+	program.on('sent', trackSent)
 
 	const drain: MessageData[] = []
 	await program.run(job, (msg: MessageData) => drain.push(msg))
+
+	program.off('sent', trackSent)
 
 	expect(drain).toHaveLength(1)
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!')
@@ -30,9 +49,9 @@ test('Store `Hello World!` with all default configuration', async () => {
 
 test('Store `Hello World! with dependencies` with all default configuration', async () => {
 	const transitions: any[] = []
-	program.on('sent', (timestamp, src, tgt, batchSize) =>
+	const trackSent = (timestamp: number, src: string, tgt: string, batchSize: number): number =>
 		transitions.push({ from: src, to: tgt, size: batchSize })
-	)
+	program.on('sent', trackSent)
 
 	const job = {
 		process: [['helloworld'], ['wordcount', 'punctcount'], ['checksum']]
@@ -40,6 +59,8 @@ test('Store `Hello World! with dependencies` with all default configuration', as
 
 	const drain: MessageData[] = []
 	await program.run(job, (msg: MessageData) => drain.push(msg))
+
+	program.off('sent', trackSent)
 
 	expect(drain).toHaveLength(1)
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!')
@@ -75,9 +96,9 @@ test('Store `Hello World! with dependencies` with all default configuration', as
 
 test('Store batching `Hello World! with dependencies` with all default configuration', async () => {
 	const transitions: any[] = []
-	program.on('sent', (timestamp, src, tgt, batchSize) =>
+	const trackSent = (timestamp: number, src: string, tgt: string, batchSize: number): number =>
 		transitions.push({ from: src, to: tgt, size: batchSize })
-	)
+	program.on('sent', trackSent)
 
 	const job: FlowExplicitDescription = {
 		process: [['hellobatchworld'], ['wordbatchcount', 'punctcount'], ['checksum']]
@@ -85,6 +106,8 @@ test('Store batching `Hello World! with dependencies` with all default configura
 
 	const drain: MessageData[] = []
 	await program.run(job, (msg: MessageData) => drain.push(msg))
+
+	program.off('sent', trackSent)
 
 	expect(drain).toHaveLength(5)
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!')
@@ -120,9 +143,9 @@ test('Store batching `Hello World! with dependencies` with all default configura
 
 test('Store batching `Hello World! with dependencies` with custom configuration', async () => {
 	const transitions: any[] = []
-	program.on('sent', (timestamp, src, tgt, batchSize) =>
+	const trackSent = (timestamp: number, src: string, tgt: string, batchSize: number): number =>
 		transitions.push({ from: src, to: tgt, size: batchSize })
-	)
+	program.on('sent', trackSent)
 
 	const job = {
 		parameters: {
@@ -133,6 +156,8 @@ test('Store batching `Hello World! with dependencies` with custom configuration'
 
 	const drain: MessageData[] = []
 	await program.run(job, (msg: MessageData) => drain.push(msg))
+
+	program.off('sent', trackSent)
 
 	expect(drain).toHaveLength(5)
 	expect(drain[0]).toHaveProperty('msg', 'Hello World!')
@@ -172,13 +197,17 @@ test('Store `Hello World!` with initial value', async () => {
 	}
 
 	const transitions: any[] = []
-	program.on('sent', (timestamp, src, tgt) => transitions.push({ from: src, to: tgt }))
+	const trackSent = (timestamp: number, src: string, tgt: string): number =>
+		transitions.push({ from: src, to: tgt })
+	program.on('sent', trackSent)
 
 	const drain: MessageData[] = []
 	await program.run(job, (msg: MessageData) => drain.push(msg), {
 		words: 4,
 		punct: 1
 	})
+
+	program.off('sent', trackSent)
 
 	expect(drain).toHaveLength(1)
 	expect(drain[0]).toHaveProperty('checksum', 1 + 4 * Math.sqrt(2))
@@ -244,6 +273,8 @@ describe('Program.on', () => {
 		const drain: MessageData[] = []
 		await p.run(job, (msg: MessageData) => drain.push(msg))
 
+		p.off('sent', sentCallback)
+
 		expect(sentCallback).toHaveBeenCalled()
 	})
 
@@ -255,6 +286,8 @@ describe('Program.on', () => {
 		const job = { process: [['helloworld']] }
 		const drain: MessageData[] = []
 		await p.run(job, (msg: MessageData) => drain.push(msg))
+
+		p.off('run', runCallback)
 
 		expect(runCallback).toHaveBeenCalled()
 	})

@@ -22,6 +22,11 @@ describe('Message Transformation Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('3.1 Field provision', () => {
 		it('box provides field that downstream boxes can access', async () => {
 			const job = {

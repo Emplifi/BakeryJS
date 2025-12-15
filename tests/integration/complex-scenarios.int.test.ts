@@ -39,6 +39,11 @@ describe('Complex Scenarios Integration Tests', () => {
 		program.on('run', eventTracker.trackRun)
 	})
 
+	afterEach(() => {
+		program.off('sent', eventTracker.trackSent)
+		program.off('run', eventTracker.trackRun)
+	})
+
 	describe('10.1 ETL Pipeline Simulation', () => {
 		it('simulates extract → transform → load pattern', async () => {
 			// Extract: generator creates data

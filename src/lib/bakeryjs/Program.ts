@@ -130,6 +130,10 @@ export class Program {
 		eventEmitter.on(eventName, callback)
 	}
 
+	public off(eventName: string, callback: (...args: any[]) => any): void {
+		eventEmitter.off(eventName, callback)
+	}
+
 	public runFlow(flow: Flow, jobInitialValue?: MessageData): Promise<void> {
 		const job = new Job(jobInitialValue)
 		if (debug.enabled) {
